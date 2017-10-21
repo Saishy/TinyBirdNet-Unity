@@ -3,6 +3,7 @@ using System.Collections;
 using LiteNetLib;
 using System.Collections.Generic;
 using LiteNetLib.Utils;
+using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
@@ -39,6 +40,7 @@ namespace TinyBirdNet {
 				_netManager.UpdateTime = 15;
 			}
 
+			_netManager.PingInterval = TinyNetGameManager.instance.PingInterval;
 			_netManager.NatPunchEnabled = TinyNetGameManager.instance.bNatPunchEnabled;
 		}
 
@@ -46,24 +48,32 @@ namespace TinyBirdNet {
 			_netManager.NatPunchEnabled = bNewState;
 		}
 
+		public virtual void SetPingInterval(int newPingInterval) {
+			if (_netManager != null) {
+				_netManager.PingInterval = newPingInterval;
+			}
+		}
+
 		//============ INetEventListener methods ============//
 
 		public virtual void OnPeerConnected(NetPeer peer) {
-			Debug.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint);
+			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint);
+
 			_peers.Add(peer);
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
-			Debug.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + "because " + disconnectInfo.Reason);
+			TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + "because " + disconnectInfo.Reason);
+
 			_peers.Remove(peer);
 		}
 
 		public virtual void OnNetworkError(NetEndPoint endPoint, int socketErrorCode) {
-			Debug.Log("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint);
+			TinyLogger.Log("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint);
 		}
 
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
-			Debug.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint);
+			TinyLogger.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint);
 
 			if (messageType == UnconnectedMessageType.DiscoveryRequest) {
 				OnDiscoveryRequestReceived(remoteEndPoint, reader);
@@ -71,17 +81,17 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void OnNetworkLatencyUpdate(NetPeer peer, int latency) {
-			Debug.Log("[" + TYPE + "] Latency update for peer: " + peer.EndPoint + " " + latency + "ms");
+			TinyLogger.Log("[" + TYPE + "] Latency update for peer: " + peer.EndPoint + " " + latency + "ms");
 		}
 
 		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
-			Debug.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
+			TinyLogger.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
 		}
 
 		//============ Network Events ============//
 
 		protected virtual void OnDiscoveryRequestReceived(NetEndPoint remoteEndPoint, NetDataReader reader) {
-			Debug.Log("[" + TYPE + "] Received discovery request. Send discovery response");
+			TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response");
 			_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
 		}
 	}

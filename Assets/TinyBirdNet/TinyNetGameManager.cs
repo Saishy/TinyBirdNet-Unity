@@ -12,10 +12,25 @@ namespace TinyBirdNet {
 
 		protected int maxNumberOfPlayers = 4;
 		protected int port = 7777;
+		protected int pingInterval = 1000;
+
 		public bool bNatPunchEnabled { get; protected set; }
 
 		public int MaxNumberOfPlayers { get { return maxNumberOfPlayers; } }
 		public int Port { get { return port; } }
+		public int PingInterval {
+			get { return pingInterval; }
+			set {
+				if (serverManager != null) {
+					serverManager.SetPingInterval(value);
+				}
+				if (clientManager != null) {
+					clientManager.SetPingInterval(value);
+				}
+
+				pingInterval = value;
+			}
+		}
 
 		protected TinyNetServerManager serverManager;
 		protected TinyNetClientManager clientManager;

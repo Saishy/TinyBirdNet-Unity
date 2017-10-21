@@ -2,6 +2,7 @@
 using System.Collections;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
@@ -13,7 +14,7 @@ namespace TinyBirdNet {
 
 		public virtual bool StartClient() {
 			if (_netManager != null) {
-				Debug.LogError("StartClient() called multiple times.");
+				TinyLogger.LogError("StartClient() called multiple times.");
 				return false;
 			}
 
@@ -22,13 +23,13 @@ namespace TinyBirdNet {
 
 			ConfigureNetManager(true);
 
-			Debug.Log("[CLIENT] Started client");
+			TinyLogger.Log("[CLIENT] Started client");
 
 			return true;
 		}
 
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
-			Debug.Log("[CLIENT] Attempt to connect at adress: " + hostAddress + ":" + hostPort);
+			TinyLogger.Log("[CLIENT] Attempt to connect at adress: " + hostAddress + ":" + hostPort);
 
 			_netManager.Connect(hostAddress, hostPort);
 		}

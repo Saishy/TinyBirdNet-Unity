@@ -2,6 +2,7 @@
 using System.Collections;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
@@ -13,7 +14,7 @@ namespace TinyBirdNet {
 
 		public virtual bool StartServer(int port, int maxNumberOfPlayers) {
 			if (_netManager != null) {
-				Debug.LogError("StartServer() called multiple times.");
+				TinyLogger.LogError("StartServer() called multiple times.");
 				return false;
 			}
 
@@ -22,7 +23,7 @@ namespace TinyBirdNet {
 
 			ConfigureNetManager(true);
 
-			Debug.Log("[SERVER] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers);
+			TinyLogger.Log("[SERVER] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers);
 
 			return true;
 		}
