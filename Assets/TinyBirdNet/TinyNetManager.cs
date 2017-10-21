@@ -17,23 +17,32 @@ namespace TinyBirdNet {
 		void Awake() {
 			_clients = new HashSet<NetPeer>();
 
-			AwakeInit();
+			AwakeVirtual();
 		}
 
-		protected void AwakeInit() { }
+		/** <summary>Please override this function to use the Awake call.</summary> */
+		protected virtual void AwakeVirtual() { }
 
 		void Start() {
-			StartInit();
+			StartVirtual();
 		}
 
-		protected void StartInit() { }
+		/** <summary>Please override this function to use the Start call.</summary> */
+		protected virtual void StartVirtual() { }
 
 		void Update() {
-
+			_netManager.PollEvents();
 		}
+
+		/** <summary>Please override this function to use the Update call.</summary> */
+		protected virtual void UpdateVirtual() { }
 
 		public void StartServer() {
 			_netManager = new NetManager(this, MaxAmountOfPlayers, Application.version);
+		}
+
+		public void StartClient() {
+			_netManager = new NetManager(this, Application.version);
 		}
 
 		public void OnPeerConnected(NetPeer peer) {
