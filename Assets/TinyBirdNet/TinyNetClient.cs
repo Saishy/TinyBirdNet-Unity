@@ -6,9 +6,9 @@ using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
-	public class TinyNetClientManager : TinyNetManager {
+	public class TinyNetClient : TinyNetConnection {
 
-		public static TinyNetClientManager instance;
+		public static TinyNetClient instance;
 
 		public override string TYPE { get { return "CLIENT"; } }
 

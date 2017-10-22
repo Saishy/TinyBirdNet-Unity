@@ -32,14 +32,16 @@ namespace TinyBirdNet {
 			}
 		}
 
-		protected TinyNetServerManager serverManager;
-		protected TinyNetClientManager clientManager;
+		protected TinyNetServer serverManager;
+		protected TinyNetClient clientManager;
 
 		void Awake() {
 			instance = this;
 
-			serverManager = new TinyNetServerManager();
-			clientManager = new TinyNetClientManager();
+			TinyNetReflector.GetAllSyncVarProps();
+
+			serverManager = new TinyNetServer();
+			clientManager = new TinyNetClient();
 
 			AwakeVirtual();
 		}

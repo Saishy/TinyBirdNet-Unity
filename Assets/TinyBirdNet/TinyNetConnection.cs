@@ -7,14 +7,14 @@ using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
-	public abstract class TinyNetManager : System.Object, INetEventListener {
+	public abstract class TinyNetConnection : System.Object, INetEventListener {
 
 		public virtual string TYPE { get { return "Abstract"; } }
 
 		public HashSet<NetPeer> _peers { get; protected set; }
 		protected NetManager _netManager;
 
-		public TinyNetManager() {
+		public TinyNetConnection() {
 			_peers = new HashSet<NetPeer>();
 		}
 
