@@ -6,7 +6,7 @@ using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
-	public class TinyNetClient : TinyNetConnection {
+	public class TinyNetClient : TinyNetScene {
 
 		public static TinyNetClient instance;
 

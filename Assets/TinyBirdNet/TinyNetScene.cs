@@ -7,14 +7,34 @@ using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
-	public abstract class TinyNetConnection : System.Object, INetEventListener {
+	public abstract class TinyNetScene : System.Object, INetEventListener {
 
 		public virtual string TYPE { get { return "Abstract"; } }
+
+		static Dictionary<string, GameObject> guidToPrefab = new Dictionary<string, GameObject>();
+
+		/// <summary>
+		/// uint is the NetworkID of the TinyNetIdentity object.
+		/// </summary>
+		Dictionary<uint, TinyNetIdentity> _localIdentityObjects = new Dictionary<uint, TinyNetIdentity>();
+
+		/// <summary>
+		/// uint is the NetworkID of the ITinyNetObject object.
+		/// </summary>
+		Dictionary<uint, ITinyNetObject> _localNetObjects = new Dictionary<uint, ITinyNetObject>();
 
 		public HashSet<NetPeer> _peers { get; protected set; }
 		protected NetManager _netManager;
 
-		public TinyNetConnection() {
+		public bool isRunning { get {
+				if (_netManager == null) {
+					return false;
+				}
+
+				return _netManager.IsRunning;
+		} }
+
+		public TinyNetScene() {
 			_peers = new HashSet<NetPeer>();
 		}
 

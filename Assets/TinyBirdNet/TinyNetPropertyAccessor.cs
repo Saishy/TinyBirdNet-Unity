@@ -1,23 +1,44 @@
-﻿using UnityEngine;
-using System.Collections;
-using FastMember;
+﻿using FastMember;
 using System;
 
-public class TinyNetPropertyAccessor<T> {
+namespace TinyBirdNet {
 
-	TypeAccessor accessor;
-	string propName;
+	public class TinyNetPropertyAccessor<T> {
 
-	public TinyNetPropertyAccessor(Type type, string newPropName) {
-		accessor = TypeAccessor.Create(type, true);
-		propName = newPropName;
-	}
+		TypeAccessor accessor;
+		string propName;
+		T previousValue;
 
-	public T Get(object obj) {
-		return (T)accessor[obj, propName];
-	}
+		public TinyNetPropertyAccessor(string newPropName) {
+			accessor = TypeAccessor.Create(typeof(T), true);
+			propName = newPropName;
+		}
 
-	public void Set(object obj, T value) {
-		accessor[obj, propName] = value;
+		public T Get(object obj) {
+			return (T)accessor[obj, propName];
+		}
+
+		public void Set(object obj, T value) {
+			accessor[obj, propName] = value;
+		}
+
+		public bool CheckIfChangedAndUpdate(object obj) {
+			T current = (T)accessor[obj, propName];
+
+			if (current.Equals(previousValue)) {
+				previousValue = current;
+				return true;
+			}
+
+			return false;
+		}
+
+		public bool WasChanged(object obj) {
+			return accessor[obj, propName].Equals(previousValue);
+		}
+
+		public void UpdateValue(object obj) {
+			previousValue = (T)accessor[obj, propName];
+		}
 	}
 }

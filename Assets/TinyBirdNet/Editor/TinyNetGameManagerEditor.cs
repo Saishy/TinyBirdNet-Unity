@@ -1,0 +1,50 @@
+﻿using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+
+namespace TinyBirdNet {
+
+	[CustomEditor(typeof(TinyNetGameManager))]
+	public class TinyNetGameManagerEditor : Editor {
+
+		SerializedProperty _registeredPrefabs;
+
+		void OnEnable() {
+			_registeredPrefabs = serializedObject.FindProperty("registeredPrefabs");
+		}
+
+		public override void OnInspectorGUI() {
+			serializedObject.Update();
+
+			TinyNetGameManager netGameManager = target as TinyNetGameManager;
+
+			EditorGUILayout.PropertyField(_registeredPrefabs, true);
+
+			if (GUILayout.Button("Register all TinyNetIdentity prefabs")) {
+				netGameManager.RebuildAllRegisteredPrefabs(GetAllAssetsWithTinyNetIdentity());
+			}
+
+			EditorGUILayout.Space();
+
+			netGameManager.currentLogFilter = (LogFilter)EditorGUILayout.EnumPopup("LogFilter:", netGameManager.currentLogFilter);
+
+			serializedObject.ApplyModifiedProperties();
+		}
+
+		GameObject[] GetAllAssetsWithTinyNetIdentity() {
+			List<GameObject> result = new List<GameObject>();
+
+			string[] guids = AssetDatabase.FindAssets("t:GameObject", null);
+
+			foreach (string guid in guids) {
+				GameObject gObj = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+
+				if (gObj.GetComponent<TinyNetIdentity>() != null) {
+					result.Add(gObj);
+				}
+			}
+
+			return result.ToArray();
+		}
+	}
+}

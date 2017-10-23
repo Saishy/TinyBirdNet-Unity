@@ -25,8 +25,69 @@ namespace TinyBirdNet {
 			if (getMethod != null && setMethod != null) {
 				syncVarProps[type].Add(prop);
 			} else {
-				TinyLogger.LogError("TinyNetSyncVar used on property without get and/or set: " + prop.Name);
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetSyncVar used on property without get and/or set: " + prop.Name); }
 			}
+		}
+
+		public static void OutPropertyNamesFromType(Type type, out string[] propNames) {
+			propNames = new string[syncVarProps[type].Count];
+
+			for (int i = 0; i < propNames.Length; i++) {
+				propNames[i] = syncVarProps[type][i].Name;
+			}
+		}
+
+		public static void OutPropertyTypesFromType(Type type, out Type[] propTypes) {
+			propTypes = new Type[syncVarProps[type].Count];
+
+			for (int i = 0; i < propTypes.Length; i++) {
+				propTypes[i] = syncVarProps[type][i].PropertyType;
+			}
+		}
+
+		public static void UpdateDirtyFlagOf(TinyNetBehaviour instance, BitArray bitArray) {
+			Type type = instance.GetType();
+
+			for (int i = 0; i < syncVarProps[type].Count; i++) {
+				if (instance.CheckIfPropertyUpdated(syncVarProps[type][i].Name, syncVarProps[type][i].PropertyType)) {
+					bitArray[i] = true;
+				} else {
+					bitArray[i] = false;
+				}
+			}
+		}
+
+		public static int DirtyFlagToInt(BitArray bitArray) {
+			int value = 0;
+
+			for (var i = 0; i < bitArray.Count; i++) {
+				value <<= 1;
+				if (bitArray[i]) {
+					value |= 1;
+				}
+			}
+
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("binary dirtyflag: " + Convert.ToString(value,2)); }
+
+			return value;
+		}
+
+		public static void IntToDirtyFlag(int input, BitArray bitArray) {
+			for (var i = 0; i < bitArray.Count; i++) {
+				if ((input & 1) == 1) { //current right most bit is a 1 [true]
+					bitArray[i] = true;
+				} else {
+					bitArray[i] = false;
+				}
+
+				input >>= 1;
+			}
+
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("bitArray: " + bitArray); }
+		}
+
+		public static int GetNumberOfSyncedProperties(Type type) {
+			return syncVarProps[type].Count;
 		}
 	}
 }

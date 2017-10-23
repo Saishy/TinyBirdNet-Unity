@@ -8,11 +8,7 @@ public class Pawn : TinyNetBehaviour {
 	[TinyNetSyncVar]
 	int TestInt { get; set; }
 
-	private int _testInt2 = 2;
+	string _playerName;
 	[TinyNetSyncVar]
-	int TestIntWithoutSet { get { return _testInt2; } }
-
-	private int _testInt3 = 3;
-	[TinyNetSyncVar]
-	int TestIntWithoutGet { set { _testInt3 = value; } }
+	string PlayerName { get { return _playerName; } set { _playerName = value; } }
 }

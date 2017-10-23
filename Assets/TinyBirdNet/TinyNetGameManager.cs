@@ -10,6 +10,10 @@ namespace TinyBirdNet {
 
 		public static TinyNetGameManager instance;
 
+		[SerializeField] List<GameObject> registeredPrefabs;
+
+		public LogFilter currentLogFilter = LogFilter.Info;
+
 		protected int maxNumberOfPlayers = 4;
 		protected int port = 7777;
 		protected int pingInterval = 1000;
@@ -35,8 +39,22 @@ namespace TinyBirdNet {
 		protected TinyNetServer serverManager;
 		protected TinyNetClient clientManager;
 
+		public bool isServer { get { return serverManager.isRunning; } }
+		public bool isClient { get { return clientManager.isRunning; } }
+		public bool isListenServer { get { return isServer && isClient; } }
+		//public bool isStandalone { get; protected set; }
+
+		private uint _nextNetworkID = 0;
+		public uint NextNetworkID {
+			get {
+				return ++_nextNetworkID;
+			}
+		}
+
 		void Awake() {
 			instance = this;
+
+			TinyNetLogLevel.currentLevel = currentLogFilter;
 
 			TinyNetReflector.GetAllSyncVarProps();
 
@@ -72,6 +90,13 @@ namespace TinyBirdNet {
 
 		void OnDestroy() {
 			ClearNetManager();
+		}
+
+		/// <summary>
+		/// Receives a new list of registered prefabs from the custom Editor.
+		/// </summary>
+		public void RebuildAllRegisteredPrefabs(GameObject[] newArray) {
+			registeredPrefabs = new List<GameObject>(newArray);
 		}
 
 		protected virtual void ClearNetManager() {

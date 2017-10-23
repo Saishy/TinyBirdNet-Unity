@@ -37,19 +37,24 @@ namespace TinyBirdNet {
 					.Where(prop => Attribute.IsDefined(prop, typeof(TinyNetSyncVar)))
 					.OrderBy(info => info.Name).ToArray();
 
-				TinyNetStateSyncer.InitializePropertyInfoListOfType(props.Length, type);
+				if (props.Length < 32) {
 
-				for (int i = 0; i < props.Length; i++) {
-					if (TinyNetSyncVar.allowedTypes.Contains(props[i].PropertyType)) {
-						TinyLogger.Log(props[i].Name);
+					TinyNetStateSyncer.InitializePropertyInfoListOfType(props.Length, type);
 
-						//MethodInfo getMethod = props[i].GetGetMethod(true);
-						//MethodInfo setMethod = props[i].GetSetMethod(true);
+					for (int i = 0; i < props.Length; i++) {
+						if (TinyNetSyncVar.allowedTypes.Contains(props[i].PropertyType)) {
+							if (TinyNetLogLevel.logDev) { TinyLogger.Log(props[i].Name); }
 
-						TinyNetStateSyncer.AddPropertyToType(props[i], type);
-					} else {
-						TinyLogger.LogError("TinyNetSyncVar used in incompatible property type: " + props[i].Name);
+							//MethodInfo getMethod = props[i].GetGetMethod(true);
+							//MethodInfo setMethod = props[i].GetSetMethod(true);
+
+							TinyNetStateSyncer.AddPropertyToType(props[i], type);
+						} else {
+							if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetSyncVar used in incompatible property type: " + props[i].Name); }
+						}
 					}
+				} else {
+					if (TinyNetLogLevel.logError) { TinyLogger.LogError("ERROR: " + type + " have more than 32 syncvar"); }
 				}
 			}
 		}
