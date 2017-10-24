@@ -239,9 +239,7 @@ namespace TinyBirdNet {
 		}
 
 		public void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
-			TinyLogger.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
-
-			ReadMessageAndCallDelegate(reader, peer);
+			TinyLogger.Log("[" + TYPE + "] On network " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint);
 		}
 
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
