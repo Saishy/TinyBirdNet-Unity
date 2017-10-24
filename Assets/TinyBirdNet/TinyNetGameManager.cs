@@ -3,12 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using UnityEngine.SceneManagement;
+using TinyBirdNet.Messaging;
+using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
 	public class TinyNetGameManager : MonoBehaviour {
 
 		public static TinyNetGameManager instance;
+
+		static public string networkSceneName = "";
+
+		static AsyncOperation s_LoadingSceneAsync;
 
 		[SerializeField] List<GameObject> registeredPrefabs;
 
@@ -74,7 +81,9 @@ namespace TinyBirdNet {
 		}
 
 		/** <summary>Please override this function to use the Start call.</summary> */
-		protected virtual void StartVirtual() { }
+		protected virtual void StartVirtual() {
+			StartCoroutine(TinyNetUpdate());
+		}
 
 		void Update() {
 			if (serverManager != null) {
@@ -88,7 +97,35 @@ namespace TinyBirdNet {
 		}
 
 		/** <summary>Please override this function to use the Update call.</summary> */
-		protected virtual void UpdateVirtual() { }
+		protected virtual void UpdateVirtual() {
+			if (instance == null)
+				return;
+
+			if (s_LoadingSceneAsync == null)
+				return;
+
+			if (!s_LoadingSceneAsync.isDone)
+				return;
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientChangeScene done readyCon: " + clientManager.tinyNetConns[0]); }
+
+			FinishLoadScene();
+			s_LoadingSceneAsync.allowSceneActivation = true;
+			s_LoadingSceneAsync = null;
+		}
+
+		IEnumerator TinyNetUpdate() {
+			while (true) {
+				if (serverManager != null) {
+					serverManager.TinyNetUpdate();
+				}
+				if (clientManager != null) {
+					clientManager.TinyNetUpdate();
+				}
+
+				yield return null;
+			}
+		}
 
 		void OnDestroy() {
 			ClearNetManager();
@@ -194,6 +231,93 @@ namespace TinyBirdNet {
 		/// <param name="hostPort">An int representing the port to use for the connection.</param>
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
 			clientManager.ClientConnectTo(hostAddress, hostPort);
+		}
+
+		void RegisterClientMessages(TinyNetClient client) {
+			//client.RegisterHandler(MsgType.Connect, OnClientConnectInternal);
+			//client.RegisterHandler(MsgType.Disconnect, OnClientDisconnectInternal);
+			//client.RegisterHandler(MsgType.NotReady, OnClientNotReadyMessageInternal);
+			//client.RegisterHandler(MsgType.Error, OnClientErrorInternal);
+			client.RegisterHandler(TinyNetMsgType.Scene, OnClientSceneInternal);
+
+			/*if (m_PlayerPrefab != null) {
+				ClientScene.RegisterPrefab(m_PlayerPrefab);
+			}
+			foreach (var prefab in m_SpawnPrefabs) {
+				if (prefab != null) {
+					ClientScene.RegisterPrefab(prefab);
+				}
+			}*/
+		}
+
+		//============ Scenes Methods =======================//
+
+		public virtual void ServerChangeScene(string newSceneName) {
+			if (string.IsNullOrEmpty(newSceneName)) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("ServerChangeScene empty scene name"); }
+				return;
+			}
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ServerChangeScene " + newSceneName); }
+
+			serverManager.SetAllClientsNotReady();
+			networkSceneName = newSceneName;
+
+			s_LoadingSceneAsync = SceneManager.LoadSceneAsync(newSceneName);
+
+			TinyNetStringMessage msg = new TinyNetStringMessage(networkSceneName);
+			msg.msgType = TinyNetMsgType.Scene;
+			serverManager.SendMessageByChannelToAllConnections(msg, SendOptions.ReliableOrdered);
+		}
+
+		public virtual void ClientChangeScene(string newSceneName, bool forceReload) {
+			if (string.IsNullOrEmpty(newSceneName)) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("ClientChangeScene empty scene name"); }
+				return;
+			}
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientChangeScene newSceneName:" + newSceneName + " networkSceneName:" + networkSceneName); }
+
+
+			if (newSceneName == networkSceneName) {
+				if (!forceReload) {
+					FinishLoadScene();
+					return;
+				}
+			}
+
+			s_LoadingSceneAsync = SceneManager.LoadSceneAsync(newSceneName);
+			networkSceneName = newSceneName;
+		}
+
+		public virtual void FinishLoadScene() {
+			if (isClient) {
+				clientManager.FinishLoadScene();
+			} else {
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("FinishLoadScene client is null"); }
+			}
+
+			if (isServer) {
+				serverManager.SpawnObjects();
+				serverManager.OnServerSceneChanged(networkSceneName);
+			}
+
+			if (isClient && clientManager.isConnected) {
+				//RegisterClientMessages(client);
+				clientManager.OnClientSceneChanged();
+			}
+		}
+
+		//============ Messages Handlers ====================//
+
+		void OnClientSceneInternal(TinyNetMessageReader netMsg) {
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetGameManager:OnClientSceneInternal"); }
+
+			string newSceneName = netMsg.reader.GetString();
+
+			if (isClient && clientManager.isConnected && !isServer) {
+				ClientChangeScene(newSceneName, true);
+			}
 		}
 	}
 }

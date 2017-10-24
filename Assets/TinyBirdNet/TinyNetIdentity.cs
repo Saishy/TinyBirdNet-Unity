@@ -55,6 +55,20 @@ namespace TinyBirdNet {
 			_sceneID = newSceneId;
 		}
 
+		public void ForceAuthority(bool authority) {
+			if (_hasAuthority == authority) {
+				return;
+			}
+
+			_hasAuthority = authority;
+
+			if (authority) {
+				OnStartAuthority();
+			} else {
+				OnStopAuthority();
+			}
+		}
+
 		void CacheTinyNetObjects() {
 			if (_tinyNetObjects == null) {
 				_tinyNetObjects = GetComponentsInChildren<ITinyNetObject>(true);

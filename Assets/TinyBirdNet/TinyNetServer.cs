@@ -16,6 +16,9 @@ namespace TinyBirdNet {
 		// static message objects to avoid runtime-allocations
 		static TinyNetRemovePlayerMessage s_TinyNetRemovePlayerMessage = new TinyNetRemovePlayerMessage();
 
+		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
+
+
 		public TinyNetServer() : base() {
 			instance = this;
 		}
@@ -31,6 +34,12 @@ namespace TinyBirdNet {
 			//RegisterHandlerSafe(TinyNetMsgType.Animation, NetworkAnimator.OnAnimationServerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationParameters, NetworkAnimator.OnAnimationParametersServerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerServerMessage);
+		}
+
+		public override void TinyNetUpdate() {
+			foreach (var item in _localNetObjects) {
+				item.Value.TinyNetUpdate();
+			}
 		}
 
 		public virtual bool StartServer(int port, int maxNumberOfPlayers) {
@@ -49,7 +58,45 @@ namespace TinyBirdNet {
 			return true;
 		}
 
+		//============ Static Methods =======================//
+
+		static public void Spawn(GameObject obj) {
+			instance.SpawnObject(obj);
+		}
+
+		static bool GetNetworkIdentity(GameObject go, out TinyNetIdentity view) {
+			view = go.GetComponent<TinyNetIdentity>();
+
+			if (view == null) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("UNET failure. GameObject doesn't have NetworkIdentity."); }
+				return false;
+			}
+
+			return true;
+		}
+
 		//============ Object Networking ====================//
+
+		void SpawnObject(GameObject obj) {
+			if (!isRunning) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("SpawnObject for " + obj + ", NetworkServer is not active. Cannot spawn objects without an active server."); }
+				return;
+			}
+
+			TinyNetIdentity objNetworkIdentity;
+
+			if (!GetNetworkIdentity(obj, out objNetworkIdentity)) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("SpawnObject " + obj + " has no TinyNetIdentity. Please add a TinyNetIdentity to " + obj); }
+				return;
+			}
+
+			objNetworkIdentity.OnStartServer(false);
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objNetworkIdentity.NetworkID + " asset GUID " + objNetworkIdentity.assetGUID); }
+
+			//objNetworkIdentity.RebuildObservers(true);
+			SendSpawnMessage(objNetworkIdentity, null);
+		}
 
 		/// <summary>
 		/// Send a spawn message.
@@ -78,6 +125,21 @@ namespace TinyBirdNet {
 				SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, targetConn);
 			} else {
 				SendMessageByChannelToAllConnections(msg, SendOptions.ReliableOrdered);
+			}
+		}
+
+		//============ TinyNetMessages Networking ===========//
+
+		public virtual void SendStateUpdateToAllConnections(TinyNetBehaviour netBehaviour, SendOptions sendOptions) {
+			recycleWriter.Reset();
+
+			recycleWriter.Put(TinyNetMsgType.StateUpdate);
+			recycleWriter.Put(netBehaviour.NetworkID);
+
+			netBehaviour.TinySerialize(recycleWriter, false);
+
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				tinyNetConns[i].Send(recycleWriter, sendOptions);
 			}
 		}
 
@@ -199,6 +261,55 @@ namespace TinyBirdNet {
 			TinyNetObjectDestroyMessage msg = new TinyNetObjectDestroyMessage();
 			msg.networkID = tinyNetId.NetworkID;
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+		}
+
+		//============ Connections Functions ================//
+
+		public bool SpawnObjects() {
+			if (isRunning) {
+				TinyNetIdentity[] uvs = Resources.FindObjectsOfTypeAll<TinyNetIdentity>();
+
+				foreach (var uv in uvs) {
+					if (uv.gameObject.hideFlags == HideFlags.NotEditable || uv.gameObject.hideFlags == HideFlags.HideAndDontSave)
+						continue;
+
+					if (uv.sceneID == 0)
+						continue;
+
+					if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObjects sceneID:" + uv.sceneID + " name:" + uv.gameObject.name); }
+
+					uv.gameObject.SetActive(true);
+				}
+
+				foreach (var uv2 in uvs) {
+					if (uv2.gameObject.hideFlags == HideFlags.NotEditable || uv2.gameObject.hideFlags == HideFlags.HideAndDontSave)
+						continue;
+
+					// If not a scene object
+					if (uv2.sceneID == 0)
+						continue;
+
+					// What does this mean???
+					if (uv2.isServer)
+						continue;
+
+					if (uv2.gameObject == null) {
+						if (TinyNetLogLevel.logDebug) { TinyLogger.LogError("Log this? Something is wrong if this happens?"); }
+						continue;
+					}
+
+					Spawn(uv2.gameObject);
+
+					// these objects are server authority - even if "localPlayerAuthority" is set on them
+					uv2.ForceAuthority(true);
+				}
+			}
+			return true;
+		}
+
+		//============ Scenes Methods =======================//
+
+		public virtual void OnServerSceneChanged(string sceneName) {
 		}
 	}
 }

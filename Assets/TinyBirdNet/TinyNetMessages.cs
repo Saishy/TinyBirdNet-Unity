@@ -18,7 +18,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("RegisterHandlerSafe id:" + msgType + " handler:" + handler.Method.Name); }
 			if (_msgHandlers.ContainsKey(msgType)) {
-				//if (TinyNetLogLevel.logError) { TinyLogger.LogError("RegisterHandlerSafe id:" + msgType + " handler:" + handler.Method.Name + " conflict"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RegisterHandlerSafe id:" + msgType + " handler:" + handler.Method.Name + " conflict"); }
 				return;
 			}
 			_msgHandlers.Add(msgType, handler);
@@ -232,6 +232,63 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
+	//============ General Typed Messages ===============//
+
+	public class TinyNetStringMessage : ITinyNetMessage {
+		public string value;
+
+		public TinyNetStringMessage() {
+		}
+
+		public TinyNetStringMessage(string v) {
+			value = v;
+		}
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+			value = reader.GetString();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(value);
+		}
+	}
+
+	public class TinyNetIntegerMessage : ITinyNetMessage {
+		public int value;
+
+		public TinyNetIntegerMessage() {
+		}
+
+		public TinyNetIntegerMessage(int v) {
+			value = v;
+		}
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+			value = reader.GetInt();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(value);
+		}
+	}
+
+	public class TinyNetEmptyMessage : ITinyNetMessage {
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+		}
+
+		public void Serialize(NetDataWriter writer) {
+		}
+	}
+
+	//============ Interal System Messages ==============//
+
 	public class TinyNetObjectDestroyMessage : ITinyNetMessage {
 		public int networkID;
 
@@ -285,6 +342,26 @@ namespace TinyBirdNet.Messaging {
 		public void Serialize(NetDataWriter writer) {
 			writer.Put(networkID);
 			writer.Put(connectId);
+		}
+	}
+
+	public class TinyNetObjectStateUpdate : ITinyNetMessage {
+		public int networkID;
+		public int dirtyFlag;
+		public byte[] state;
+
+		public ushort msgType { get { return 8; } }
+
+		public virtual void Deserialize(NetDataReader reader) {
+			networkID = reader.GetInt();
+			dirtyFlag = reader.GetInt();
+			state = reader.GetRemainingBytes();
+		}
+
+		public virtual void Serialize(NetDataWriter writer) {
+			writer.Put(networkID);
+			writer.Put(dirtyFlag);
+			writer.Put(state);
 		}
 	}
 

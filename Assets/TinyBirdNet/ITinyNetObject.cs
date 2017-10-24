@@ -13,10 +13,10 @@ namespace TinyBirdNet {
 		void TinySerialize(NetDataWriter writer, bool firstStateUpdate);
 		void TinyDeserialize(NetDataReader reader, bool firstStateUpdate);
 
-		/*/// <summary>
+		/// <summary>
 		/// Called after all Updates but before any LateUpdate.
 		/// </summary>
-		void TinyNetUpdate();*/
+		void TinyNetUpdate();
 
 		bool IsTimeToUpdate();
 
@@ -51,7 +51,7 @@ namespace TinyBirdNet {
 
 		void OnSetLocalVisibility(bool vis);
 
-		int GetNetworkChannel();
+		LiteNetLib.SendOptions GetNetworkChannel();
 
 		float GetNetworkSendInterval();
 	}

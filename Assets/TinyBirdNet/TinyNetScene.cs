@@ -44,6 +44,9 @@ namespace TinyBirdNet {
 
 		protected NetManager _netManager;
 
+		/// <summary>
+		/// Returns true if socket listening and update thread is running.
+		/// </summary>
 		public bool isRunning { get {
 				if (_netManager == null) {
 					return false;
@@ -51,6 +54,19 @@ namespace TinyBirdNet {
 
 				return _netManager.IsRunning;
 		} }
+
+		/// <summary>
+		/// Returns true if it's connected to at least one peer.
+		/// </summary>
+		public bool isConnected {
+			get {
+				if (_netManager == null) {
+					return false;
+				}
+
+				return _netManager.PeersCount > 0;
+			}
+		}
 
 		public TinyNetScene() {
 			_tinyNetConns = new List<TinyNetConnection>(TinyNetGameManager.instance.MaxNumberOfPlayers);
@@ -66,6 +82,10 @@ namespace TinyBirdNet {
             //RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
         }
 
+		public void RegisterHandler(ushort msgType, TinyNetMessageDelegate handler) {
+			_tinyMessageHandlers.RegisterHandler(msgType, handler);
+		}
+
 		public void RegisterHandlerSafe(ushort msgType, TinyNetMessageDelegate handler) {
 			_tinyMessageHandlers.RegisterHandlerSafe(msgType, handler);
 		}
@@ -73,10 +93,13 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// It is called from TinyNetGameManager Update(), handles PollEvents().
 		/// </summary>
-		public void InternalUpdate() {
+		public virtual void InternalUpdate() {
 			if (_netManager != null) {
 				_netManager.PollEvents();
 			}
+		}
+
+		public virtual void TinyNetUpdate() {
 		}
 
 		public virtual void ClearNetManager() {
@@ -173,19 +196,23 @@ namespace TinyBirdNet {
 		//============ INetEventListener methods ============//
 
 		public virtual void OnPeerConnected(NetPeer peer) {
-			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint);
+			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId);
 
 			tinyNetConns.Add(new TinyNetConnection(peer));
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
-			TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + "because " + disconnectInfo.Reason);
+			TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + " because " + disconnectInfo.Reason);
 
 			RemoveTinyNetConnection(peer);
 		}
 
 		public virtual void OnNetworkError(NetEndPoint endPoint, int socketErrorCode) {
 			TinyLogger.Log("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint);
+		}
+
+		public void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
+			TinyLogger.Log("[" + TYPE + "] received " + TinyNetMsgType.msgLabels[reader.GetUShort()] + " from: " + peer.EndPoint);
 		}
 
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
@@ -200,9 +227,9 @@ namespace TinyBirdNet {
 			TinyLogger.Log("[" + TYPE + "] Latency update for peer: " + peer.EndPoint + " " + latency + "ms");
 		}
 
-		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
+		/*public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
 			TinyLogger.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
-		}
+		}*/
 
 		//============ Network Events =======================//
 

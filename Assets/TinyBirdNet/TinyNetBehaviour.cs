@@ -252,6 +252,12 @@ namespace TinyBirdNet {
 			}
 		}
 
+		public void TinyNetUpdate() {
+			if (IsTimeToUpdate()) {
+				TinyNetServer.instance.SendStateUpdateToAllConnections(this, GetNetworkChannel());
+			}
+		}
+
 		public bool IsTimeToUpdate() {
 			if (Time.time - _lastSendTime > GetNetworkSendInterval()) {
 				UpdateDirtyFlag();
@@ -289,8 +295,8 @@ namespace TinyBirdNet {
 		public virtual void OnSetLocalVisibility(bool vis) {
 		}
 
-		public virtual int GetNetworkChannel() {
-			return (int)LiteNetLib.SendOptions.ReliableOrdered;
+		public virtual LiteNetLib.SendOptions GetNetworkChannel() {
+			return LiteNetLib.SendOptions.ReliableOrdered;
 		}
 
 		public virtual float GetNetworkSendInterval() {

@@ -15,9 +15,16 @@ namespace TinyBirdNet {
 
 		public override string TYPE { get { return "CLIENT"; } }
 
+		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
+
 		bool _isSpawnFinished;
+		
+		public bool bLoadedScene { get; protected set; }
 
 		Dictionary<int, TinyNetIdentity> _sceneIdentityObjectsToSpawn;
+
+		protected List<TinyNetPlayerController> _localPlayers = new List<TinyNetPlayerController>();
+		public List<TinyNetPlayerController> localPlayers { get { return _localPlayers; } }
 
 		public TinyNetClient() : base() {
 			instance = this;
@@ -41,7 +48,7 @@ namespace TinyBirdNet {
 				//RegisterHandlerSafe(TinyNetMsgType.ObjectHide, OnObjectDestroy);
 				RegisterHandlerSafe(TinyNetMsgType.StateUpdate, OnStateUpdateMessage);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnScene, OnObjectSpawnScene);
-				RegisterHandlerSafe(TinyNetMsgType.SpawnFinished, OnObjectSpawnFinished); //Saishy: Something to do with Scene objects?
+				RegisterHandlerSafe(TinyNetMsgType.SpawnFinished, OnObjectSpawnFinished);
 				//RegisterHandlerSafe(TinyNetMsgType.SyncList, OnSyncListMessage);
 				//RegisterHandlerSafe(TinyNetMsgType.Animation, NetworkAnimator.OnAnimationClientMessage);
 				//RegisterHandlerSafe(TinyNetMsgType.AnimationParameters, NetworkAnimator.OnAnimationParametersClientMessage);
@@ -71,9 +78,13 @@ namespace TinyBirdNet {
 			_netManager.Connect(hostAddress, hostPort);
 		}
 
-		//============ Object Networking ====================//
+		//============ Static Methods =======================//
 
 		
+
+		//============ Object Networking ====================//
+
+
 
 		//============ TinyNetMessages Handlers =============//
 
@@ -365,6 +376,63 @@ namespace TinyBirdNet {
 			}
 
 			return null;
+		}
+
+		//===
+
+		public bool Ready() {
+			if (!isConnected) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("Ready() called but we are not connected to anything."); }
+				return false;
+			}
+
+			TinyNetConnection conn = _tinyNetConns[0];
+
+			if (conn.isReady) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("A connection has already been set as ready. There can only be one."); }
+				return false;
+			}			
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::Ready() called with connection [" + conn + "]"); }
+
+			var msg = new TinyNetReadyMessage();
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+
+			conn.isReady = true;
+
+			return true;
+		}
+
+		public virtual void OnClientSceneChanged() {
+			// always become ready.
+			Ready();
+
+			/*if (!m_AutoCreatePlayer) {
+				return;
+			}
+
+			bool addPlayer = (ClientScene.localPlayers.Count == 0);
+			bool foundPlayer = false;
+			foreach (var playerController in ClientScene.localPlayers) {
+				if (playerController.gameObject != null) {
+					foundPlayer = true;
+					break;
+				}
+			}
+			if (!foundPlayer) {
+				// there are players, but their game objects have all been deleted
+				addPlayer = true;
+			}
+			if (addPlayer) {
+				ClientScene.AddPlayer(0);
+			}*/
+		}
+
+		//============ Scenes Methods =======================//
+
+		public virtual void FinishLoadScene() {
+			bLoadedScene = true;
+			//OnClientConnect(s_ClientReadyConnection);
 		}
 	}
 }

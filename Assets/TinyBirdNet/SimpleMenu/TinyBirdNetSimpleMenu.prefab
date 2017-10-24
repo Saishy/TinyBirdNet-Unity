@@ -779,6 +779,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ipToConnectField: {fileID: 114373822800127160}
   portToConnectField: {fileID: 114679006726073946}
+  hostPortField: {fileID: 114298426201551342}
 --- !u!114 &114331074291205348
 MonoBehaviour:
   m_ObjectHideFlags: 1

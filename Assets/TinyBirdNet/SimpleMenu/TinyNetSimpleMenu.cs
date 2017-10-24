@@ -9,6 +9,7 @@ namespace TinyBirdNet {
 
 		public InputField ipToConnectField;
 		public InputField portToConnectField;
+		public InputField hostPortField;
 
 		public void PressedConnectButton() {
 			TinyNetGameManager.instance.StartClient();
@@ -17,9 +18,13 @@ namespace TinyBirdNet {
 		}
 
 		public void PressedHostButton() {
-			TinyNetGameManager.instance.SetPort(portToConnectField.text.Length == 0 ? 7777 : int.Parse(portToConnectField.text));
+			TinyNetGameManager.instance.SetPort(hostPortField.text.Length == 0 ? 7777 : int.Parse(hostPortField.text));
 
 			TinyNetGameManager.instance.StartServer();
+
+			TinyNetGameManager.instance.StartClient();
+
+			TinyNetGameManager.instance.ClientConnectTo("localhost", hostPortField.text.Length == 0 ? 7777 : int.Parse(hostPortField.text));
 		}
 
 		public void ToggleNatPunching(bool bNewValue) {
