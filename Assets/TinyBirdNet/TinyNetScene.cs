@@ -29,6 +29,8 @@ namespace TinyBirdNet {
 		/// </summary>
 		protected static NetDataWriter recycleWriter = new NetDataWriter();
 
+		protected static TinyNetMessageReader recycleMessageReader = new TinyNetMessageReader();
+
 		// static message objects to avoid runtime-allocations
 		protected static TinyNetObjectDestroyMessage s_TinyNetObjectDestroyMessage = new TinyNetObjectDestroyMessage();
 		protected static TinyNetObjectSpawnMessage s_TinyNetObjectSpawnMessage = new TinyNetObjectSpawnMessage();
@@ -131,6 +133,16 @@ namespace TinyBirdNet {
 			}
 		}
 
+		protected TinyNetConnection GetTinyNetConnection(NetPeer peer) {
+			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
+				if (tinyNetCon.netPeer == peer) {
+					return tinyNetCon;
+				}
+			}
+
+			return null;
+		}
+
 		protected virtual bool RemoveTinyNetConnection(NetPeer peer) {
 			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
 				if (tinyNetCon.netPeer == peer) {
@@ -173,6 +185,21 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Networking ===========//
 
+		ushort ReadMessageAndCallDelegate(NetDataReader reader, NetPeer peer) {
+			ushort msgType = reader.GetUShort();
+
+			if (_tinyMessageHandlers.Contains(msgType)) {
+				recycleMessageReader.msgType = msgType;
+				recycleMessageReader.reader = reader;
+				recycleMessageReader.tinyNetConn = GetTinyNetConnection(peer);
+				recycleMessageReader.channelId = SendOptions.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
+
+				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
+			}
+
+			return msgType;
+		}
+
 		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, SendOptions sendOptions, TinyNetConnection tinyNetConn) {
 			recycleWriter.Reset();
 
@@ -212,7 +239,9 @@ namespace TinyBirdNet {
 		}
 
 		public void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
-			TinyLogger.Log("[" + TYPE + "] received " + TinyNetMsgType.msgLabels[reader.GetUShort()] + " from: " + peer.EndPoint);
+			TinyLogger.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
+
+			ReadMessageAndCallDelegate(reader, peer);
 		}
 
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {

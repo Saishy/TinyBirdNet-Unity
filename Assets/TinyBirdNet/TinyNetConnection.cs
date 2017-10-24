@@ -15,7 +15,7 @@ namespace TinyBirdNet {
 
 		public NetPeer netPeer { get { return _peer; } }
 
-		List<TinyNetPlayerController> _playerControllers;
+		List<TinyNetPlayerController> _playerControllers = new List<TinyNetPlayerController>();
 
 		public List<TinyNetPlayerController> playerControllers { get { return _playerControllers; } }
 

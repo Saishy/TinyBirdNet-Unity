@@ -48,6 +48,10 @@ namespace TinyBirdNet {
 			_msgHandlers.Remove(msgType);
 		}
 
+		public bool Contains(ushort msgType) {
+			return _msgHandlers.ContainsKey(msgType);
+		}
+
 		internal TinyNetMessageDelegate GetHandler(ushort msgType) {
 			if (_msgHandlers.ContainsKey(msgType)) {
 				return _msgHandlers[msgType];
