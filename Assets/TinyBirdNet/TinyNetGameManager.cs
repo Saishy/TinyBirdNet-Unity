@@ -14,7 +14,7 @@ namespace TinyBirdNet {
 
 		public LogFilter currentLogFilter = LogFilter.Info;
 
-		protected int maxNumberOfPlayers = 4;
+		[SerializeField] protected int maxNumberOfPlayers = 4;
 		protected int port = 7777;
 		protected int pingInterval = 1000;
 
@@ -44,8 +44,8 @@ namespace TinyBirdNet {
 		public bool isListenServer { get { return isServer && isClient; } }
 		//public bool isStandalone { get; protected set; }
 
-		private uint _nextNetworkID = 0;
-		public uint NextNetworkID {
+		private int _nextNetworkID = 0;
+		public int NextNetworkID {
 			get {
 				return ++_nextNetworkID;
 			}
@@ -90,6 +90,24 @@ namespace TinyBirdNet {
 
 		void OnDestroy() {
 			ClearNetManager();
+		}
+
+		public int GetAssetIdFromPrefab(GameObject prefab) {
+			return registeredPrefabs.IndexOf(prefab);
+		}
+
+		public GameObject GetPrefabFromAssetId(int assetId) {
+			return registeredPrefabs[assetId];
+		}
+
+		public Dictionary<string, GameObject> GetDictionaryOfAssetGUIDToPrefabs() {
+			Dictionary<string, GameObject> result = new Dictionary<string, GameObject>(registeredPrefabs.Count);
+
+			for (int i = 0; i < registeredPrefabs.Count; i++) {
+				result.Add(registeredPrefabs[i].GetComponent<TinyNetIdentity>().assetGUID, registeredPrefabs[i]);
+			}
+
+			return result;
 		}
 
 		/// <summary>

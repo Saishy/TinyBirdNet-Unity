@@ -8,15 +8,21 @@ namespace TinyBirdNet {
 	public class TinyNetGameManagerEditor : Editor {
 
 		SerializedProperty _registeredPrefabs;
+		SerializedProperty _maxNumberOfPlayers;
 
 		void OnEnable() {
 			_registeredPrefabs = serializedObject.FindProperty("registeredPrefabs");
+			_maxNumberOfPlayers = serializedObject.FindProperty("maxNumberOfPlayers");
 		}
 
 		public override void OnInspectorGUI() {
 			serializedObject.Update();
 
 			TinyNetGameManager netGameManager = target as TinyNetGameManager;
+
+			EditorGUILayout.PropertyField(_maxNumberOfPlayers);
+
+			EditorGUILayout.Space();
 
 			EditorGUILayout.PropertyField(_registeredPrefabs, true);
 

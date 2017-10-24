@@ -25,17 +25,31 @@ namespace TinyBirdNet {
 		/// </summary>
 		void OnNetworkCreate();
 
+		/// <summary>
+		/// Not implemented
+		/// </summary>
 		void OnNetworkDestroy();
 
 		void OnStartServer();
 
 		void OnStartClient();
 
+		/// <summary>
+		/// Not implemented
+		/// </summary>
 		void OnStartLocalPlayer();
 
+		/// <summary>
+		/// Not implemented
+		/// </summary>
 		void OnStartAuthority();
 
+		/// <summary>
+		/// Not implemented
+		/// </summary>
 		void OnStopAuthority();
+
+		void OnSetLocalVisibility(bool vis);
 
 		int GetNetworkChannel();
 

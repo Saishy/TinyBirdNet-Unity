@@ -11,7 +11,7 @@ namespace TinyBirdNet {
 	[RequireComponent(typeof(TinyNetIdentity))]
 	public class TinyNetBehaviour : MonoBehaviour, ITinyNetObject {
 
-		public uint NetworkID { get; protected set; }
+		public int NetworkID { get; protected set; }
 
 		private Dictionary<string, TinyNetPropertyAccessor<byte>> byteAccessor;
 		private Dictionary<string, TinyNetPropertyAccessor<sbyte>> sbyteAccessor;
@@ -27,7 +27,7 @@ namespace TinyBirdNet {
 		private Dictionary<string, TinyNetPropertyAccessor<string>> stringAccessor;
 
 		private string[] propertiesName;
-		private Type[] propertiestypes;
+		private Type[] propertiesTypes;
 
 		private BitArray _dirtyFlag = new BitArray(32);
 		public BitArray DirtyFlag { get { return _dirtyFlag; } private set { _dirtyFlag = value; } }
@@ -55,7 +55,7 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public void ReceiveNetworkID(ushort newID) {
+		public void ReceiveNetworkID(int newID) {
 			NetworkID = newID;
 		}
 
@@ -77,7 +77,7 @@ namespace TinyBirdNet {
 			Type type;
 
 			for (int i = 0; i < propertiesName.Length; i++) {
-				type = propertiestypes[i];
+				type = propertiesTypes[i];
 
 				if (type == typeof(byte)) {
 					byteAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<byte>(propertiesName[i]));
@@ -173,11 +173,15 @@ namespace TinyBirdNet {
 		public void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
 			writer.Put(TinyNetStateSyncer.DirtyFlagToInt(DirtyFlag));
 
-			Type type = GetType();
-			int maxSyncVar = TinyNetStateSyncer.GetNumberOfSyncedProperties(type);
+			Type type;
+			int maxSyncVar = propertiesName.Length;
 
 			for (int i = 0; i < maxSyncVar; i++) {
-				type = propertiestypes[i];
+				if (DirtyFlag[i] == false) {
+					continue;
+				}
+
+				type = propertiesTypes[i];
 
 				if (type == typeof(byte)) {
 					writer.Put(byteAccessor[propertiesName[i]].Get(this));
@@ -208,7 +212,44 @@ namespace TinyBirdNet {
 		}
 
 		public void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
+			TinyNetStateSyncer.IntToDirtyFlag(reader.GetInt(), DirtyFlag);
 
+			Type type;
+			int maxSyncVar = propertiesName.Length;
+
+			for (int i = 0; i < maxSyncVar; i++) {
+				if (DirtyFlag[i] == false) {
+					continue;
+				}
+
+				type = propertiesTypes[i];
+
+				if (type == typeof(byte)) {
+					byteAccessor[propertiesName[i]].Set(this, reader.GetByte());
+				} else if (type == typeof(sbyte)) {
+					sbyteAccessor[propertiesName[i]].Set(this, reader.GetSByte());
+				} else if (type == typeof(short)) {
+					shortAccessor[propertiesName[i]].Set(this, reader.GetShort());
+				} else if (type == typeof(ushort)) {
+					ushortAccessor[propertiesName[i]].Set(this, reader.GetUShort());
+				} else if (type == typeof(int)) {
+					intAccessor[propertiesName[i]].Set(this, reader.GetInt());
+				} else if (type == typeof(uint)) {
+					uintAccessor[propertiesName[i]].Set(this, reader.GetUInt());
+				} else if (type == typeof(long)) {
+					longAccessor[propertiesName[i]].Set(this, reader.GetLong());
+				} else if (type == typeof(ulong)) {
+					ulongAccessor[propertiesName[i]].Set(this, reader.GetULong());
+				} else if (type == typeof(float)) {
+					floatAccessor[propertiesName[i]].Set(this, reader.GetFloat());
+				} else if (type == typeof(double)) {
+					doubleAccessor[propertiesName[i]].Set(this, reader.GetDouble());
+				} else if (type == typeof(bool)) {
+					boolAccessor[propertiesName[i]].Set(this, reader.GetBool());
+				} else if (type == typeof(string)) {
+					stringAccessor[propertiesName[i]].Set(this, reader.GetString());
+				}
+			}
 		}
 
 		public bool IsTimeToUpdate() {
@@ -222,7 +263,7 @@ namespace TinyBirdNet {
 
 		public virtual void OnNetworkCreate() {
 			TinyNetStateSyncer.OutPropertyNamesFromType(GetType(), out propertiesName);
-			TinyNetStateSyncer.OutPropertyTypesFromType(GetType(), out propertiestypes);
+			TinyNetStateSyncer.OutPropertyTypesFromType(GetType(), out propertiesTypes);
 
 			CreateAccessors();
 		}
@@ -243,6 +284,9 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void OnStopAuthority() {
+		}
+
+		public virtual void OnSetLocalVisibility(bool vis) {
 		}
 
 		public virtual int GetNetworkChannel() {

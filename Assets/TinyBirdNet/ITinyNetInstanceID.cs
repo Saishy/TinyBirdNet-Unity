@@ -11,8 +11,8 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// The ID of an instance in the network, given by the server on spawn.
 		/// </summary>
-		uint NetworkID { get; }
+		int NetworkID { get; }
 
-		void ReceiveNetworkID(ushort newID);
+		void ReceiveNetworkID(int newID);
 	}
 }
