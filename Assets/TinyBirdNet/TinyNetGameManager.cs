@@ -12,6 +12,8 @@ namespace TinyBirdNet {
 
 		[SerializeField] List<GameObject> registeredPrefabs;
 
+		[SerializeField] List<string> prefabsGUID;
+
 		public LogFilter currentLogFilter = LogFilter.Info;
 
 		[SerializeField] protected int maxNumberOfPlayers = 4;
@@ -39,8 +41,8 @@ namespace TinyBirdNet {
 		protected TinyNetServer serverManager;
 		protected TinyNetClient clientManager;
 
-		public bool isServer { get { return serverManager.isRunning; } }
-		public bool isClient { get { return clientManager.isRunning; } }
+		public bool isServer { get { return serverManager != null && serverManager.isRunning; } }
+		public bool isClient { get { return clientManager != null && clientManager.isRunning; } }
 		public bool isListenServer { get { return isServer && isClient; } }
 		//public bool isStandalone { get; protected set; }
 
@@ -58,8 +60,8 @@ namespace TinyBirdNet {
 
 			TinyNetReflector.GetAllSyncVarProps();
 
-			serverManager = new TinyNetServer();
-			clientManager = new TinyNetClient();
+			//serverManager = new TinyNetServer();
+			//clientManager = new TinyNetClient();
 
 			AwakeVirtual();
 		}
@@ -96,11 +98,31 @@ namespace TinyBirdNet {
 			return registeredPrefabs.IndexOf(prefab);
 		}
 
+		public int GetAssetIdFromAssetGUID(string assetGUID) {
+			return prefabsGUID.IndexOf(assetGUID);
+		}
+
 		public GameObject GetPrefabFromAssetId(int assetId) {
 			return registeredPrefabs[assetId];
 		}
 
-		public Dictionary<string, GameObject> GetDictionaryOfAssetGUIDToPrefabs() {
+		public GameObject GetPrefabFromAssetGUID(string assetGUID) {
+			return registeredPrefabs[prefabsGUID.IndexOf(assetGUID)];
+		}
+
+		public int GetAmountOfRegisteredAssets() {
+			return registeredPrefabs.Count;
+		}
+
+		void MakeListOfPrefabsGUID() {
+			prefabsGUID = new List<string>(registeredPrefabs.Count);
+
+			for (int i = 0; i < registeredPrefabs.Count; i++) {
+				prefabsGUID.Add(registeredPrefabs[i].GetComponent<TinyNetIdentity>().assetGUID);
+			}
+		}
+
+		/*public Dictionary<string, GameObject> GetDictionaryOfAssetGUIDToPrefabs() {
 			Dictionary<string, GameObject> result = new Dictionary<string, GameObject>(registeredPrefabs.Count);
 
 			for (int i = 0; i < registeredPrefabs.Count; i++) {
@@ -108,7 +130,7 @@ namespace TinyBirdNet {
 			}
 
 			return result;
-		}
+		}*/
 
 		/// <summary>
 		/// Receives a new list of registered prefabs from the custom Editor.
@@ -151,6 +173,8 @@ namespace TinyBirdNet {
 		/// Prepares this game to work as a server.
 		/// </summary>
 		public virtual void StartServer() {
+			serverManager = new TinyNetServer();
+
 			serverManager.StartServer(port, maxNumberOfPlayers);
 		}
 
@@ -158,6 +182,8 @@ namespace TinyBirdNet {
 		/// Prepares this game to work as a client.
 		/// </summary>
 		public virtual void StartClient() {
+			clientManager = new TinyNetClient();
+
 			clientManager.StartClient();
 		}
 

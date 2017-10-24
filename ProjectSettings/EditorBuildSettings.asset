@@ -4,4 +4,10 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/TinyBirdNet/Example/MainMenu.unity
+    guid: 0d009c0df7934e04a9ea80e755e473a6
+  - enabled: 1
+    path: Assets/TinyBirdNet/Example/MainScene.unity
+    guid: c17c457eb4e17d843a9a62c06d900622

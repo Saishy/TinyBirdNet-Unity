@@ -2,6 +2,7 @@
 using TinyBirdNet.Messaging;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using System.Collections.Generic;
 
 namespace TinyBirdNet {
 
@@ -13,6 +14,10 @@ namespace TinyBirdNet {
 		protected NetPeer _peer;
 
 		public NetPeer netPeer { get { return _peer; } }
+
+		List<TinyNetPlayerController> _playerControllers;
+
+		public List<TinyNetPlayerController> playerControllers { get { return _playerControllers; } }
 
 		public bool isReady;
 

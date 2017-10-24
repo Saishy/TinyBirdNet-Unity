@@ -143,7 +143,7 @@ namespace TinyBirdNet.Messaging {
 			"Command",
 			"LocalPlayerTransform",
 			"SyncEvent",
-			"UpdateVars",
+			"StateUpdate",
 			"SyncList",
 			"ObjectSpawnScene", // 10
             "NetworkInfo",
@@ -285,6 +285,67 @@ namespace TinyBirdNet.Messaging {
 		public void Serialize(NetDataWriter writer) {
 			writer.Put(networkID);
 			writer.Put(connectId);
+		}
+	}
+
+	public class TinyNetObjectSpawnSceneMessage : ITinyNetMessage {
+		public int networkID;
+		public int sceneId;
+		public Vector3 position;
+		public byte[] initialState;
+
+		public ushort msgType { get { return 10; } }
+
+		public void Deserialize(NetDataReader reader) {
+			networkID = reader.GetInt();
+			sceneId = reader.GetInt();
+			position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
+			initialState = reader.GetRemainingBytes();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(networkID);
+			writer.Put(sceneId);
+			writer.Put(position.x);
+			writer.Put(position.y);
+			writer.Put(position.z);
+			writer.Put(initialState);
+		}
+	}
+
+	public class TinyNetObjectSpawnFinishedMessage : ITinyNetMessage {
+		public byte state;
+
+		public ushort msgType { get { return 12; } }
+
+		public void Deserialize(NetDataReader reader) {
+			state = reader.GetByte();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(state);
+		}
+	}
+
+	public class TinyNetReadyMessage : ITinyNetMessage {
+
+		public ushort msgType { get { return 35; } }
+
+		public void Deserialize(NetDataReader reader) {
+		}
+
+		public void Serialize(NetDataWriter writer) {
+		}
+	}
+
+	public class TinyNetNotReadyMessage : ITinyNetMessage {
+
+		public ushort msgType { get { return 36; } }
+
+		public void Deserialize(NetDataReader reader) {
+		}
+
+		public void Serialize(NetDataWriter writer) {
 		}
 	}
 

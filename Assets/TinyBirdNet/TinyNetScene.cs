@@ -12,7 +12,7 @@ namespace TinyBirdNet {
 
 		public virtual string TYPE { get { return "Abstract"; } }
 
-		protected static Dictionary<string, GameObject> guidToPrefab;
+		//protected static Dictionary<string, GameObject> guidToPrefab;
 
 		/// <summary>
 		/// uint is the NetworkID of the TinyNetIdentity object.
@@ -30,16 +30,18 @@ namespace TinyBirdNet {
 		protected static NetDataWriter recycleWriter = new NetDataWriter();
 
 		// static message objects to avoid runtime-allocations
-		//protected static TinyNetObjectSpawnMessage s_TinyNetObjectSpawnSceneMessage = new TinyNetObjectSpawnMessage();
-		//static ObjectSpawnFinishedMessage s_ObjectSpawnFinishedMessage = new ObjectSpawnFinishedMessage();
 		protected static TinyNetObjectDestroyMessage s_TinyNetObjectDestroyMessage = new TinyNetObjectDestroyMessage();
 		protected static TinyNetObjectSpawnMessage s_TinyNetObjectSpawnMessage = new TinyNetObjectSpawnMessage();
 		protected static TinyNetOwnerMessage s_TinyNetOwnerMessage = new TinyNetOwnerMessage();
+		protected static TinyNetObjectSpawnSceneMessage s_TinyNetObjectSpawnSceneMessage = new TinyNetObjectSpawnSceneMessage();
+		protected static TinyNetObjectSpawnFinishedMessage s_TineNetObjectSpawnFinishedMessage = new TinyNetObjectSpawnFinishedMessage();
 		//static ClientAuthorityMessage s_ClientAuthorityMessage = new ClientAuthorityMessage();
 
 		protected TinyNetMessageHandlers _tinyMessageHandlers = new TinyNetMessageHandlers();
 
-		public List<TinyNetConnection> _tinyNetConns { get; protected set; }
+		protected List<TinyNetConnection> _tinyNetConns;
+		public List<TinyNetConnection> tinyNetConns { get { return _tinyNetConns; } }
+
 		protected NetManager _netManager;
 
 		public bool isRunning { get {
@@ -53,9 +55,9 @@ namespace TinyBirdNet {
 		public TinyNetScene() {
 			_tinyNetConns = new List<TinyNetConnection>(TinyNetGameManager.instance.MaxNumberOfPlayers);
 
-			if (guidToPrefab == null) {
+			/*if (guidToPrefab == null) {
 				guidToPrefab = TinyNetGameManager.instance.GetDictionaryOfAssetGUIDToPrefabs();
-			}
+			}*/
 		}
 
 		protected virtual void RegisterMessageHandlers() {
@@ -92,6 +94,8 @@ namespace TinyBirdNet {
 
 			_netManager.PingInterval = TinyNetGameManager.instance.PingInterval;
 			_netManager.NatPunchEnabled = TinyNetGameManager.instance.bNatPunchEnabled;
+
+			RegisterMessageHandlers();
 		}
 
 		public virtual void ToggleNatPunching(bool bNewState) {
@@ -105,9 +109,9 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual bool RemoveTinyNetConnection(NetPeer peer) {
-			foreach (TinyNetConnection tinyNetCon in _tinyNetConns) {
+			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
 				if (tinyNetCon.netPeer == peer) {
-					_tinyNetConns.Remove(tinyNetCon);
+					tinyNetConns.Remove(tinyNetCon);
 					return true;
 				}
 			}
@@ -116,9 +120,9 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual bool RemoveTinyNetConnection(long connectId) {
-			foreach (TinyNetConnection tinyNetCon in _tinyNetConns) {
+			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
 				if (tinyNetCon.ConnectId == connectId) {
-					_tinyNetConns.Remove(tinyNetCon);
+					tinyNetConns.Remove(tinyNetCon);
 					return true;
 				}
 			}
@@ -128,30 +132,20 @@ namespace TinyBirdNet {
 
 		//============ Object Networking ====================//
 
-		public static void TinyNetIdentitySpawned(TinyNetIdentity netIdentity) {
+		public static void AddTinyNetIdentityToList(TinyNetIdentity netIdentity) {
 			_localIdentityObjects.Add(netIdentity.NetworkID, netIdentity);
-
-			netIdentity.OnNetworkCreate();
 		}
 
-		public static void TinyNetObjectSpawned(ITinyNetObject netObj) {
+		public static void AddTinyNetObjectToList(ITinyNetObject netObj) {
 			_localNetObjects.Add(netObj.NetworkID, netObj);
-
-			netObj.OnNetworkCreate();
 		}
 
-		public static void TinyNetIdentityDestroyed(TinyNetIdentity netIdentity, bool bSilent = false) {
+		public static void RemoveTinyNetIdentityFromList(TinyNetIdentity netIdentity) {
 			_localIdentityObjects.Remove(netIdentity.NetworkID);
-
-			netIdentity.OnNetworkDestroy();
 		}
 
-		public static void TinyNetObjectDestroyed(ITinyNetObject netObj, bool bSilent = false) {
+		public static void RemoveTinyNetObjectFromList(ITinyNetObject netObj) {
 			_localNetObjects.Remove(netObj.NetworkID);
-
-			if (!bSilent) {
-				netObj.OnNetworkDestroy();
-			}
 		}
 
 		//============ TinyNetMessages Networking ===========//
@@ -165,14 +159,14 @@ namespace TinyBirdNet {
 			tinyNetConn.Send(recycleWriter, sendOptions);
 		}
 
-		public virtual void SendMessageByChannelToAllPeers(ITinyNetMessage msg, SendOptions sendOptions) {
+		public virtual void SendMessageByChannelToAllConnections(ITinyNetMessage msg, SendOptions sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
 			msg.Serialize(recycleWriter);
 			
-			for (int i = 0; i < _tinyNetConns.Count; i++) {
-				_tinyNetConns[i].Send(recycleWriter, sendOptions);
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				tinyNetConns[i].Send(recycleWriter, sendOptions);
 			}
 		}
 
@@ -181,7 +175,7 @@ namespace TinyBirdNet {
 		public virtual void OnPeerConnected(NetPeer peer) {
 			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint);
 
-			_tinyNetConns.Add(new TinyNetConnection(peer));
+			tinyNetConns.Add(new TinyNetConnection(peer));
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {

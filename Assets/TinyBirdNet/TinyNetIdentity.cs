@@ -19,6 +19,7 @@ namespace TinyBirdNet {
 		[SerializeField] bool _serverOnly;
 		[SerializeField] bool _localPlayerAuthority;
 		[SerializeField] string _assetGUID;
+		[SerializeField] int _sceneID;
 
 		ITinyNetObject[] _tinyNetObjects;
 
@@ -30,6 +31,8 @@ namespace TinyBirdNet {
 		public bool ServerOnly { get { return _serverOnly; } }
 
 		public bool hasAuthority { get { return _hasAuthority; } }
+
+		public int sceneID { get { return _sceneID; } }
 
 		public string assetGUID {
 			get {
@@ -45,6 +48,11 @@ namespace TinyBirdNet {
 
 		public void ReceiveNetworkID(int newID) {
 			NetworkID = newID;
+		}
+
+		// only used when fixing duplicate scene IDs duing post-processing
+		public void ForceSceneId(int newSceneId) {
+			_sceneID = newSceneId;
 		}
 
 		void CacheTinyNetObjects() {
@@ -118,12 +126,7 @@ namespace TinyBirdNet {
 			CacheTinyNetObjects();
 
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				if (isServer) {
-					TinyNetServer.TinyNetObjectSpawned(_tinyNetObjects[i]);
-				}
-				if (isClient) {
-					TinyNetClient.TinyNetObjectSpawned(_tinyNetObjects[i]);
-				}
+				TinyNetScene.AddTinyNetObjectToList(_tinyNetObjects[i]);
 			}
 		}
 
@@ -131,9 +134,9 @@ namespace TinyBirdNet {
 		/// 
 		/// </summary>
 		/// <param name="bLocalClient">If true, means we are doing a NetworkDestroy on a client of a listen server.</param>
-		public virtual void OnNetworkDestroy(bool bLocalClient = false) {
+		public virtual void OnNetworkDestroy() {
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				TinyNetScene.TinyNetObjectDestroyed(_tinyNetObjects[i], bLocalClient);
+				TinyNetScene.RemoveTinyNetObjectFromList(_tinyNetObjects[i]);
 			}
 		}
 

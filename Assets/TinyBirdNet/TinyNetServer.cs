@@ -63,7 +63,7 @@ namespace TinyBirdNet {
 
 			TinyNetObjectSpawnMessage msg = new TinyNetObjectSpawnMessage();
 			msg.networkID = netIdentity.NetworkID;
-			msg.assetId = TinyNetGameManager.instance.GetAssetIdFromPrefab(guidToPrefab[netIdentity.assetGUID]);
+			msg.assetId = TinyNetGameManager.instance.GetAssetIdFromAssetGUID(netIdentity.assetGUID);
 			msg.position = netIdentity.transform.position;
 
 			// Include state of TinyNetObjects.
@@ -77,15 +77,8 @@ namespace TinyBirdNet {
 			if (targetConn != null) {
 				SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, targetConn);
 			} else {
-				SendMessageByChannelToAllPeers(msg, SendOptions.ReliableOrdered);
+				SendMessageByChannelToAllConnections(msg, SendOptions.ReliableOrdered);
 			}
-		}
-
-		// Event called when a TinyNetObject spawns, if isListenServer, always call this one before the client.
-		public new static void TinyNetObjectSpawned(ITinyNetObject netObj) {
-			TinyNetScene.TinyNetObjectSpawned(netObj);
-
-			netObj.OnStartServer();
 		}
 
 		//============ TinyNetMessages Handlers =============//
@@ -107,6 +100,8 @@ namespace TinyBirdNet {
 			SetClientReady(netMsg.tinyNetConn);
 		}
 
+		//============ Clients Functions ====================//
+
 		void SetClientReady(TinyNetConnection conn) {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SetClientReady for conn:" + conn.ConnectId); }
 
@@ -115,63 +110,95 @@ namespace TinyBirdNet {
 				return;
 			}
 
-			/*if (conn.playerControllers.Count == 0) {
+			if (conn.playerControllers.Count == 0) {
 				// this is now allowed
 				if (TinyNetLogLevel.logDebug) { TinyLogger.LogWarning("Ready with no player object"); }
-			}*/
+			}
 
 			conn.isReady = true;
 
-			/*var localConnection = conn as ULocalConnectionToClient;
+			var localConnection = conn as TinyNetLocalConnectionToClient;
 			if (localConnection != null) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer Ready handling ULocalConnectionToClient"); }
 
 				// Setup spawned objects for local player
 				// Only handle the local objects for the first player (no need to redo it when doing more local players)
 				// and don't handle player objects here, they were done above
-				foreach (NetworkIdentity uv in objects.Values) {
+				foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
 					// Need to call OnStartClient directly here, as it's already been added to the local object dictionary
 					// in the above SetLocalPlayer call
-					if (uv != null && uv.gameObject != null) {
-						var vis = uv.OnCheckObserver(conn);
-						if (vis) {
-							uv.AddObserver(conn);
-						}
-						if (!uv.isClient) {
+					if (tinyNetId != null && tinyNetId.gameObject != null) {
+						if (!tinyNetId.isClient) {
+							ShowForConnection(tinyNetId, localConnection);
+
 							if (TinyNetLogLevel.logDev) { TinyLogger.Log("LocalClient.SetSpawnObject calling OnStartClient"); }
-							uv.OnStartClient();
+							tinyNetId.OnStartClient();
 						}
 					}
 				}
+
 				return;
-			}*/
+			}
 
 			// Spawn/update all current server objects
-			/*if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning " + objects.Count + " objects for conn " + conn.ConnectId); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning " + _localIdentityObjects.Count + " objects for conn " + conn.ConnectId); }
 
-			ObjectSpawnFinishedMessage msg = new ObjectSpawnFinishedMessage();
+			TinyNetObjectSpawnFinishedMessage msg = new TinyNetObjectSpawnFinishedMessage();
 			msg.state = 0;
-			conn.Send(MsgType.SpawnFinished, msg);
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
 
-			foreach (NetworkIdentity uv in objects.Values) {
-				if (uv == null) {
+			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
+
+				if (tinyNetId == null) {
 					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Invalid object found in server local object list (null NetworkIdentity)."); }
 					continue;
 				}
-				if (!uv.gameObject.activeSelf) {
+				if (!tinyNetId.gameObject.activeSelf) {
 					continue;
 				}
 
-				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Sending spawn message for current server objects name='" + uv.gameObject.name + "' netId=" + uv.netId); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Sending spawn message for current server objects name='" + tinyNetId.gameObject.name + "' netId=" + tinyNetId.NetworkID); }
 
-				var vis = uv.OnCheckObserver(conn);
-				if (vis) {
-					uv.AddObserver(conn);
-				}
+				ShowForConnection(tinyNetId, localConnection);
 			}
 
 			msg.state = 1;
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);*/
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+		}
+
+		public void SetAllClientsNotReady() {
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				var conn = tinyNetConns[i];
+
+				if (conn != null) {
+					SetClientNotReady(conn);
+				}
+			}
+		}
+
+		void SetClientNotReady(TinyNetConnection conn) {
+			if (conn.isReady) {
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("PlayerNotReady " + conn); }
+
+				conn.isReady = false;
+
+				TinyNetNotReadyMessage msg = new TinyNetNotReadyMessage();
+				SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+			}
+		}
+
+		//============ Connections Functions ================//
+
+		public void ShowForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
+			if (conn.isReady) {
+				instance.SendSpawnMessage(tinyNetId, conn);
+			}
+		}
+
+		public void HideForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
+			TinyNetObjectDestroyMessage msg = new TinyNetObjectDestroyMessage();
+			msg.networkID = tinyNetId.NetworkID;
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
 		}
 	}
 }

@@ -4,8 +4,8 @@ namespace TinyBirdNet {
 
 	// This class represents the player entity in a network game, there can be multiple players per client.
 	// when there are multiple people playing on one machine.
-	// The server has one NetPeer per player.
-	public class TinyPlayerController {
+	// The server has one TinyNetConnection per peer.
+	public class TinyNetPlayerController {
 		internal const short kMaxLocalPlayers = 8;
 
 		public short playerControllerId = -1;
@@ -14,12 +14,12 @@ namespace TinyBirdNet {
 
 		public const int MaxPlayersPerClient = 32;
 
-		public TinyPlayerController() {
+		public TinyNetPlayerController() {
 		}
 
 		public bool IsValid { get { return playerControllerId != -1; } }
 
-		public TinyPlayerController(GameObject go, short playerControllerId) {
+		public TinyNetPlayerController(GameObject go, short playerControllerId) {
 			gameObject = go;
 			tinyNetId = go.GetComponent<TinyNetIdentity>();
 			this.playerControllerId = playerControllerId;
