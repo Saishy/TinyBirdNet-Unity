@@ -122,8 +122,10 @@ namespace TinyBirdNet.Messaging {
 		public const ushort NotReady = 36;
 		public const ushort AddPlayer = 37;
 		public const ushort RemovePlayer = 38;
-		public const ushort Scene = 39;
-		public const ushort Animation = 40;
+		public const ushort RequestAddPlayer = 39;
+		public const ushort RequestRemovePlayer = 40;
+		public const ushort Scene = 41;
+		/*public const ushort Animation = 40;
 		public const ushort AnimationParameters = 41;
 		public const ushort AnimationTrigger = 42;
 		public const ushort LobbyReadyToBegin = 43;
@@ -132,10 +134,10 @@ namespace TinyBirdNet.Messaging {
 		public const ushort LobbyReturnToLobby = 46;
 #if ENABLE_UNET_HOST_MIGRATION
         public const ushort ReconnectPlayer = 47;
-#endif
+#endif*/
 
 		//NOTE: update msgLabels below if this is changed.
-		public const ushort Highest = 47;
+		public const ushort Highest = 41;
 
 		static internal string[] msgLabels =
 		{
@@ -178,8 +180,9 @@ namespace TinyBirdNet.Messaging {
 			"NotReady",
 			"AddPlayer",
 			"RemovePlayer",
-			"Scene",
-			"Animation", // 40
+			"RequestAddPlayer",
+			"Scene", //40
+			/*"Animation", // 4
             "AnimationParams",
 			"AnimationTrigger",
 			"LobbyReadyToBegin",
@@ -188,7 +191,7 @@ namespace TinyBirdNet.Messaging {
             "LobbyReturnToLobby", // 46
 #if ENABLE_UNET_HOST_MIGRATION
             "ReconnectPlayer", // 47
-#endif
+#endif*/
         };
 
 		static public string MsgTypeToString(ushort value) {
@@ -236,6 +239,7 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
+	// Remember to set the msgType before using those.
 	//============ General Typed Messages ===============//
 
 	public class TinyNetStringMessage : ITinyNetMessage {
@@ -291,12 +295,96 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
+	public class TinyNetFloatMessage : ITinyNetMessage {
+		public float value;
+
+		public TinyNetFloatMessage() {
+		}
+
+		public TinyNetFloatMessage(float v) {
+			value = v;
+		}
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+			value = reader.GetShort();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(value);
+		}
+	}
+
+	public class TinyNetShortMessage : ITinyNetMessage {
+		public short value;
+
+		public TinyNetShortMessage() {
+		}
+
+		public TinyNetShortMessage(short v) {
+			value = v;
+		}
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+			value = reader.GetShort();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(value);
+		}
+	}
+
+	public class TinyNetBoolMessage : ITinyNetMessage {
+		public bool value;
+
+		public TinyNetBoolMessage() {
+		}
+
+		public TinyNetBoolMessage(bool v) {
+			value = v;
+		}
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+			value = reader.GetBool();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(value);
+		}
+	}
+
+	public class TinyNetByteMessage : ITinyNetMessage {
+		public byte value;
+
+		public TinyNetByteMessage() {
+		}
+
+		public TinyNetByteMessage(byte v) {
+			value = v;
+		}
+
+		public ushort msgType { get; set; }
+
+		public void Deserialize(NetDataReader reader) {
+			value = reader.GetByte();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(value);
+		}
+	}
+
 	//============ Interal System Messages ==============//
 
 	public class TinyNetObjectDestroyMessage : ITinyNetMessage {
 		public int networkID;
 
-		public ushort msgType { get { return 1; } }
+		public ushort msgType { get { return TinyNetMsgType.ObjectDestroy; } }
 
 		public virtual void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
@@ -313,7 +401,7 @@ namespace TinyBirdNet.Messaging {
 		public Vector3 position;
 		public byte[] initialState;
 
-		public ushort msgType { get { return 3; } }
+		public ushort msgType { get { return TinyNetMsgType.ObjectSpawnMessage; } }
 
 		public virtual void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
@@ -336,7 +424,7 @@ namespace TinyBirdNet.Messaging {
 		public int networkID;
 		public short connectId;
 
-		public ushort msgType { get { return 4; } }
+		public ushort msgType { get { return TinyNetMsgType.Owner; } }
 
 		public void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
@@ -354,7 +442,7 @@ namespace TinyBirdNet.Messaging {
 		public int dirtyFlag;
 		public byte[] state;
 
-		public ushort msgType { get { return 8; } }
+		public ushort msgType { get { return TinyNetMsgType.StateUpdate; } }
 
 		public virtual void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
@@ -375,7 +463,7 @@ namespace TinyBirdNet.Messaging {
 		public Vector3 position;
 		public byte[] initialState;
 
-		public ushort msgType { get { return 10; } }
+		public ushort msgType { get { return TinyNetMsgType.ObjectSpawnScene; } }
 
 		public void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
@@ -397,7 +485,7 @@ namespace TinyBirdNet.Messaging {
 	public class TinyNetObjectSpawnFinishedMessage : ITinyNetMessage {
 		public byte state;
 
-		public ushort msgType { get { return 12; } }
+		public ushort msgType { get { return TinyNetMsgType.SpawnFinished; } }
 
 		public void Deserialize(NetDataReader reader) {
 			state = reader.GetByte();
@@ -410,7 +498,7 @@ namespace TinyBirdNet.Messaging {
 
 	public class TinyNetReadyMessage : ITinyNetMessage {
 
-		public ushort msgType { get { return 35; } }
+		public ushort msgType { get { return TinyNetMsgType.Ready; } }
 
 		public void Deserialize(NetDataReader reader) {
 		}
@@ -421,7 +509,7 @@ namespace TinyBirdNet.Messaging {
 
 	public class TinyNetNotReadyMessage : ITinyNetMessage {
 
-		public ushort msgType { get { return 36; } }
+		public ushort msgType { get { return TinyNetMsgType.NotReady; } }
 
 		public void Deserialize(NetDataReader reader) {
 		}
@@ -430,17 +518,69 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
-	public class TinyNetRemovePlayerMessage : ITinyNetMessage {
-		public long connectId;
+	public class TinyNetAddPlayerMessage : ITinyNetMessage {
+		public short playerControllerId;
+		public int msgSize;
+		public byte[] msgData;
 
-		public ushort msgType { get { return 38; } }
+		public ushort msgType { get { return TinyNetMsgType.AddPlayer; } }
 
 		public void Deserialize(NetDataReader reader) {
-			connectId = (short)reader.GetLong();
+			playerControllerId = reader.GetShort();
+			msgData = reader.GetRemainingBytes();
+
+			if (msgData == null) {
+				msgSize = 0;
+			} else {
+				msgSize = msgData.Length;
+			}
 		}
 
 		public void Serialize(NetDataWriter writer) {
-			writer.Put(connectId);
+			writer.Put(playerControllerId);
+			writer.Put(msgData);
+		}
+	}
+
+	public class TinyNetRemovePlayerMessage : ITinyNetMessage {
+		public short playerControllerId;
+
+		public ushort msgType { get { return TinyNetMsgType.RemovePlayer; } }
+
+		public void Deserialize(NetDataReader reader) {
+			playerControllerId = reader.GetShort();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(playerControllerId);
+		}
+	}
+
+	public class TinyNetRequestAddPlayerMessage : ITinyNetMessage {
+		public ushort amountOfPlayers;
+
+		public ushort msgType { get { return TinyNetMsgType.RequestAddPlayer; } }
+
+		public void Deserialize(NetDataReader reader) {
+			amountOfPlayers = reader.GetUShort();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(amountOfPlayers);
+		}
+	}
+
+	public class TinyNetRequestRemovePlayerMessage : ITinyNetMessage {
+		public short playerControllerId;
+
+		public ushort msgType { get { return TinyNetMsgType.RequestRemovePlayer; } }
+
+		public void Deserialize(NetDataReader reader) {
+			playerControllerId = reader.GetShort();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(playerControllerId);
 		}
 	}
 }

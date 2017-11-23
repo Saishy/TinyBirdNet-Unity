@@ -53,7 +53,11 @@ namespace TinyBirdNet {
 				//RegisterHandlerSafe(TinyNetMsgType.Animation, NetworkAnimator.OnAnimationClientMessage);
 				//RegisterHandlerSafe(TinyNetMsgType.AnimationParameters, NetworkAnimator.OnAnimationParametersClientMessage);
 				//RegisterHandlerSafe(TinyNetMsgType.LocalClientAuthority, OnClientAuthority);
+				RegisterHandlerSafe(TinyNetMsgType.AddPlayer, OnAddPlayerMessage);
+				RegisterHandlerSafe(TinyNetMsgType.RemovePlayer, OnRemovePlayerMessage);
 			}
+
+			RegisterHandler(TinyNetMsgType.Scene, OnClientChangeSceneMessage);
 		}
 
 		public virtual bool StartClient() {
@@ -275,6 +279,10 @@ namespace TinyBirdNet {
 			}*/
 		}
 
+		/// <summary>
+		/// By default it will deserialize the TinyNetSyncVar properties.
+		/// </summary>
+		/// <param name="netMsg"></param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
 			int networkID = netMsg.reader.GetInt();
 
@@ -380,25 +388,26 @@ namespace TinyBirdNet {
 
 		//===
 
-		public bool Ready() {
+		public virtual bool Ready() {
 			if (!isConnected) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("Ready() called but we are not connected to anything."); }
 				return false;
 			}
 
-			TinyNetConnection conn = _tinyNetConns[0];
+			// The first connection should always be to the host.
+			//TinyNetConnection conn = _tinyNetConns[0];
 
-			if (conn.isReady) {
+			if (connToHost.isReady) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("A connection has already been set as ready. There can only be one."); }
 				return false;
 			}			
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::Ready() called with connection [" + conn + "]"); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::Ready() called with connection [" + connToHost + "]"); }
 
 			var msg = new TinyNetReadyMessage();
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);
 
-			conn.isReady = true;
+			connToHost.isReady = true;
 
 			return true;
 		}
@@ -406,6 +415,10 @@ namespace TinyBirdNet {
 		public virtual void OnClientSceneChanged() {
 			// always become ready.
 			Ready();
+
+			// Saishy: I don't think the client should be the one managing the spawn of player controllers?
+
+			RequestAddPlayerControllerToServer(1);
 
 			/*if (!m_AutoCreatePlayer) {
 				return;
@@ -430,9 +443,50 @@ namespace TinyBirdNet {
 
 		//============ Scenes Methods =======================//
 
-		public virtual void FinishLoadScene() {
+		/// <summary>
+		/// Handler for a scene change message.
+		/// </summary>
+		/// <param name="netMsg"></param>
+		protected virtual void OnClientChangeSceneMessage(TinyNetMessageReader netMsg) {
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient:OnClientChangeSceneMessage"); }
+
+			string newSceneName = netMsg.reader.GetString();
+
+			if (isConnected && !TinyNetGameManager.instance.isServer) {
+				TinyNetGameManager.instance.ClientChangeScene(newSceneName, true);
+			}
+		}
+
+		/// <summary>
+		/// Called from the TinyNetGameManager when a scene finishes loading.
+		/// </summary>
+		public virtual void ClientFinishLoadScene() {
 			bLoadedScene = true;
-			//OnClientConnect(s_ClientReadyConnection);
+		}
+
+		//============ Players Methods ======================//
+
+		protected virtual void OnAddPlayerMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetAddPlayerMessage);
+
+			AddPlayerControllerToConnection(netMsg.tinyNetConn, s_TinyNetAddPlayerMessage.playerControllerId);
+		}
+
+		protected virtual void OnRemovePlayerMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetRemovePlayerMessage);
+
+			//netMsg.tinyNetConn.RemovePlayerController(s_TinyNetRemovePlayerMessage.playerControllerId);
+			RemovePlayerControllerFromConnection(netMsg.tinyNetConn, s_TinyNetRemovePlayerMessage.playerControllerId);
+		}
+
+		public void RequestAddPlayerControllerToServer(int amountPlayers = 1) {
+			if (amountPlayers <= 0) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RequestAddPlayerControllerToServer() called with amountPlayers <= 0"); }
+				return;
+			}
+
+			s_TinyNetRequestAddPlayerMessage.amountOfPlayers = (ushort)amountPlayers;
+			SendMessageByChannelToTargetConnection(s_TinyNetRequestAddPlayerMessage, SendOptions.ReliableOrdered, connToHost);
 		}
 	}
 }

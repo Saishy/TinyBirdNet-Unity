@@ -13,9 +13,6 @@ namespace TinyBirdNet {
 
 		public override string TYPE { get { return "SERVER"; } }
 
-		// static message objects to avoid runtime-allocations
-		static TinyNetRemovePlayerMessage s_TinyNetRemovePlayerMessage = new TinyNetRemovePlayerMessage();
-
 		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
 
 
@@ -30,7 +27,7 @@ namespace TinyBirdNet {
 			//RegisterHandlerSafe(TinyNetMsgType.Command, OnCommandMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalPlayerTransform, NetworkTransform.HandleTransform);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalChildTransform, NetworkTransformChild.HandleChildTransform);
-			RegisterHandlerSafe(TinyNetMsgType.RemovePlayer, OnRemovePlayerMessage);
+			RegisterHandlerSafe(TinyNetMsgType.RequestAddPlayer, OnRequestAddPlayerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.Animation, NetworkAnimator.OnAnimationServerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationParameters, NetworkAnimator.OnAnimationParametersServerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerServerMessage);
@@ -145,16 +142,6 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Handlers =============//
 
-		// default remove player handler
-		void OnRemovePlayerMessage(TinyNetMessageReader netMsg) {
-			netMsg.ReadMessage(s_TinyNetRemovePlayerMessage);
-
-			if (RemoveTinyNetConnection(s_TinyNetRemovePlayerMessage.connectId)) {
-			} else {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("Received remove player message but could not find the connectId: " + s_TinyNetRemovePlayerMessage.connectId); }
-			}
-		}
-
 		// default ready handler.
 		void OnClientReadyMessage(TinyNetMessageReader netMsg) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("Default handler for ready message from " + netMsg.tinyNetConn); }
@@ -173,7 +160,6 @@ namespace TinyBirdNet {
 			}
 
 			if (conn.playerControllers.Count == 0) {
-				// this is now allowed
 				if (TinyNetLogLevel.logDebug) { TinyLogger.LogWarning("Ready with no player object"); }
 			}
 
@@ -181,7 +167,7 @@ namespace TinyBirdNet {
 
 			var localConnection = conn as TinyNetLocalConnectionToClient;
 			if (localConnection != null) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer Ready handling ULocalConnectionToClient"); }
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer Ready handling TinyNetLocalConnectionToClient"); }
 
 				// Setup spawned objects for local player
 				// Only handle the local objects for the first player (no need to redo it when doing more local players)
@@ -249,7 +235,7 @@ namespace TinyBirdNet {
 			}
 		}
 
-		//============ Connections Functions ================//
+		//============ Connections Methods ==================//
 
 		public void ShowForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
 			if (conn.isReady) {
@@ -260,10 +246,11 @@ namespace TinyBirdNet {
 		public void HideForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
 			TinyNetObjectDestroyMessage msg = new TinyNetObjectDestroyMessage();
 			msg.networkID = tinyNetId.NetworkID;
+
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
 		}
 
-		//============ Connections Functions ================//
+		//============ Objects Methods ======================//
 
 		public bool SpawnObjects() {
 			if (isRunning) {
@@ -310,6 +297,42 @@ namespace TinyBirdNet {
 		//============ Scenes Methods =======================//
 
 		public virtual void OnServerSceneChanged(string sceneName) {
+		}
+
+		//============ Players Methods ======================//
+
+		void OnRequestAddPlayerMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetRequestAddPlayerMessage);
+
+			if (s_TinyNetRequestAddPlayerMessage.amountOfPlayers <= 0) {
+				if (TinyNetLogLevel.logDebug) { TinyLogger.LogError("OnRequestAddPlayerMessage() called with amountOfPlayers <= 0"); }
+				return;
+			}
+
+			// Check here if you should create another player controller for that connection.
+
+			int playerId = netMsg.tinyNetConn.playerControllers.Count;
+
+			CreatePlayerAndAdd(netMsg.tinyNetConn, playerId);
+
+			// Tell the origin client to add them too!
+			s_TinyNetAddPlayerMessage.playerControllerId = (short)playerId;
+			SendMessageByChannelToTargetConnection(s_TinyNetAddPlayerMessage, SendOptions.ReliableOrdered, netMsg.tinyNetConn);
+		}
+
+		void OnRequestRemovePlayerMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetRequestRemovePlayerMessage);
+
+			if (s_TinyNetRequestRemovePlayerMessage.playerControllerId <= 0) {
+				if (TinyNetLogLevel.logDebug) { TinyLogger.LogError("OnRequestRemovePlayerMessage() called with playerControllerId <= 0"); }
+				return;
+			}
+
+			RemovePlayerControllerFromConnection(netMsg.tinyNetConn, s_TinyNetRequestRemovePlayerMessage.playerControllerId);
+
+			// Tell the origin client to remove them too!
+			s_TinyNetRemovePlayerMessage.playerControllerId = s_TinyNetRequestRemovePlayerMessage.playerControllerId;
+			SendMessageByChannelToTargetConnection(s_TinyNetRemovePlayerMessage, SendOptions.ReliableOrdered, netMsg.tinyNetConn);
 		}
 	}
 }

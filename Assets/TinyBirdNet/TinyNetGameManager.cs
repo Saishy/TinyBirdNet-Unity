@@ -13,8 +13,14 @@ namespace TinyBirdNet {
 
 		public static TinyNetGameManager instance;
 
+		/// <summary>
+		/// Current scene name at runtime.
+		/// </summary>
 		static public string networkSceneName = "";
 
+		/// <summary>
+		///  Stores the scene changing async operation, used to check if a scene loading was finished.
+		/// </summary>
 		static AsyncOperation s_LoadingSceneAsync;
 
 		[SerializeField] List<GameObject> registeredPrefabs;
@@ -93,25 +99,15 @@ namespace TinyBirdNet {
 				clientManager.InternalUpdate();
 			}
 
+			CheckForSceneLoad();
+
 			UpdateVirtual();
 		}
 
-		/** <summary>Please override this function to use the Update call.</summary> */
+		/// <summary>
+		/// Please override this function to use the Update call.
+		/// </summary>
 		protected virtual void UpdateVirtual() {
-			if (instance == null)
-				return;
-
-			if (s_LoadingSceneAsync == null)
-				return;
-
-			if (!s_LoadingSceneAsync.isDone)
-				return;
-
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientChangeScene done readyCon: " + clientManager.tinyNetConns[0]); }
-
-			FinishLoadScene();
-			s_LoadingSceneAsync.allowSceneActivation = true;
-			s_LoadingSceneAsync = null;
 		}
 
 		IEnumerator TinyNetUpdate() {
@@ -233,25 +229,32 @@ namespace TinyBirdNet {
 			clientManager.ClientConnectTo(hostAddress, hostPort);
 		}
 
-		void RegisterClientMessages(TinyNetClient client) {
-			//client.RegisterHandler(MsgType.Connect, OnClientConnectInternal);
-			//client.RegisterHandler(MsgType.Disconnect, OnClientDisconnectInternal);
-			//client.RegisterHandler(MsgType.NotReady, OnClientNotReadyMessageInternal);
-			//client.RegisterHandler(MsgType.Error, OnClientErrorInternal);
-			client.RegisterHandler(TinyNetMsgType.Scene, OnClientSceneInternal);
-
-			/*if (m_PlayerPrefab != null) {
-				ClientScene.RegisterPrefab(m_PlayerPrefab);
-			}
-			foreach (var prefab in m_SpawnPrefabs) {
-				if (prefab != null) {
-					ClientScene.RegisterPrefab(prefab);
-				}
-			}*/
-		}
-
 		//============ Scenes Methods =======================//
 
+		/// <summary>
+		/// Checks if a scene load was requested and if it finished.
+		/// </summary>
+		protected virtual void CheckForSceneLoad() {
+			if (instance == null)
+				return;
+
+			if (s_LoadingSceneAsync == null)
+				return;
+
+			if (!s_LoadingSceneAsync.isDone)
+				return;
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientChangeScene done readyCon: " + clientManager.tinyNetConns[0]); }
+
+			FinishLoadScene();
+			s_LoadingSceneAsync.allowSceneActivation = true;
+			s_LoadingSceneAsync = null;
+		}
+
+		/// <summary>
+		/// Orders the Server to change the given scene.
+		/// </summary>
+		/// <param name="newSceneName">The name of the scene to change to.</param>
 		public virtual void ServerChangeScene(string newSceneName) {
 			if (string.IsNullOrEmpty(newSceneName)) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("ServerChangeScene empty scene name"); }
@@ -292,7 +295,7 @@ namespace TinyBirdNet {
 
 		public virtual void FinishLoadScene() {
 			if (isClient) {
-				clientManager.FinishLoadScene();
+				clientManager.ClientFinishLoadScene();
 			} else {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("FinishLoadScene client is null"); }
 			}
@@ -303,21 +306,18 @@ namespace TinyBirdNet {
 			}
 
 			if (isClient && clientManager.isConnected) {
-				//RegisterClientMessages(client);
 				clientManager.OnClientSceneChanged();
 			}
 		}
 
+		//============ Players Methods ======================//
+
+		
+
+		
+
 		//============ Messages Handlers ====================//
 
-		void OnClientSceneInternal(TinyNetMessageReader netMsg) {
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetGameManager:OnClientSceneInternal"); }
 
-			string newSceneName = netMsg.reader.GetString();
-
-			if (isClient && clientManager.isConnected && !isServer) {
-				ClientChangeScene(newSceneName, true);
-			}
-		}
 	}
 }

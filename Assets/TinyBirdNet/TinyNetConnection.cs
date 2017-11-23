@@ -39,5 +39,48 @@ namespace TinyBirdNet {
 		public override string ToString() {
 			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", netPeer.EndPoint, ConnectId, isReady);
 		}
+
+		//============ Player Controllers ===================//
+
+		public void SetPlayerController<T>(TinyNetPlayerController player) where T : TinyNetPlayerController, new() {
+			while (player.playerControllerId >= _playerControllers.Count) {
+				_playerControllers.Add(new T());
+			}
+
+			_playerControllers[player.playerControllerId] = player;
+		}
+
+		public void RemovePlayerController(short playerControllerId) {
+			int count = _playerControllers.Count;
+
+			while (count >= 0) {
+				if (playerControllerId == count && playerControllerId == _playerControllers[count].playerControllerId) {
+					_playerControllers[count] = new TinyNetPlayerController();
+					return;
+				}
+				count -= 1;
+			}
+
+			if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemovePlayerController for playerControllerId " + playerControllerId + " not found"); }
+		}
+
+		// Get player controller from connection's list
+		public bool GetPlayerController(short playerControllerId, out TinyNetPlayerController playerController) {
+			playerController = null;
+
+			if (playerControllers.Count > 0) {
+				for (int i = 0; i < playerControllers.Count; i++) {
+					if (playerControllers[i].IsValid && playerControllers[i].playerControllerId == playerControllerId) {
+						playerController = playerControllers[i];
+
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			return false;
+		}
 	}
 }

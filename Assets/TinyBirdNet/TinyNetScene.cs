@@ -37,12 +37,18 @@ namespace TinyBirdNet {
 		protected static TinyNetOwnerMessage s_TinyNetOwnerMessage = new TinyNetOwnerMessage();
 		protected static TinyNetObjectSpawnSceneMessage s_TinyNetObjectSpawnSceneMessage = new TinyNetObjectSpawnSceneMessage();
 		protected static TinyNetObjectSpawnFinishedMessage s_TineNetObjectSpawnFinishedMessage = new TinyNetObjectSpawnFinishedMessage();
+		protected static TinyNetAddPlayerMessage s_TinyNetAddPlayerMessage = new TinyNetAddPlayerMessage();
+		protected static TinyNetRemovePlayerMessage s_TinyNetRemovePlayerMessage = new TinyNetRemovePlayerMessage();
+		protected static TinyNetRequestAddPlayerMessage s_TinyNetRequestAddPlayerMessage = new TinyNetRequestAddPlayerMessage();
+		protected static TinyNetRequestRemovePlayerMessage s_TinyNetRequestRemovePlayerMessage = new TinyNetRequestRemovePlayerMessage();
 		//static ClientAuthorityMessage s_ClientAuthorityMessage = new ClientAuthorityMessage();
 
 		protected TinyNetMessageHandlers _tinyMessageHandlers = new TinyNetMessageHandlers();
 
 		protected List<TinyNetConnection> _tinyNetConns;
 		public List<TinyNetConnection> tinyNetConns { get { return _tinyNetConns; } }
+
+		public TinyNetConnection connToHost { get; protected set; }
 
 		protected NetManager _netManager;
 
@@ -79,10 +85,10 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual void RegisterMessageHandlers() {
-            //RegisterHandlerSafe(MsgType.Rpc, OnRPCMessage);
-            //RegisterHandlerSafe(MsgType.SyncEvent, OnSyncEventMessage);
-            //RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
-        }
+			//RegisterHandlerSafe(MsgType.Rpc, OnRPCMessage);
+			//RegisterHandlerSafe(MsgType.SyncEvent, OnSyncEventMessage);
+			//RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
+		}
 
 		public void RegisterHandler(ushort msgType, TinyNetMessageDelegate handler) {
 			_tinyMessageHandlers.RegisterHandler(msgType, handler);
@@ -226,6 +232,11 @@ namespace TinyBirdNet {
 			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId);
 
 			tinyNetConns.Add(new TinyNetConnection(peer));
+
+			//First connection is to host:
+			if (tinyNetConns.Count == 0) {
+				connToHost = tinyNetConns[0];
+			}
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
@@ -239,7 +250,7 @@ namespace TinyBirdNet {
 		}
 
 		public void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
-			TinyLogger.Log("[" + TYPE + "] On network " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint);
+			TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint);
 		}
 
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
@@ -263,6 +274,30 @@ namespace TinyBirdNet {
 		protected virtual void OnDiscoveryRequestReceived(NetEndPoint remoteEndPoint, NetDataReader reader) {
 			TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response");
 			_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
+		}
+
+		//============ Players Methods ======================//
+
+		protected virtual void AddPlayerControllerToConnection(TinyNetConnection conn, int playerControllerId) {
+			if (playerControllerId < 0) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("AddPlayerControllerToConnection() called with playerControllerId = 0"); }
+				return;
+			}
+
+			if (playerControllerId < conn.playerControllers.Count && conn.playerControllers[playerControllerId].IsValid) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("There is already a player with that playerControllerId for this connection"); }
+				return;
+			}
+
+			CreatePlayerAndAdd(conn, playerControllerId);
+		}
+
+		protected virtual void RemovePlayerControllerFromConnection(TinyNetConnection conn, short playerControllerId) {
+			conn.RemovePlayerController(playerControllerId);
+		}
+
+		protected virtual void CreatePlayerAndAdd(TinyNetConnection conn, int playerControllerId) {
+			conn.SetPlayerController<TinyNetPlayerController>(new TinyNetPlayerController((short)playerControllerId));
 		}
 	}
 }
