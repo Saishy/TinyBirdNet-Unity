@@ -31,7 +31,7 @@ namespace TinyBirdNet {
 		void OnNetworkCreate();
 
 		/// <summary>
-		/// Called when the object receives an order to be destroyed from the network.
+		/// Called when the object receives an order to be destroyed from the network, in a listen server the object could just be unspawned witout being destroyed.
 		/// </summary>
 		void OnNetworkDestroy();
 

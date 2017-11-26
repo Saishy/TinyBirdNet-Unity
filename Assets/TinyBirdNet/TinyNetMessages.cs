@@ -90,7 +90,7 @@ namespace TinyBirdNet.Messaging {
 		public const ushort ObjectDestroy = 1;
 		public const ushort Rpc = 2;
 		public const ushort ObjectSpawnMessage = 3;
-		public const ushort Owner = 4;
+		public const ushort Owner = 4; //Not used
 		public const ushort Command = 5;
 		public const ushort LocalPlayerTransform = 6;
 		public const ushort SyncEvent = 7;
@@ -411,7 +411,7 @@ namespace TinyBirdNet.Messaging {
 
 	public class TinyNetObjectSpawnMessage : ITinyNetMessage {
 		public int networkID;
-		public int assetId;
+		public int assetIndex;
 		public Vector3 position;
 		public byte[] initialState;
 
@@ -419,14 +419,14 @@ namespace TinyBirdNet.Messaging {
 
 		public virtual void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
-			assetId = reader.GetInt();
+			assetIndex = reader.GetInt();
 			position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
 			initialState = reader.GetRemainingBytes();
 		}
 
 		public virtual void Serialize(NetDataWriter writer) {
 			writer.Put(networkID);
-			writer.Put(assetId);
+			writer.Put(assetIndex);
 			writer.Put(position.x);
 			writer.Put(position.y);
 			writer.Put(position.z);
@@ -434,6 +434,9 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
+	/// <summary>
+	/// Something about player controllers objects, but since they are not gameobjects in TinyBirdNet this message is useless.
+	/// </summary>
 	public class TinyNetOwnerMessage : ITinyNetMessage {
 		public int networkID;
 		public short connectId;

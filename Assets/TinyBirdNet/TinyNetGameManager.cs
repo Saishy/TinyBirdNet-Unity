@@ -27,6 +27,11 @@ namespace TinyBirdNet {
 
 		[SerializeField] List<string> prefabsGUID;
 
+		/**<summary>int is the asset index in TinyNetGameManager</summary>*/
+		protected Dictionary<int, SpawnDelegate> _spawnHandlers = new Dictionary<int, SpawnDelegate>();
+		/**<summary>int is the asset index in TinyNetGameManager</summary>*/
+		protected Dictionary<int, UnSpawnDelegate> _unspawnHandlers = new Dictionary<int, UnSpawnDelegate>();
+
 		public LogFilter currentLogFilter = LogFilter.Info;
 
 		[SerializeField] protected int maxNumberOfPlayers = 4;
@@ -127,12 +132,18 @@ namespace TinyBirdNet {
 			ClearNetManager();
 		}
 
+		//============ Assets Methods =======================//
+
 		public int GetAssetIdFromPrefab(GameObject prefab) {
 			return registeredPrefabs.IndexOf(prefab);
 		}
 
 		public int GetAssetIdFromAssetGUID(string assetGUID) {
 			return prefabsGUID.IndexOf(assetGUID);
+		}
+
+		public string GetAssetGUIDFromAssetId(int assetId) {
+			return prefabsGUID[assetId];
 		}
 
 		public GameObject GetPrefabFromAssetId(int assetId) {
@@ -171,6 +182,51 @@ namespace TinyBirdNet {
 		public void RebuildAllRegisteredPrefabs(GameObject[] newArray) {
 			registeredPrefabs = new List<GameObject>(newArray);
 		}
+
+		public void UnregisterSpawnHandler(int assetIndex) {
+			_spawnHandlers.Remove(assetIndex);
+			_unspawnHandlers.Remove(assetIndex);
+		}
+
+		public void RegisterSpawnHandler(int assetIndex, SpawnDelegate spawnHandler, UnSpawnDelegate unspawnHandler) {
+			if (spawnHandler == null || unspawnHandler == null) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RegisterSpawnHandler custom spawn function null for " + assetIndex); }
+				return;
+			}
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("RegisterSpawnHandler asset '" + assetIndex + "' " + spawnHandler.Method.Name + "/" + unspawnHandler.Method.Name); }
+
+			_spawnHandlers[assetIndex] = spawnHandler;
+			_unspawnHandlers[assetIndex] = unspawnHandler;
+		}
+
+		public bool GetSpawnHandler(string assetGUID, out SpawnDelegate handler) {
+			return GetSpawnHandler(GetAssetIdFromAssetGUID(assetGUID), out handler);
+		}
+
+		public bool GetSpawnHandler(int assetIndex, out SpawnDelegate handler) {
+			if (_spawnHandlers.ContainsKey(assetIndex)) {
+				handler = _spawnHandlers[assetIndex];
+				return true;
+			}
+			handler = null;
+			return false;
+		}
+
+		public bool InvokeUnSpawnHandler(string assetGUID, GameObject obj) {
+			return InvokeUnSpawnHandler(GetAssetIdFromAssetGUID(assetGUID), obj);
+		}
+
+		public bool InvokeUnSpawnHandler(int assetIndex, GameObject obj) {
+			if (_unspawnHandlers.ContainsKey(assetIndex) && _unspawnHandlers[assetIndex] != null) {
+				UnSpawnDelegate handler = _unspawnHandlers[assetIndex];
+				handler(obj);
+				return true;
+			}
+			return false;
+		}
+
+		//============ Net Management =======================//
 
 		protected virtual void ClearNetManager() {
 			if (serverManager != null) {

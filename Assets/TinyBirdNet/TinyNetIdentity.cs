@@ -151,6 +151,14 @@ namespace TinyBirdNet {
 			}
 		}
 #endif
+		public void SetDynamicAssetGUID(string newAssetGUID) {
+			if (!IsValidAssetGUI(_assetGUID) || _assetGUID.Equals(newAssetGUID)) {
+				_assetGUID = newAssetGUID;
+			} else {
+				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("SetDynamicAssetId object already has an assetId <" + _assetGUID + ">"); }
+			}
+		}
+
 		/// <summary>
 		/// Used by the server to have a shortcut in the case a client owns this connection.
 		/// </summary>

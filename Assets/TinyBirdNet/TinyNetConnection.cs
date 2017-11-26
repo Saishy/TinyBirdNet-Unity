@@ -50,6 +50,10 @@ namespace TinyBirdNet {
 
 		//============ Network Identity =====================//
 
+		public bool IsObservingNetIdentity(TinyNetIdentity tni) {
+			return _observingNetObjects.Contains(tni);
+		}
+
 		/// <summary>
 		/// Always call this to spawn an object to a client, or you will have sync issues.
 		/// </summary>

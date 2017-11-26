@@ -35,7 +35,6 @@ namespace TinyBirdNet {
 		protected static TinyNetObjectHideMessage s_TinyNetObjectHideMessage = new TinyNetObjectHideMessage();
 		protected static TinyNetObjectDestroyMessage s_TinyNetObjectDestroyMessage = new TinyNetObjectDestroyMessage();
 		protected static TinyNetObjectSpawnMessage s_TinyNetObjectSpawnMessage = new TinyNetObjectSpawnMessage();
-		protected static TinyNetOwnerMessage s_TinyNetOwnerMessage = new TinyNetOwnerMessage();
 		protected static TinyNetObjectSpawnSceneMessage s_TinyNetObjectSpawnSceneMessage = new TinyNetObjectSpawnSceneMessage();
 		protected static TinyNetObjectSpawnFinishedMessage s_TineNetObjectSpawnFinishedMessage = new TinyNetObjectSpawnFinishedMessage();
 		protected static TinyNetAddPlayerMessage s_TinyNetAddPlayerMessage = new TinyNetAddPlayerMessage();
@@ -83,9 +82,9 @@ namespace TinyBirdNet {
 			/*if (guidToPrefab == null) {
 				guidToPrefab = TinyNetGameManager.instance.GetDictionaryOfAssetGUIDToPrefabs();
 			}*/
-		}
+	}
 
-		protected virtual void RegisterMessageHandlers() {
+	protected virtual void RegisterMessageHandlers() {
 			//RegisterHandlerSafe(MsgType.Rpc, OnRPCMessage);
 			//RegisterHandlerSafe(MsgType.SyncEvent, OnSyncEventMessage);
 			//RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
@@ -228,6 +227,34 @@ namespace TinyBirdNet {
 			msg.Serialize(recycleWriter);
 			
 			for (int i = 0; i < tinyNetConns.Count; i++) {
+				tinyNetConns[i].Send(recycleWriter, sendOptions);
+			}
+		}
+
+		public virtual void SendMessageByChannelToAllReadyConnections(ITinyNetMessage msg, SendOptions sendOptions) {
+			recycleWriter.Reset();
+
+			recycleWriter.Put(msg.msgType);
+			msg.Serialize(recycleWriter);
+
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (!tinyNetConns[i].isReady) {
+					return;
+				}
+				tinyNetConns[i].Send(recycleWriter, sendOptions);
+			}
+		}
+
+		public virtual void SendMessageByChannelToAllObserversOf(TinyNetIdentity tni, ITinyNetMessage msg, SendOptions sendOptions) {
+			recycleWriter.Reset();
+
+			recycleWriter.Put(msg.msgType);
+			msg.Serialize(recycleWriter);
+
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (!tinyNetConns[i].IsObservingNetIdentity(tni)) {
+					return;
+				}
 				tinyNetConns[i].Send(recycleWriter, sendOptions);
 			}
 		}
