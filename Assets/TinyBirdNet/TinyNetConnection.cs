@@ -19,6 +19,14 @@ namespace TinyBirdNet {
 
 		public List<TinyNetPlayerController> playerControllers { get { return _playerControllers; } }
 
+		/// <summary>
+		/// This is a list of objects the connection is able to observe, aka, are spawned and synced.
+		/// <para>At a client this list would just be a copy of the one in TinyNetScene so it is always empty.</para>
+		/// </summary>
+		protected HashSet<TinyNetIdentity> _observingNetObjects = new HashSet<TinyNetIdentity>();
+		/**<summary>A hash containing the networkIds of objects owned by this connection.</summary>*/
+		protected HashSet<int> _ownedObjectsId;
+
 		public bool isReady;
 
 		public TinyNetConnection(NetPeer newPeer) {
@@ -38,6 +46,58 @@ namespace TinyBirdNet {
 
 		public override string ToString() {
 			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", netPeer.EndPoint, ConnectId, isReady);
+		}
+
+		//============ Network Identity =====================//
+
+		/// <summary>
+		/// Always call this to spawn an object to a client, or you will have sync issues.
+		/// </summary>
+		/// <param name="tni"></param>
+		public void ShowObjectToConnection(TinyNetIdentity tni) {
+			if (_observingNetObjects.Contains(tni)) {
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("ShowObjectToConnection() called but object with networkdID: " + tni.NetworkID + " is already shown"); }
+				return;
+			}
+
+			_observingNetObjects.Add(tni);
+
+			// spawn tiny for this conn
+			TinyNetServer.instance.ShowForConnection(tni, this);
+		}
+
+		/// <summary>
+		/// Always call this to hide an object from a client, or you will have sync issues.
+		/// </summary>
+		/// <param name="tni"></param>
+		public void HideObjectToConnection(TinyNetIdentity tni, bool isDestroyed) {
+			if (!_observingNetObjects.Contains(tni)) {
+				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.NetworkID + " is not shown"); }
+				return;
+			}
+
+			_observingNetObjects.Remove(tni);
+
+			if (!isDestroyed) {
+				// hide tni for this conn
+				TinyNetServer.instance.HideForConnection(tni, this);
+			}
+		}
+
+		public void AddOwnedObject(TinyNetIdentity obj) {
+			if (_ownedObjectsId == null) {
+				_ownedObjectsId = new HashSet<int>();
+			}
+
+			_ownedObjectsId.Add(obj.NetworkID);
+		}
+
+		public void RemoveOwnedObject(TinyNetIdentity obj) {
+			if (_ownedObjectsId == null) {
+				return;
+			}
+
+			_ownedObjectsId.Remove(obj.NetworkID);
 		}
 
 		//============ Player Controllers ===================//

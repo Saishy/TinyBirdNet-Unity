@@ -29,6 +29,8 @@ namespace TinyBirdNet {
 		private string[] propertiesName;
 		private Type[] propertiesTypes;
 
+		// Used for comparisson.
+		private BitArray _oldDirtyFlag = new BitArray(32);
 		private BitArray _dirtyFlag = new BitArray(32);
 		public BitArray DirtyFlag { get { return _dirtyFlag; } private set { _dirtyFlag = value; } }
 
@@ -68,7 +70,7 @@ namespace TinyBirdNet {
 		}
 
 		private void UpdateDirtyFlag() {
-			TinyNetStateSyncer.UpdateDirtyFlagOf(this, DirtyFlag);
+			TinyNetStateSyncer.UpdateDirtyFlagOf(this, _dirtyFlag);
 
 			_lastSendTime = Time.time;
 		}
@@ -171,13 +173,13 @@ namespace TinyBirdNet {
 		}
 
 		public void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
-			writer.Put(TinyNetStateSyncer.DirtyFlagToInt(DirtyFlag));
+			writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
 
 			Type type;
 			int maxSyncVar = propertiesName.Length;
 
 			for (int i = 0; i < maxSyncVar; i++) {
-				if (DirtyFlag[i] == false) {
+				if (_dirtyFlag[i] == false) {
 					continue;
 				}
 

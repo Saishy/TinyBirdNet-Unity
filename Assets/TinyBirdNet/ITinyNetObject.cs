@@ -15,23 +15,34 @@ namespace TinyBirdNet {
 
 		/// <summary>
 		/// Called after all Updates but before any LateUpdate.
+		/// <para>It is used by TinyNetServer to check if it is time to send the current state to clients.</para>
 		/// </summary>
 		void TinyNetUpdate();
 
+		/// <summary>
+		/// Used to check if 
+		/// </summary>
+		/// <returns></returns>
 		bool IsTimeToUpdate();
 
 		/// <summary>
-		/// Always called, regardless of being a client or server.
+		/// Always called, regardless of being a client or server. (order 0)
 		/// </summary>
 		void OnNetworkCreate();
 
 		/// <summary>
-		/// Not implemented
+		/// Called when the object receives an order to be destroyed from the network.
 		/// </summary>
 		void OnNetworkDestroy();
 
+		/// <summary>
+		/// Called on the server when Spawn is called for this object. (order 1)
+		/// </summary>
 		void OnStartServer();
 
+		/// <summary>
+		/// Called on the client when the object is spawned. (order: 2)
+		/// </summary>
 		void OnStartClient();
 
 		/// <summary>
@@ -49,10 +60,18 @@ namespace TinyBirdNet {
 		/// </summary>
 		void OnStopAuthority();
 
+		/// <summary>
+		/// This is only called on a listen server, for spawn and hide messages. Objects being destroyed will trigger OnNetworkDestroy as normal.
+		/// </summary>
+		/// <param name="vis"></param>
 		void OnSetLocalVisibility(bool vis);
 
 		LiteNetLib.SendOptions GetNetworkChannel();
 
+		/// <summary>
+		/// Sets how frequently a state update is checked and sent. (1f = One time per second)
+		/// </summary>
+		/// <returns></returns>
 		float GetNetworkSendInterval();
 	}
 }

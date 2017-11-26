@@ -36,26 +36,26 @@ namespace TinyBirdNet {
 			// A local client is basically the client in a listen server.
 			if (TinyNetGameManager.instance.isListenServer) {
 				RegisterHandlerSafe(TinyNetMsgType.ObjectDestroy, OnLocalClientObjectDestroy);
-				//RegisterHandlerSafe(TinyNetMsgType.ObjectHide, OnLocalClientObjectHide);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnMessage, OnLocalClientObjectSpawn);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnScene, OnLocalClientObjectSpawnScene);
-				//RegisterHandlerSafe(TinyNetMsgType.LocalClientAuthority, OnClientAuthority);
+				RegisterHandlerSafe(TinyNetMsgType.ObjectHide, OnLocalClientObjectHide);
 			} else {
 				// LocalClient shares the sim/scene with the server, no need for these events
 				RegisterHandlerSafe(TinyNetMsgType.ObjectDestroy, OnObjectDestroy);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnMessage, OnObjectSpawn);
 				RegisterHandlerSafe(TinyNetMsgType.Owner, OnOwnerMessage);
-				//RegisterHandlerSafe(TinyNetMsgType.ObjectHide, OnObjectDestroy);
 				RegisterHandlerSafe(TinyNetMsgType.StateUpdate, OnStateUpdateMessage);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnScene, OnObjectSpawnScene);
 				RegisterHandlerSafe(TinyNetMsgType.SpawnFinished, OnObjectSpawnFinished);
+				RegisterHandlerSafe(TinyNetMsgType.ObjectHide, OnObjectDestroy);
 				//RegisterHandlerSafe(TinyNetMsgType.SyncList, OnSyncListMessage);
 				//RegisterHandlerSafe(TinyNetMsgType.Animation, NetworkAnimator.OnAnimationClientMessage);
 				//RegisterHandlerSafe(TinyNetMsgType.AnimationParameters, NetworkAnimator.OnAnimationParametersClientMessage);
-				//RegisterHandlerSafe(TinyNetMsgType.LocalClientAuthority, OnClientAuthority);
 				RegisterHandlerSafe(TinyNetMsgType.AddPlayer, OnAddPlayerMessage);
 				RegisterHandlerSafe(TinyNetMsgType.RemovePlayer, OnRemovePlayerMessage);
 			}
+
+			RegisterHandlerSafe(TinyNetMsgType.LocalClientAuthority, OnClientAuthorityMessage);
 
 			RegisterHandler(TinyNetMsgType.Scene, OnClientChangeSceneMessage);
 		}
@@ -82,9 +82,22 @@ namespace TinyBirdNet {
 			_netManager.Connect(hostAddress, hostPort);
 		}
 
+		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
+			TinyNetConnection tinyConn = TinyNetGameManager.instance.isListenServer ? new TinyNetLocalConnectionToServer(peer) : new TinyNetConnection(peer);
+
+			tinyNetConns.Add(tinyConn);
+
+			//First connection is to host:
+			if (tinyNetConns.Count == 0) {
+				connToHost = tinyNetConns[0];
+			}
+
+			return tinyConn;
+		}
+
 		//============ Static Methods =======================//
 
-		
+
 
 		//============ Object Networking ====================//
 
@@ -105,16 +118,16 @@ namespace TinyBirdNet {
 			}
 		}
 
-		/*void OnLocalClientObjectHide(TinyNetMessageReader netMsg) {
-			netMsg.ReadMessage(s_TinyNetObjectDestroyMessage);
+		void OnLocalClientObjectHide(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetObjectHideMessage);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnLocalObjectObjHide netId:" + s_TinyNetObjectDestroyMessage.networkID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnLocalObjectObjHide netId:" + s_TinyNetObjectHideMessage.networkID); }
 
-			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectDestroyMessage.networkID];
+			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectHideMessage.networkID];
 			if (localObject != null) {
 				localObject.OnSetLocalVisibility(false);
 			}
-		}*/
+		}
 
 		void OnLocalClientObjectSpawn(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetObjectSpawnMessage);
@@ -237,6 +250,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnFinished: " + s_TineNetObjectSpawnFinishedMessage.state); }
 
+			// when 0, means we already started receiving the spawn messages but we have yet to receive them all.
 			if (s_TineNetObjectSpawnFinishedMessage.state == 0) {
 				PrepareToSpawnSceneObjects();
 				_isSpawnFinished = false;
@@ -244,6 +258,7 @@ namespace TinyBirdNet {
 				return;
 			}
 
+			// when 1, means we have received every single spawn message!
 			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
 				if (tinyNetId.isClient) {
 					tinyNetId.OnStartClient();
@@ -254,8 +269,21 @@ namespace TinyBirdNet {
 			_isSpawnFinished = true;
 		}
 
+		void OnClientAuthorityMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetClientAuthorityMessage);
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnClientAuthority for  connectionId=" + netMsg.tinyNetConn.ConnectId + " netId: " + s_TinyNetClientAuthorityMessage.networkID); }
+
+			TinyNetIdentity tni = _localIdentityObjects[s_TinyNetClientAuthorityMessage.networkID];
+
+			if (tni != null) {
+				tni.HandleClientAuthority(s_TinyNetClientAuthorityMessage.authority);
+			}
+		}
+
 		// OnClientAddedPlayer?
 		// Something something to do with changing an owner of an object?
+		// Saishy: This seems to be about giving a player controller.
 		void OnOwnerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetOwnerMessage);
 
@@ -318,8 +346,7 @@ namespace TinyBirdNet {
 			tinyNetId.ReceiveNetworkID(networkID);
 			AddTinyNetIdentityToList(tinyNetId);
 
-			// objects spawned as part of initial state are started on a second pass.
-			// Saishy: Wat?
+			// If the object was spawned as part of the initial replication (s_TineNetObjectSpawnFinishedMessage.state == 0) it will have it's OnStartClient called by OnObjectSpawnFinished.
 			if (_isSpawnFinished) {
 				tinyNetId.OnStartClient();
 				CheckForOwner(tinyNetId);
@@ -417,8 +444,6 @@ namespace TinyBirdNet {
 			Ready();
 
 			// Saishy: I don't think the client should be the one managing the spawn of player controllers?
-
-			RequestAddPlayerControllerToServer(1);
 
 			/*if (!m_AutoCreatePlayer) {
 				return;

@@ -15,12 +15,12 @@ namespace TinyBirdNet {
 		//protected static Dictionary<string, GameObject> guidToPrefab;
 
 		/// <summary>
-		/// uint is the NetworkID of the TinyNetIdentity object.
+		/// int is the NetworkID of the TinyNetIdentity object.
 		/// </summary>
 		protected static Dictionary<int, TinyNetIdentity> _localIdentityObjects = new Dictionary<int, TinyNetIdentity>();
 
 		/// <summary>
-		/// uint is the NetworkID of the ITinyNetObject object.
+		/// int is the NetworkID of the ITinyNetObject object.
 		/// </summary>
 		protected static Dictionary<int, ITinyNetObject> _localNetObjects = new Dictionary<int, ITinyNetObject>();
 
@@ -32,6 +32,7 @@ namespace TinyBirdNet {
 		protected static TinyNetMessageReader recycleMessageReader = new TinyNetMessageReader();
 
 		// static message objects to avoid runtime-allocations
+		protected static TinyNetObjectHideMessage s_TinyNetObjectHideMessage = new TinyNetObjectHideMessage();
 		protected static TinyNetObjectDestroyMessage s_TinyNetObjectDestroyMessage = new TinyNetObjectDestroyMessage();
 		protected static TinyNetObjectSpawnMessage s_TinyNetObjectSpawnMessage = new TinyNetObjectSpawnMessage();
 		protected static TinyNetOwnerMessage s_TinyNetOwnerMessage = new TinyNetOwnerMessage();
@@ -41,7 +42,7 @@ namespace TinyBirdNet {
 		protected static TinyNetRemovePlayerMessage s_TinyNetRemovePlayerMessage = new TinyNetRemovePlayerMessage();
 		protected static TinyNetRequestAddPlayerMessage s_TinyNetRequestAddPlayerMessage = new TinyNetRequestAddPlayerMessage();
 		protected static TinyNetRequestRemovePlayerMessage s_TinyNetRequestRemovePlayerMessage = new TinyNetRequestRemovePlayerMessage();
-		//static ClientAuthorityMessage s_ClientAuthorityMessage = new ClientAuthorityMessage();
+		protected static TinyNetClientAuthorityMessage s_TinyNetClientAuthorityMessage = new TinyNetClientAuthorityMessage();
 
 		protected TinyNetMessageHandlers _tinyMessageHandlers = new TinyNetMessageHandlers();
 
@@ -139,6 +140,11 @@ namespace TinyBirdNet {
 			}
 		}
 
+		protected virtual TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
+			//No default implemention
+			return null;
+		}
+
 		protected TinyNetConnection GetTinyNetConnection(NetPeer peer) {
 			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
 				if (tinyNetCon.netPeer == peer) {
@@ -231,12 +237,7 @@ namespace TinyBirdNet {
 		public virtual void OnPeerConnected(NetPeer peer) {
 			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId);
 
-			tinyNetConns.Add(new TinyNetConnection(peer));
-
-			//First connection is to host:
-			if (tinyNetConns.Count == 0) {
-				connToHost = tinyNetConns[0];
-			}
+			CreateTinyNetConnection(peer);
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {

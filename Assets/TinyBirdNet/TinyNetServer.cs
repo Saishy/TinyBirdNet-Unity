@@ -28,6 +28,7 @@ namespace TinyBirdNet {
 			//RegisterHandlerSafe(TinyNetMsgType.LocalPlayerTransform, NetworkTransform.HandleTransform);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalChildTransform, NetworkTransformChild.HandleChildTransform);
 			RegisterHandlerSafe(TinyNetMsgType.RequestAddPlayer, OnRequestAddPlayerMessage);
+			RegisterHandlerSafe(TinyNetMsgType.RequestRemovePlayer, OnRequestRemovePlayerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.Animation, NetworkAnimator.OnAnimationServerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationParameters, NetworkAnimator.OnAnimationParametersServerMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerServerMessage);
@@ -55,8 +56,20 @@ namespace TinyBirdNet {
 			return true;
 		}
 
+		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
+			TinyNetConnection tinyConn = TinyNetGameManager.instance.isListenServer ? new TinyNetLocalConnectionToClient(peer) : new TinyNetConnection(peer);
+
+			tinyNetConns.Add(tinyConn);
+
+			return tinyConn;
+		}
+
 		//============ Static Methods =======================//
 
+		/// <summary>
+		/// Just a shortcut to SpawnObject(obj)
+		/// </summary>
+		/// <param name="obj"></param>
 		static public void Spawn(GameObject obj) {
 			instance.SpawnObject(obj);
 		}
@@ -74,7 +87,19 @@ namespace TinyBirdNet {
 
 		//============ Object Networking ====================//
 
-		void SpawnObject(GameObject obj) {
+		public bool SpawnWithClientAuthority(GameObject obj, TinyNetConnection conn) {
+			Spawn(obj);
+
+			var tni = obj.GetComponent<TinyNetIdentity>();
+			if (tni == null) {
+				// spawning the object failed.
+				return false;
+			}
+
+			return tni.AssignClientAuthority(conn);
+		}
+
+		public void SpawnObject(GameObject obj) {
 			if (!isRunning) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("SpawnObject for " + obj + ", NetworkServer is not active. Cannot spawn objects without an active server."); }
 				return;
@@ -92,7 +117,11 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objNetworkIdentity.NetworkID + " asset GUID " + objNetworkIdentity.assetGUID); }
 
 			//objNetworkIdentity.RebuildObservers(true);
-			SendSpawnMessage(objNetworkIdentity, null);
+			//SendSpawnMessage(objNetworkIdentity, null);
+			// Using ShowObjectToConnection prevents the server from sending spawn messages of objects that are already spawned.
+			foreach (TinyNetConnection conn in tinyNetConns) {
+				conn.ShowObjectToConnection(objNetworkIdentity);
+			}
 		}
 
 		/// <summary>
@@ -100,7 +129,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netIdentity">The TinyNetIdentity of the object to spawn.</param>
 		/// <param name="targetPeer">If null, send to all connected peers.</param>
-		public void SendSpawnMessage(TinyNetIdentity netIdentity, TinyNetConnection targetConn) {
+		public void SendSpawnMessage(TinyNetIdentity netIdentity, TinyNetConnection targetConn = null) {
 			if (netIdentity.ServerOnly) {
 				return;
 			}
@@ -165,7 +194,8 @@ namespace TinyBirdNet {
 
 			conn.isReady = true;
 
-			var localConnection = conn as TinyNetLocalConnectionToClient;
+			// This is only in case this is a listen server.
+			TinyNetLocalConnectionToClient localConnection = conn as TinyNetLocalConnectionToClient;
 			if (localConnection != null) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer Ready handling TinyNetLocalConnectionToClient"); }
 
@@ -177,7 +207,7 @@ namespace TinyBirdNet {
 					// in the above SetLocalPlayer call
 					if (tinyNetId != null && tinyNetId.gameObject != null) {
 						if (!tinyNetId.isClient) {
-							ShowForConnection(tinyNetId, localConnection);
+							localConnection.ShowObjectToConnection(tinyNetId);
 
 							if (TinyNetLogLevel.logDev) { TinyLogger.Log("LocalClient.SetSpawnObject calling OnStartClient"); }
 							tinyNetId.OnStartClient();
@@ -192,7 +222,7 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning " + _localIdentityObjects.Count + " objects for conn " + conn.ConnectId); }
 
 			TinyNetObjectSpawnFinishedMessage msg = new TinyNetObjectSpawnFinishedMessage();
-			msg.state = 0;
+			msg.state = 0; //State 0 means we are starting the spawn messages 'spam'.
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
 
 			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
@@ -207,10 +237,10 @@ namespace TinyBirdNet {
 
 				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Sending spawn message for current server objects name='" + tinyNetId.gameObject.name + "' netId=" + tinyNetId.NetworkID); }
 
-				ShowForConnection(tinyNetId, localConnection);
+				conn.ShowObjectToConnection(tinyNetId);
 			}
 
-			msg.state = 1;
+			msg.state = 1; //We finished spamming the spawn messages!
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
 		}
 
@@ -237,14 +267,24 @@ namespace TinyBirdNet {
 
 		//============ Connections Methods ==================//
 
+		/// <summary>
+		/// Always call this from a TinyNetConnection ShowObjectToConnection, or you will have sync issues.
+		/// </summary>
+		/// <param name="tinyNetId"></param>
+		/// <param name="conn"></param>
 		public void ShowForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
 			if (conn.isReady) {
 				instance.SendSpawnMessage(tinyNetId, conn);
 			}
 		}
 
+		/// <summary>
+		/// Always call this from a TinyNetConnection RemoveFromVisList, or you will have sync issues.
+		/// </summary>
+		/// <param name="tinyNetId"></param>
+		/// <param name="conn"></param>
 		public void HideForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
-			TinyNetObjectDestroyMessage msg = new TinyNetObjectDestroyMessage();
+			TinyNetObjectHideMessage msg = new TinyNetObjectHideMessage();
 			msg.networkID = tinyNetId.NetworkID;
 
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
@@ -252,7 +292,11 @@ namespace TinyBirdNet {
 
 		//============ Objects Methods ======================//
 
-		public bool SpawnObjects() {
+		/// <summary>
+		/// Spawns all TinyNetIdentity objects in the scene.
+		/// </summary>
+		/// <returns>This actually always return true?</returns>
+		public bool SpawnAllObjects() {
 			if (isRunning) {
 				TinyNetIdentity[] uvs = Resources.FindObjectsOfTypeAll<TinyNetIdentity>();
 
@@ -285,12 +329,13 @@ namespace TinyBirdNet {
 						continue;
 					}
 
-					Spawn(uv2.gameObject);
+					SpawnObject(uv2.gameObject);
 
 					// these objects are server authority - even if "localPlayerAuthority" is set on them
 					uv2.ForceAuthority(true);
 				}
 			}
+
 			return true;
 		}
 

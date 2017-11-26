@@ -244,7 +244,7 @@ namespace TinyBirdNet {
 			if (!s_LoadingSceneAsync.isDone)
 				return;
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientChangeScene done readyCon: " + clientManager.tinyNetConns[0]); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("CheckForSceneLoad done readyCon: " + clientManager.tinyNetConns[0]); }
 
 			FinishLoadScene();
 			s_LoadingSceneAsync.allowSceneActivation = true;
@@ -301,7 +301,7 @@ namespace TinyBirdNet {
 			}
 
 			if (isServer) {
-				serverManager.SpawnObjects();
+				serverManager.SpawnAllObjects();
 				serverManager.OnServerSceneChanged(networkSceneName);
 			}
 

@@ -381,6 +381,20 @@ namespace TinyBirdNet.Messaging {
 
 	//============ Interal System Messages ==============//
 
+	public class TinyNetObjectHideMessage : ITinyNetMessage {
+		public int networkID;
+
+		public ushort msgType { get { return TinyNetMsgType.ObjectHide; } }
+
+		public virtual void Deserialize(NetDataReader reader) {
+			networkID = reader.GetInt();
+		}
+
+		public virtual void Serialize(NetDataWriter writer) {
+			writer.Put(networkID);
+		}
+	}
+
 	public class TinyNetObjectDestroyMessage : ITinyNetMessage {
 		public int networkID;
 
@@ -434,6 +448,23 @@ namespace TinyBirdNet.Messaging {
 		public void Serialize(NetDataWriter writer) {
 			writer.Put(networkID);
 			writer.Put(connectId);
+		}
+	}
+
+	public class TinyNetClientAuthorityMessage : ITinyNetMessage {
+		public int networkID;
+		public bool authority;
+
+		public ushort msgType { get { return TinyNetMsgType.LocalClientAuthority; } }
+
+		public void Deserialize(NetDataReader reader) {
+			networkID = reader.GetInt();
+			authority = reader.GetBool();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(networkID);
+			writer.Put(authority);
 		}
 	}
 
