@@ -26,8 +26,7 @@ namespace TinyBirdNet {
 
 		ITinyNetObject[] _tinyNetObjects;
 
-		/**<summary>Both the server and a client can have authority, but only one can be the owner.</summary>*/
-		bool _bIsOwner;
+		//bool _bIsOwner;
 		/**<summary>Both the server and a client can have authority, but only one can be the owner.</summary>*/
 		bool _hasAuthority;
 
@@ -43,7 +42,7 @@ namespace TinyBirdNet {
 		public bool ServerOnly { get { return _serverOnly; } }
 
 		public bool hasAuthority { get { return _hasAuthority; } }
-		public bool hasOwnership { get { return _bIsOwner;  } }
+		//public bool hasOwnership { get { return _bIsOwner;  } }
 
 		public short playerControllerId { get { return _ownerPlayerId; } }
 		public TinyNetConnection connectionToOwnerClient { get { return _ConnectionToOwnerClient; } }

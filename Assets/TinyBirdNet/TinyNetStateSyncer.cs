@@ -51,6 +51,7 @@ namespace TinyBirdNet {
 			for (int i = 0; i < syncVarProps[type].Count; i++) {
 				if (instance.CheckIfPropertyUpdated(syncVarProps[type][i].Name, syncVarProps[type][i].PropertyType)) {
 					bitArray[i] = true;
+					instance.bIsDirty = true;
 				} else {
 					bitArray[i] = false;
 				}

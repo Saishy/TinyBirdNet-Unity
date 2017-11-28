@@ -201,6 +201,7 @@ namespace TinyBirdNet {
 
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, obj);
 			}
+
 			// lookup registered factory for type:
 			else if (TinyNetGameManager.instance.GetSpawnHandler(s_TinyNetObjectSpawnMessage.assetIndex, out handler)) {
 				GameObject obj = handler(s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.assetIndex);

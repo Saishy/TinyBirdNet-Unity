@@ -30,7 +30,9 @@ namespace TinyBirdNet {
 		private Type[] propertiesTypes;
 
 		// Used for comparisson.
-		private BitArray _oldDirtyFlag = new BitArray(32);
+		private bool _bIsDirty = false;
+		public bool bIsDirty { get { return _bIsDirty; } set { _bIsDirty = value; } }
+
 		private BitArray _dirtyFlag = new BitArray(32);
 		public BitArray DirtyFlag { get { return _dirtyFlag; } private set { _dirtyFlag = value; } }
 
@@ -67,6 +69,10 @@ namespace TinyBirdNet {
 
 		protected void SetDirtyFlag(int index, bool bValue) {
 			_dirtyFlag[index] = bValue;
+
+			if (bValue) {
+				_bIsDirty = true;
+			}
 		}
 
 		private void UpdateDirtyFlag() {
@@ -261,7 +267,7 @@ namespace TinyBirdNet {
 		}
 
 		public bool IsTimeToUpdate() {
-			if (Time.time - _lastSendTime > GetNetworkSendInterval()) {
+			if (_bIsDirty && Time.time - _lastSendTime > GetNetworkSendInterval()) {
 				UpdateDirtyFlag();
 				return true;
 			}
