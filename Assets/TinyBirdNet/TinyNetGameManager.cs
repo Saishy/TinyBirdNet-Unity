@@ -13,6 +13,9 @@ namespace TinyBirdNet {
 
 		public static TinyNetGameManager instance;
 
+		[Range(1, 60)]
+		public int NetworkEveryXFixedFrames = 20;
+
 		/// <summary>
 		/// Current scene name at runtime.
 		/// </summary>
@@ -124,7 +127,7 @@ namespace TinyBirdNet {
 					clientManager.TinyNetUpdate();
 				}
 
-				yield return null;
+				yield return new WaitForFixedUpdate();
 			}
 		}
 

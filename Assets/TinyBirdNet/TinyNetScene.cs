@@ -52,6 +52,8 @@ namespace TinyBirdNet {
 
 		protected NetManager _netManager;
 
+		protected int currentFixedFrame = 0;
+
 		/// <summary>
 		/// Returns true if socket listening and update thread is running.
 		/// </summary>

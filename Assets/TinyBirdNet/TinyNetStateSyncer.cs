@@ -13,9 +13,14 @@ namespace TinyBirdNet {
 	public abstract class TinyNetStateSyncer {
 
 		protected static Dictionary<Type, List<PropertyInfo>> syncVarProps = new Dictionary<Type, List<PropertyInfo>>();
+		protected static Dictionary<Type, List<String>> rpcMethods = new Dictionary<Type, List<String>>(); //Maybe we have to change this
 
 		public static void InitializePropertyInfoListOfType(int size, Type type) {
 			syncVarProps.Add(type, new List<PropertyInfo>(size));
+		}
+
+		public static void InitializeRPCMethodsOfType(int size, Type type) {
+			rpcMethods.Add(type, new List<string>(size));
 		}
 
 		public static void AddPropertyToType(PropertyInfo prop, Type type) {
@@ -29,11 +34,23 @@ namespace TinyBirdNet {
 			}
 		}
 
+		public static void AddRPCMethodNameToType(string rpcName, Type type) {
+			rpcMethods[type].Add(rpcName);
+		}
+
 		public static void OutPropertyNamesFromType(Type type, out string[] propNames) {
 			propNames = new string[syncVarProps[type].Count];
 
 			for (int i = 0; i < propNames.Length; i++) {
 				propNames[i] = syncVarProps[type][i].Name;
+			}
+		}
+
+		public static void OutRPCMethodNamesFromType(Type type, out string[] rpcNames) {
+			rpcNames = new string[rpcMethods[type].Count];
+
+			for (int i = 0; i < rpcNames.Length; i++) {
+				rpcNames[i] = rpcMethods[type][i];
 			}
 		}
 
@@ -43,6 +60,10 @@ namespace TinyBirdNet {
 			for (int i = 0; i < propTypes.Length; i++) {
 				propTypes[i] = syncVarProps[type][i].PropertyType;
 			}
+		}
+
+		public static int GetRPCMethodIndexFromType(Type type, string rpcName) {
+			return rpcMethods[type].IndexOf(rpcName);
 		}
 
 		public static void UpdateDirtyFlagOf(TinyNetBehaviour instance, BitArray bitArray) {
@@ -89,6 +110,10 @@ namespace TinyBirdNet {
 
 		public static int GetNumberOfSyncedProperties(Type type) {
 			return syncVarProps[type].Count;
+		}
+
+		public static int GetNumberOfRPCMethods(Type type) {
+			return rpcMethods[type].Count;
 		}
 	}
 }

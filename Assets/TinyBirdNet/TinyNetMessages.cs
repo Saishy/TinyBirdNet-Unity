@@ -91,7 +91,7 @@ namespace TinyBirdNet.Messaging {
 		public const ushort Rpc = 2;
 		public const ushort ObjectSpawnMessage = 3;
 		public const ushort Owner = 4; //Not used
-		public const ushort Command = 5;
+		public const ushort Command = 5; //Maybe change this to be the Everyone call from a client for the server to pass along
 		public const ushort LocalPlayerTransform = 6;
 		public const ushort SyncEvent = 7;
 		public const ushort StateUpdate = 8;
@@ -431,6 +431,26 @@ namespace TinyBirdNet.Messaging {
 			writer.Put(position.y);
 			writer.Put(position.z);
 			writer.Put(initialState);
+		}
+	}
+
+	public class TinyNetRPCMessage : ITinyNetMessage {
+		public int networkID;
+		public int rpcMethodIndex;
+		public byte[] parameters;
+
+		public ushort msgType { get { return TinyNetMsgType.Rpc; } }
+
+		public void Deserialize(NetDataReader reader) {
+			networkID = reader.GetInt();
+			rpcMethodIndex = reader.GetInt();
+			parameters = reader.GetRemainingBytes();
+		}
+
+		public void Serialize(NetDataWriter writer) {
+			writer.Put(networkID);
+			writer.Put(rpcMethodIndex);
+			writer.Put(parameters);
 		}
 	}
 

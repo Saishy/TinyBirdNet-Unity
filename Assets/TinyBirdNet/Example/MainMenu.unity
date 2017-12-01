@@ -311,6 +311,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6dbe83d791db234d8c50fdc1e46609e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  NetworkEveryXFixedFrames: 20
   registeredPrefabs:
   - {fileID: 1057121294660296, guid: 3d4ccdbf287c1dc4e910d17a2f69307f, type: 2}
   prefabsGUID: []
@@ -340,7 +341,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1148536498}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 244, z: 0}
+  m_LocalPosition: {x: 0, y: 152.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1998987615}
@@ -383,9 +384,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'TinyBirdNet FPS Example
-
-'
+  m_Text: TinyBirdNet TPS Example
 --- !u!222 &1148536501
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -639,7 +638,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1998987611}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 513, y: 304, z: 0}
+  m_LocalPosition: {x: 513, y: 212.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1148536499}

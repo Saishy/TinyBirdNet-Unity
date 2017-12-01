@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace TinyBirdNet {
 	/// <summary>
@@ -8,7 +7,7 @@ namespace TinyBirdNet {
 	/// <para>byte, sbyte, short, ushort, int, uint, long, ulong, float, double, bool, string.</para>
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property)]
-	public class TinyNetSyncVar : System.Attribute {
+	public class TinyNetSyncVar : Attribute {
 
 		public static HashSet<Type> allowedTypes = new HashSet<Type> { typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string) };
 	}

@@ -15,7 +15,6 @@ namespace TinyBirdNet {
 
 		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
 
-
 		public TinyNetServer() : base() {
 			instance = this;
 		}
@@ -35,6 +34,10 @@ namespace TinyBirdNet {
 		}
 
 		public override void TinyNetUpdate() {
+			if (currentFixedFrame % TinyNetGameManager.instance.NetworkEveryXFixedFrames != 0) {
+				return;
+			}
+
 			foreach (var item in _localNetObjects) {
 				item.Value.TinyNetUpdate();
 			}
@@ -209,6 +212,26 @@ namespace TinyBirdNet {
 			}
 
 			tni.ReceiveNetworkID(0);
+		}
+
+		public void SendRPCToClientOwner(byte[] stream, string rpcName, ITinyNetObject iObj) {
+			var msg = new TinyNetRPCMessage();
+
+			msg.networkID = iObj.NetworkID;
+			msg.rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodIndexFromType(iObj.GetType(), rpcName);
+			msg.parameters = stream;
+			
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
+		}
+
+		public void SendRPCToAllCLients(byte[] stream, string rpcName, ITinyNetObject iObj) {
+			var msg = new TinyNetRPCMessage();
+
+			msg.networkID = iObj.NetworkID;
+			msg.rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodIndexFromType(iObj.GetType(), rpcName);
+			msg.parameters = stream;
+
+			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, SendOptions.ReliableOrdered);
 		}
 
 		//============ TinyNetMessages Networking ===========//

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LiteNetLib.Utils;
+using System;
 using UnityEngine;
 
 namespace TinyBirdNet {
@@ -7,4 +8,7 @@ namespace TinyBirdNet {
 
 	// Handles requests to unspawn objects on the client
 	public delegate void UnSpawnDelegate(GameObject gObj);
+
+	// Handles RPC calls
+	public delegate void CmdDelegate(TinyNetBehaviour obj, NetDataReader reader);
 }

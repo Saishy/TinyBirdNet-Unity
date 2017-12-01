@@ -40,10 +40,10 @@ namespace TinyBirdNet {
 
 		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
 		public bool isClient { get { return TinyNetGameManager.instance.isClient; } }
-		public bool hasAuthority { get { return netIdentity.hasAuthority; } }
+		public bool hasAuthority { get { return NetIdentity.hasAuthority; } }
 
 		TinyNetIdentity _netIdentity;
-		protected TinyNetIdentity netIdentity {
+		public TinyNetIdentity NetIdentity {
 			get {
 				if (_netIdentity == null) {
 					_netIdentity = GetComponent<TinyNetIdentity>();
@@ -178,7 +178,7 @@ namespace TinyBirdNet {
 			return false;
 		}
 
-		public void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
+		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
 			writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
 
 			Type type;
@@ -219,7 +219,7 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
+		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
 			TinyNetStateSyncer.IntToDirtyFlag(reader.GetInt(), DirtyFlag);
 
 			Type type;
@@ -260,20 +260,60 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public void TinyNetUpdate() {
-			if (IsTimeToUpdate()) {
-				TinyNetServer.instance.SendStateUpdateToAllConnections(this, GetNetworkChannel());
+		public virtual void SendRPC(byte[] stream, RPCTarget target, RPCCallers caller, string rpcName) {
+			if (target == RPCTarget.ClientOwner) {
+				if (!isServer || _netIdentity.hasAuthority) {
+					//We are not the server or we are the owner, so we can't or have no need to replicate
+					return;
+				}
+			} else if (target == RPCTarget.Server) {
+				if (isServer) {
+					//We are the server, no need to replicate
+					return;
+				}
+			} else if (target == RPCTarget.Everyone) {
+				if (!isServer) {
+					//We are not the server, we don't have a connection to everyone
+					return;
+				}
+			}
+
+			switch(target) {
+				case RPCTarget.Server:
+					TinyNetClient.instance.SendRPCToServer(stream, rpcName, this);
+					return;
 			}
 		}
 
-		public bool IsTimeToUpdate() {
+		public virtual bool InvokeRPC(int rpcMethodIndex, NetDataReader reader) {
+			//if (InvokeRpcDelegate(cmdHash, reader)) {
+			//	return true;
+			//}
+
+			return false;
+		}
+
+		public void TinyNetUpdate() {
+			//if (IsTimeToUpdate()) {
+			UpdateDirtyFlag();
+
+			if (_bIsDirty) {
+				TinyNetServer.instance.SendStateUpdateToAllConnections(this, GetNetworkChannel());
+
+				_bIsDirty = false;
+			}
+				
+			//}
+		}
+
+		/*public bool IsTimeToUpdate() {
 			if (_bIsDirty && Time.time - _lastSendTime > GetNetworkSendInterval()) {
 				UpdateDirtyFlag();
 				return true;
 			}
 
 			return false;
-		}
+		}*/
 
 		public virtual void OnNetworkCreate() {
 			TinyNetStateSyncer.OutPropertyNamesFromType(GetType(), out propertiesName);

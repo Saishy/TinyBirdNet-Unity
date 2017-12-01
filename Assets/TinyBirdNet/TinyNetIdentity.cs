@@ -19,7 +19,7 @@ namespace TinyBirdNet {
 		public int NetworkID { get; protected set; }
 
 		[SerializeField] bool _serverOnly;
-		/**<summary>If true, this object is owned by a </summary>*/
+		/**<summary>If true, this object is owned by a client</summary>*/
 		[SerializeField] bool _localPlayerAuthority;
 		[SerializeField] string _assetGUID;
 		[SerializeField] int _sceneID;
@@ -27,7 +27,6 @@ namespace TinyBirdNet {
 		ITinyNetObject[] _tinyNetObjects;
 
 		//bool _bIsOwner;
-		/**<summary>Both the server and a client can have authority, but only one can be the owner.</summary>*/
 		bool _hasAuthority;
 
 		//Saishy: Is it possible for a client to be the owner but not have authority? What would that imply?
@@ -41,6 +40,7 @@ namespace TinyBirdNet {
 
 		public bool ServerOnly { get { return _serverOnly; } }
 
+		//
 		public bool hasAuthority { get { return _hasAuthority; } }
 		//public bool hasOwnership { get { return _bIsOwner;  } }
 

@@ -5,7 +5,6 @@ using LiteNetLib.Utils;
 using TinyBirdUtils;
 using TinyBirdNet.Messaging;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
 
 namespace TinyBirdNet {
 
@@ -100,7 +99,15 @@ namespace TinyBirdNet {
 
 		//============ Object Networking ====================//
 
+		public void SendRPCToServer(byte[] stream, string rpcName, ITinyNetObject iObj) {
+			var msg = new TinyNetRPCMessage();
 
+			msg.networkID = iObj.NetworkID;
+			msg.rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodIndexFromType(iObj.GetType(), rpcName);
+			msg.parameters = stream;
+
+			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);
+		}
 
 		//============ TinyNetMessages Handlers =============//
 
@@ -110,6 +117,7 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnLocalObjectObjDestroy netId:" + s_TinyNetObjectDestroyMessage.networkID); }
 
 			// Removing from the tinynetidentitylist is already done at OnNetworkDestroy() at the TinyNetIdentity.
+
 			/*TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectSpawnMessage.networkID];
 			if (localObject != null) {
 				RemoveTinyNetIdentityFromList(localObject);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace TinyBirdNet {
 
-	[CustomEditor(typeof(TinyNetGameManager))]
+	[CustomEditor(typeof(TinyNetGameManager), true)]
 	public class TinyNetGameManagerEditor : Editor {
 
 		SerializedProperty _registeredPrefabs;
@@ -19,6 +19,11 @@ namespace TinyBirdNet {
 			serializedObject.Update();
 
 			TinyNetGameManager netGameManager = target as TinyNetGameManager;
+
+			EditorGUILayout.LabelField("Update Network every X Fixed Frames");
+			EditorGUILayout.IntSlider(netGameManager.NetworkEveryXFixedFrames, 1, 60);
+
+			EditorGUILayout.Space();
 
 			EditorGUILayout.PropertyField(_maxNumberOfPlayers);
 

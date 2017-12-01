@@ -11,4 +11,11 @@ public class Pawn : TinyNetBehaviour {
 	string _playerName;
 	[TinyNetSyncVar]
 	string PlayerName { get { return _playerName; } set { _playerName = value; } }
+
+	[TinyNetRPC(RPCTarget.Server, RPCCallers.ClientOwner)]
+	void ClientToServerCallRPC() {
+		if (TinyNetGameManager.instance.isClient) {
+
+		}
+	}
 }

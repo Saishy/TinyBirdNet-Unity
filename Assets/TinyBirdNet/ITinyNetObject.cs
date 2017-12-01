@@ -10,11 +10,17 @@ namespace TinyBirdNet {
 		bool isServer { get; }
 		bool isClient { get; }
 
+		// Saishy: You don't need to use a netidentity if you don't want and have implemmented your own way of spawning netobjects
+		TinyNetIdentity NetIdentity { get; }
+
 		void TinySerialize(NetDataWriter writer, bool firstStateUpdate);
 		void TinyDeserialize(NetDataReader reader, bool firstStateUpdate);
 
+		void SendRPC(byte[] stream, RPCTarget target, RPCCallers caller, string rpcName);
+		bool InvokeRPC(int rpcMethodIndex, NetDataReader reader);
+
 		/// <summary>
-		/// Called after all Updates but before any LateUpdate.
+		/// Called after all FixedUpdates and physics but before any Update.
 		/// <para>It is used by TinyNetServer to check if it is time to send the current state to clients.</para>
 		/// </summary>
 		void TinyNetUpdate();
@@ -23,7 +29,7 @@ namespace TinyBirdNet {
 		/// Used to check if 
 		/// </summary>
 		/// <returns></returns>
-		bool IsTimeToUpdate();
+		//bool IsTimeToUpdate();
 
 		/// <summary>
 		/// Always called, regardless of being a client or server. (order 0)
@@ -72,6 +78,6 @@ namespace TinyBirdNet {
 		/// Sets how frequently a state update is checked and sent. (1f = One time per second)
 		/// </summary>
 		/// <returns></returns>
-		float GetNetworkSendInterval();
+		//float GetNetworkSendInterval();
 	}
 }
