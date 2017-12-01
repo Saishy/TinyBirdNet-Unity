@@ -33,7 +33,7 @@ namespace TinyBirdNet {
 			List<Type> types = GetAllClassesAndChildsOf<TinyNetBehaviour>();
 
 			foreach (Type type in types) {
-				PropertyInfo[] props = type.GetProperties(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)
+				PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 					.Where(prop => Attribute.IsDefined(prop, typeof(TinyNetSyncVar)))
 					.OrderBy(info => info.Name).ToArray();
 
@@ -55,6 +55,36 @@ namespace TinyBirdNet {
 					}
 				} else {
 					if (TinyNetLogLevel.logError) { TinyLogger.LogError("ERROR: " + type + " have more than 32 syncvar"); }
+				}
+
+				// Time for the RPC methods
+				MethodInfo[] methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+					.Where(method => Attribute.IsDefined(method, typeof(TinyNetRPC)))
+					.OrderBy(info => info.Name).ToArray();
+
+				TinyNetStateSyncer.InitializeRPCMethodsOfType(methods.Length, type);
+
+				ParameterInfo[] pars;
+				bool bValid = true;
+				TinyNetRPC rpcAttribute;
+
+				for (int i = 0; i < methods.Length; i++) {
+					pars = methods[i].GetParameters();
+					rpcAttribute = (TinyNetRPC)methods[i].GetCustomAttributes(typeof(TinyNetRPC), true)[0];
+
+					bValid = true;
+					for (int x = 0; x < pars.Length; x++) {
+						if (!TinyNetSyncVar.allowedTypes.Contains(pars[x].ParameterType)) {
+							if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetRPC used with incompatible parameter: " + pars[x].Name); }
+							bValid = false;
+						}
+					}
+
+					if (bValid) {
+						if (TinyNetLogLevel.logDev) { TinyLogger.Log(methods[i].Name); }
+
+						TinyNetStateSyncer.AddRPCMethodNameToType(methods[i].Name, rpcAttribute.Targets, rpcAttribute.Callers, type);
+					}
 				}
 			}
 		}

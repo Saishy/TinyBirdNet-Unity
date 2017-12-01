@@ -16,7 +16,7 @@ namespace TinyBirdNet {
 		void TinySerialize(NetDataWriter writer, bool firstStateUpdate);
 		void TinyDeserialize(NetDataReader reader, bool firstStateUpdate);
 
-		void SendRPC(byte[] stream, RPCTarget target, RPCCallers caller, string rpcName);
+		void SendRPC(byte[] stream, string rpcName);
 		bool InvokeRPC(int rpcMethodIndex, NetDataReader reader);
 
 		/// <summary>

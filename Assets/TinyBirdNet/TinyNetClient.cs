@@ -86,7 +86,7 @@ namespace TinyBirdNet {
 			tinyNetConns.Add(tinyConn);
 
 			//First connection is to host:
-			if (tinyNetConns.Count == 0) {
+			if (tinyNetConns.Count == 1) {
 				connToHost = tinyNetConns[0];
 			}
 
@@ -99,11 +99,11 @@ namespace TinyBirdNet {
 
 		//============ Object Networking ====================//
 
-		public void SendRPCToServer(byte[] stream, string rpcName, ITinyNetObject iObj) {
+		public void SendRPCToServer(byte[] stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
-			msg.rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodIndexFromType(iObj.GetType(), rpcName);
+			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream;
 
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);

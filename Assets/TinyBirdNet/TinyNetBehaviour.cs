@@ -26,6 +26,8 @@ namespace TinyBirdNet {
 		private Dictionary<string, TinyNetPropertyAccessor<bool>> boolAccessor;
 		private Dictionary<string, TinyNetPropertyAccessor<string>> stringAccessor;
 
+		private List<RPCDelegate> rpcHandlers;
+
 		private string[] propertiesName;
 		private Type[] propertiesTypes;
 
@@ -61,6 +63,10 @@ namespace TinyBirdNet {
 
 		public void ReceiveNetworkID(int newID) {
 			NetworkID = newID;
+		}
+
+		protected void RegisterRPCDelegate(RPCDelegate rpcDel, string methodName) {
+			rpcHandlers[TinyNetStateSyncer.GetRPCMethodIndexFromType(GetType(), methodName)] = rpcDel;
 		}
 
 		/*protected void CreateDirtyFlag() {
@@ -260,7 +266,14 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public virtual void SendRPC(byte[] stream, RPCTarget target, RPCCallers caller, string rpcName) {
+		public virtual void SendRPC(byte[] stream, string rpcName) {
+			RPCMethodInfo rpcMethodInfo = null;
+			int rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodInfoFromType(GetType(), rpcName, ref rpcMethodInfo);
+
+			SendRPC(stream, rpcMethodInfo.target, rpcMethodInfo.caller, rpcMethodIndex);
+		}
+
+		public virtual void SendRPC(byte[] stream, RPCTarget target, RPCCallers caller, int rpcMethodIndex) {
 			if (target == RPCTarget.ClientOwner) {
 				if (!isServer || _netIdentity.hasAuthority) {
 					//We are not the server or we are the owner, so we can't or have no need to replicate
@@ -280,17 +293,26 @@ namespace TinyBirdNet {
 
 			switch(target) {
 				case RPCTarget.Server:
-					TinyNetClient.instance.SendRPCToServer(stream, rpcName, this);
+					TinyNetClient.instance.SendRPCToServer(stream, rpcMethodIndex, this);
+					return;
+				case RPCTarget.ClientOwner:
+					TinyNetServer.instance.SendRPCToClientOwner(stream, rpcMethodIndex, this);
+					return;
+				case RPCTarget.Everyone:
+					TinyNetServer.instance.SendRPCToAllCLients(stream, rpcMethodIndex, this);
 					return;
 			}
 		}
 
 		public virtual bool InvokeRPC(int rpcMethodIndex, NetDataReader reader) {
-			//if (InvokeRpcDelegate(cmdHash, reader)) {
-			//	return true;
-			//}
+			if (rpcHandlers[rpcMethodIndex] == null) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::InvokeRPC netId:" + NetworkID + " RPCDelegate is not registered."); }
+				return false;
+			}
 
-			return false;
+			rpcHandlers[rpcMethodIndex].Invoke(reader);
+
+			return true;
 		}
 
 		public void TinyNetUpdate() {

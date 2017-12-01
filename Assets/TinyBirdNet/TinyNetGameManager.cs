@@ -308,6 +308,7 @@ namespace TinyBirdNet {
 			FinishLoadScene();
 			s_LoadingSceneAsync.allowSceneActivation = true;
 			s_LoadingSceneAsync = null;
+
 		}
 
 		/// <summary>

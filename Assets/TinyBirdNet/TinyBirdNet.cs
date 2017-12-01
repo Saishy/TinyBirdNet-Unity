@@ -10,5 +10,17 @@ namespace TinyBirdNet {
 	public delegate void UnSpawnDelegate(GameObject gObj);
 
 	// Handles RPC calls
-	public delegate void CmdDelegate(TinyNetBehaviour obj, NetDataReader reader);
+	public delegate void RPCDelegate(NetDataReader reader);
+
+	public class RPCMethodInfo {
+		public RPCTarget target { private set; get; }
+		public RPCCallers caller { private set; get; }
+		public string name { private set; get; }
+
+		public RPCMethodInfo(string rpcName, RPCTarget nTarget, RPCCallers nCaller) {
+			name = rpcName;
+			target = nTarget;
+			caller = nCaller;
+		}
+	}
 }

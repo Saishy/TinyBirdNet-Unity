@@ -214,21 +214,21 @@ namespace TinyBirdNet {
 			tni.ReceiveNetworkID(0);
 		}
 
-		public void SendRPCToClientOwner(byte[] stream, string rpcName, ITinyNetObject iObj) {
+		public void SendRPCToClientOwner(byte[] stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
-			msg.rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodIndexFromType(iObj.GetType(), rpcName);
+			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream;
 			
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
 		}
 
-		public void SendRPCToAllCLients(byte[] stream, string rpcName, ITinyNetObject iObj) {
+		public void SendRPCToAllCLients(byte[] stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
-			msg.rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodIndexFromType(iObj.GetType(), rpcName);
+			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream;
 
 			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, SendOptions.ReliableOrdered);

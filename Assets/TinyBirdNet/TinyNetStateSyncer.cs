@@ -13,14 +13,14 @@ namespace TinyBirdNet {
 	public abstract class TinyNetStateSyncer {
 
 		protected static Dictionary<Type, List<PropertyInfo>> syncVarProps = new Dictionary<Type, List<PropertyInfo>>();
-		protected static Dictionary<Type, List<String>> rpcMethods = new Dictionary<Type, List<String>>(); //Maybe we have to change this
+		protected static Dictionary<Type, List<RPCMethodInfo>> rpcMethods = new Dictionary<Type, List<RPCMethodInfo>>(); //Maybe we have to change this
 
 		public static void InitializePropertyInfoListOfType(int size, Type type) {
 			syncVarProps.Add(type, new List<PropertyInfo>(size));
 		}
 
 		public static void InitializeRPCMethodsOfType(int size, Type type) {
-			rpcMethods.Add(type, new List<string>(size));
+			rpcMethods.Add(type, new List<RPCMethodInfo>(size));
 		}
 
 		public static void AddPropertyToType(PropertyInfo prop, Type type) {
@@ -34,8 +34,8 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public static void AddRPCMethodNameToType(string rpcName, Type type) {
-			rpcMethods[type].Add(rpcName);
+		public static void AddRPCMethodNameToType(string rpcName, RPCTarget nTarget, RPCCallers nCaller, Type type) {
+			rpcMethods[type].Add(new RPCMethodInfo(rpcName, nTarget, nCaller));
 		}
 
 		public static void OutPropertyNamesFromType(Type type, out string[] propNames) {
@@ -50,7 +50,7 @@ namespace TinyBirdNet {
 			rpcNames = new string[rpcMethods[type].Count];
 
 			for (int i = 0; i < rpcNames.Length; i++) {
-				rpcNames[i] = rpcMethods[type][i];
+				rpcNames[i] = rpcMethods[type][i].name;
 			}
 		}
 
@@ -63,7 +63,28 @@ namespace TinyBirdNet {
 		}
 
 		public static int GetRPCMethodIndexFromType(Type type, string rpcName) {
-			return rpcMethods[type].IndexOf(rpcName);
+			for (int i = 0; i < rpcMethods.Count; i++) {
+				if (rpcMethods[type][i].name == rpcName) {
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
+		public static int GetRPCMethodInfoFromType(Type type, string rpcName, ref RPCMethodInfo rpcMethodInfo) {
+			for (int i = 0; i < rpcMethods.Count; i++) {
+				if (rpcMethods[type][i].name == rpcName) {
+					rpcMethodInfo = rpcMethods[type][i];
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
+		public static void GetRPCMethodInfoFromType(Type type, int rpcMethodIndex, ref RPCMethodInfo rpcMethodInfo) {
+			rpcMethodInfo = rpcMethods[type][rpcMethodIndex];
 		}
 
 		public static void UpdateDirtyFlagOf(TinyNetBehaviour instance, BitArray bitArray) {
