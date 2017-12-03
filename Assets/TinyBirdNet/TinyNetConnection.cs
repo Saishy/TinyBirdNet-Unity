@@ -11,6 +11,11 @@ namespace TinyBirdNet {
 	/// </summary>
 	public class TinyNetConnection {
 
+		/// <summary>
+		/// If using this, always Reset before use!
+		/// </summary>
+		protected static NetDataWriter recycleWriter;
+
 		protected NetPeer _peer;
 
 		public NetPeer netPeer { get { return _peer; } }
@@ -48,6 +53,15 @@ namespace TinyBirdNet {
 
 		public void Send(NetDataWriter dataWriter, SendOptions options) {
 			_peer.Send(dataWriter, options);
+		}
+
+		public void Send(ITinyNetMessage msg, SendOptions options) {
+			recycleWriter.Reset();
+
+			recycleWriter.Put(msg.msgType);
+			msg.Serialize(recycleWriter);
+
+			Send(recycleWriter, options);
 		}
 
 		//============ Network Identity =====================//

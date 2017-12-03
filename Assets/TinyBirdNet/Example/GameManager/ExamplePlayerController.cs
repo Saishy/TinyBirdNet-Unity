@@ -16,6 +16,10 @@ public class ExamplePlayerController : TinyNetPlayerController {
 
 	protected Coroutine fixedUpdateCoroutine;
 
+	protected ExamplePawn pawn;
+
+	public ExamplePawn Pawn { get { return pawn; } }
+
 	public ExamplePlayerController() : base() {
 		/*inputBuffer = new List<ExampleInputMessage>(inputBufferSize);
 		inputMessages = new ExampleInputMessage[inputBufferSize];
@@ -28,6 +32,8 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	public ExamplePlayerController(short playerControllerId) : base(playerControllerId) {
 		//Hacky way, but I want a coroutine...
 		fixedUpdateCoroutine = TinyNetGameManager.instance.StartCoroutine(FixedUpdateLoop());
+
+		inputMessageBuffer.playerControllerId = playerControllerId;
 	}
 
 	//Finalizer
@@ -59,10 +65,17 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		while (true) {
 			Vector2 axis = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
 
-			MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
+			inputMessageBuffer.Direction = MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
 
 			if (Input.GetButton("Fire1")) {
 				Shoot();
+				inputMessageBuffer.bShoot = true;
+			} else {
+				inputMessageBuffer.bShoot = false;
+			}
+
+			if (!TinyNetGameManager.instance.isServer) {
+				conn.Send(inputMessageBuffer, LiteNetLib.SendOptions.Sequenced);
 			}
 
 			yield return new WaitForFixedUpdate();
@@ -79,27 +92,14 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		}
 	}
 
-	protected void MoveToDir(byte direction) {
-		switch (direction) {
-			case 0:
-				return;
-			//Top
-			case 1:
-				return;
-			//Right
-			case 2:
-				return;
-			//Down
-			case 3:
-				return;
-			//Left
-			case 4:
-				return;
-		}
+	protected byte MoveToDir(byte direction) {
+		pawn.MoveToDir(direction);
+
+		return direction;
 	}
 
 	protected void Shoot() {
-
+		pawn.Shoot();
 	}
 }
 
