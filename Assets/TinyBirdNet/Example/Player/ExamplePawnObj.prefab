@@ -25,7 +25,7 @@ GameObject:
   - component: {fileID: 114733409532478982}
   - component: {fileID: 114184574253418120}
   m_Layer: 0
-  m_Name: PlayerObj
+  m_Name: ExamplePawnObj
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -280,3 +280,4 @@ MonoBehaviour:
   _serverOnly: 0
   _localPlayerAuthority: 0
   _assetGUID: 3d4ccdbf287c1dc4e910d17a2f69307f
+  _sceneID: 0

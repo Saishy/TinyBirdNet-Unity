@@ -13,18 +13,18 @@ namespace TinyBirdNet {
 
 		public int NetworkID { get; protected set; }
 
-		private Dictionary<string, TinyNetPropertyAccessor<byte>> byteAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<sbyte>> sbyteAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<short>> shortAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<ushort>> ushortAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<int>> intAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<uint>> uintAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<long>> longAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<ulong>> ulongAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<float>> floatAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<double>> doubleAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<bool>> boolAccessor;
-		private Dictionary<string, TinyNetPropertyAccessor<string>> stringAccessor;
+		private Dictionary<string, TinyNetPropertyAccessor<byte>> byteAccessor = new Dictionary<string, TinyNetPropertyAccessor<byte>>();
+		private Dictionary<string, TinyNetPropertyAccessor<sbyte>> sbyteAccessor = new Dictionary<string, TinyNetPropertyAccessor<sbyte>>();
+		private Dictionary<string, TinyNetPropertyAccessor<short>> shortAccessor = new Dictionary<string, TinyNetPropertyAccessor<short>>();
+		private Dictionary<string, TinyNetPropertyAccessor<ushort>> ushortAccessor = new Dictionary<string, TinyNetPropertyAccessor<ushort>>();
+		private Dictionary<string, TinyNetPropertyAccessor<int>> intAccessor = new Dictionary<string, TinyNetPropertyAccessor<int>>();
+		private Dictionary<string, TinyNetPropertyAccessor<uint>> uintAccessor = new Dictionary<string, TinyNetPropertyAccessor<uint>>();
+		private Dictionary<string, TinyNetPropertyAccessor<long>> longAccessor = new Dictionary<string, TinyNetPropertyAccessor<long>>();
+		private Dictionary<string, TinyNetPropertyAccessor<ulong>> ulongAccessor = new Dictionary<string, TinyNetPropertyAccessor<ulong>>();
+		private Dictionary<string, TinyNetPropertyAccessor<float>> floatAccessor = new Dictionary<string, TinyNetPropertyAccessor<float>>();
+		private Dictionary<string, TinyNetPropertyAccessor<double>> doubleAccessor = new Dictionary<string, TinyNetPropertyAccessor<double>>();
+		private Dictionary<string, TinyNetPropertyAccessor<bool>> boolAccessor = new Dictionary<string, TinyNetPropertyAccessor<bool>>();
+		private Dictionary<string, TinyNetPropertyAccessor<string>> stringAccessor = new Dictionary<string, TinyNetPropertyAccessor<string>>();
 
 		private List<RPCDelegate> rpcHandlers;
 
@@ -66,6 +66,10 @@ namespace TinyBirdNet {
 		}
 
 		protected void RegisterRPCDelegate(RPCDelegate rpcDel, string methodName) {
+			if (rpcHandlers == null) {
+				rpcHandlers = new List<RPCDelegate>();
+			}
+
 			rpcHandlers[TinyNetStateSyncer.GetRPCMethodIndexFromType(GetType(), methodName)] = rpcDel;
 		}
 

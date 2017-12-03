@@ -14,7 +14,7 @@ namespace TinyBirdNet {
 		public static TinyNetGameManager instance;
 
 		[Range(1, 60)]
-		public int NetworkEveryXFixedFrames = 20;
+		public int NetworkEveryXFixedFrames = 15;
 
 		/// <summary>
 		/// Current scene name at runtime.

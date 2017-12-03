@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿using LiteNetLib.Utils;
+using System;
+using System.Collections.Generic;
+using TinyBirdNet.Messaging;
+using UnityEngine;
 
 namespace TinyBirdNet {
 
@@ -7,9 +11,14 @@ namespace TinyBirdNet {
 	// The server has one TinyNetConnection per peer.
 	public class TinyNetPlayerController {
 
+		protected static NetDataWriter inputWriter = new NetDataWriter();
+
 		public short playerControllerId = -1;
-		//public TinyNetIdentity tinyNetId;
-		//public GameObject gameObject;
+
+		/**<summary>Holds a reference to the client connection on the server, and to the server connection on the client.</summary>*/
+		protected TinyNetConnection conn;
+
+		public virtual TinyNetConnection Conn { get { return conn; } set { conn = value; } }
 
 		public TinyNetPlayerController() {
 		}
@@ -23,8 +32,11 @@ namespace TinyBirdNet {
 			this.playerControllerId = playerControllerId;
 		}*/
 
-		public TinyNetPlayerController(short playerControllerId) {
+		public TinyNetPlayerController(short playerControllerId) : this() {
 			this.playerControllerId = playerControllerId;
+		}
+
+		public virtual void GetInputMessage(TinyNetMessageReader netMsg) {
 		}
 
 		public override string ToString() {

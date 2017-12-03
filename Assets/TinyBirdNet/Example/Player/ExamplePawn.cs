@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using TinyBirdNet;
 using UnityEngine;
 
-public class Pawn : TinyNetBehaviour {
-
-	[TinyNetSyncVar]
-	int TestInt { get; set; }
+public class ExamplePawn : TinyNetBehaviour {
 
 	string _playerName;
 	[TinyNetSyncVar]
@@ -18,4 +15,6 @@ public class Pawn : TinyNetBehaviour {
 
 		}
 	}
+
+
 }

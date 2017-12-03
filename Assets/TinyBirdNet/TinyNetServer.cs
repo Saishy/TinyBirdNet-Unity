@@ -23,7 +23,7 @@ namespace TinyBirdNet {
 			base.RegisterMessageHandlers();
 
 			RegisterHandlerSafe(TinyNetMsgType.Ready, OnClientReadyMessage);
-			//RegisterHandlerSafe(TinyNetMsgType.Command, OnCommandMessage);
+			RegisterHandlerSafe(TinyNetMsgType.Input, OnPlayerInputMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalPlayerTransform, NetworkTransform.HandleTransform);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalChildTransform, NetworkTransformChild.HandleChildTransform);
 			RegisterHandlerSafe(TinyNetMsgType.RequestAddPlayer, OnRequestAddPlayerMessage);
@@ -426,6 +426,10 @@ namespace TinyBirdNet {
 
 		//============ Players Methods ======================//
 
+		void OnPlayerInputMessage(TinyNetMessageReader netMsg) {
+			netMsg.tinyNetConn.GetPlayerInputMessage(netMsg);
+		}
+
 		void OnRequestAddPlayerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetRequestAddPlayerMessage);
 
@@ -438,7 +442,7 @@ namespace TinyBirdNet {
 
 			int playerId = netMsg.tinyNetConn.playerControllers.Count;
 
-			CreatePlayerAndAdd(netMsg.tinyNetConn, playerId);
+			AddPlayerControllerToConnection(netMsg.tinyNetConn, playerId);
 
 			// Tell the origin client to add them too!
 			s_TinyNetAddPlayerMessage.playerControllerId = (short)playerId;

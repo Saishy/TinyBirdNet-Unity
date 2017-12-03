@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using LiteNetLib.Utils;
 using TinyBirdUtils;
 using TinyBirdNet.Messaging;
+using System;
 
 namespace TinyBirdNet {
 
@@ -13,6 +14,8 @@ namespace TinyBirdNet {
 		public virtual string TYPE { get { return "Abstract"; } }
 
 		//protected static Dictionary<string, GameObject> guidToPrefab;
+
+		public static Action<TinyNetConnection, int> createPlayerAction;
 
 		/// <summary>
 		/// int is the NetworkID of the TinyNetIdentity object.
@@ -84,9 +87,9 @@ namespace TinyBirdNet {
 			/*if (guidToPrefab == null) {
 				guidToPrefab = TinyNetGameManager.instance.GetDictionaryOfAssetGUIDToPrefabs();
 			}*/
-	}
+		}
 
-	protected virtual void RegisterMessageHandlers() {
+		protected virtual void RegisterMessageHandlers() {
 			//RegisterHandlerSafe(MsgType.Rpc, OnRPCMessage);
 			//RegisterHandlerSafe(MsgType.SyncEvent, OnSyncEventMessage);
 			//RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
@@ -310,7 +313,7 @@ namespace TinyBirdNet {
 
 		protected virtual void AddPlayerControllerToConnection(TinyNetConnection conn, int playerControllerId) {
 			if (playerControllerId < 0) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("AddPlayerControllerToConnection() called with playerControllerId = 0"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("AddPlayerControllerToConnection() called with playerControllerId < 0"); }
 				return;
 			}
 
@@ -327,6 +330,11 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual void CreatePlayerAndAdd(TinyNetConnection conn, int playerControllerId) {
+			if (createPlayerAction != null) {
+				createPlayerAction(conn, playerControllerId);
+				return;
+			}
+			// If no action is set, we just use default implementation
 			conn.SetPlayerController<TinyNetPlayerController>(new TinyNetPlayerController((short)playerControllerId));
 		}
 	}

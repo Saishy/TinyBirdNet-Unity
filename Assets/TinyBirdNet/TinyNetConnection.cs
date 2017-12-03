@@ -36,16 +36,18 @@ namespace TinyBirdNet {
 		public long ConnectId {	get { return _peer.ConnectId; }
 		}
 
+		public override string ToString() {
+			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", netPeer.EndPoint, ConnectId, isReady);
+		}
+
+		//============ Network Data =========================//
+
 		public void Send(byte[] data, SendOptions options) {
 			_peer.Send(data, options);
 		}
 
 		public void Send(NetDataWriter dataWriter, SendOptions options) {
 			_peer.Send(dataWriter, options);
-		}
-
-		public override string ToString() {
-			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", netPeer.EndPoint, ConnectId, isReady);
 		}
 
 		//============ Network Identity =====================//
@@ -112,6 +114,7 @@ namespace TinyBirdNet {
 			}
 
 			_playerControllers[player.playerControllerId] = player;
+			_playerControllers[player.playerControllerId].Conn = this;
 		}
 
 		public void RemovePlayerController(short playerControllerId) {
@@ -145,6 +148,10 @@ namespace TinyBirdNet {
 			}
 
 			return false;
+		}
+
+		public void GetPlayerInputMessage(TinyNetMessageReader netMsg) {
+			_playerControllers[TinyNetInputMessage.PeekAtPlayerControllerId(netMsg)].GetInputMessage(netMsg);
 		}
 	}
 }
