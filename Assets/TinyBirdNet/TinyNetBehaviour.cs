@@ -11,6 +11,8 @@ namespace TinyBirdNet {
 	[RequireComponent(typeof(TinyNetIdentity))]
 	public class TinyNetBehaviour : MonoBehaviour, ITinyNetObject {
 
+		protected static NetDataWriter rpcRecycleWriter = new NetDataWriter();
+
 		public int NetworkID { get; protected set; }
 
 		private Dictionary<string, TinyNetPropertyAccessor<byte>> byteAccessor = new Dictionary<string, TinyNetPropertyAccessor<byte>>();
@@ -270,14 +272,14 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public virtual void SendRPC(byte[] stream, string rpcName) {
+		public virtual void SendRPC(NetDataWriter stream, string rpcName) {
 			RPCMethodInfo rpcMethodInfo = null;
 			int rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodInfoFromType(GetType(), rpcName, ref rpcMethodInfo);
 
 			SendRPC(stream, rpcMethodInfo.target, rpcMethodInfo.caller, rpcMethodIndex);
 		}
 
-		public virtual void SendRPC(byte[] stream, RPCTarget target, RPCCallers caller, int rpcMethodIndex) {
+		public virtual void SendRPC(NetDataWriter stream, RPCTarget target, RPCCallers caller, int rpcMethodIndex) {
 			if (target == RPCTarget.ClientOwner) {
 				if (!isServer || _netIdentity.hasAuthority) {
 					//We are not the server or we are the owner, so we can't or have no need to replicate

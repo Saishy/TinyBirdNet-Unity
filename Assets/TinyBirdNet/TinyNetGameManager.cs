@@ -279,6 +279,12 @@ namespace TinyBirdNet {
 			clientManager.StartClient();
 		}
 
+		public virtual void RegisterMessageHandlersServer() {
+		}
+
+		public virtual void RegisterMessageHandlersClient() {
+		}
+
 		/// <summary>
 		/// Attempts to connect to the target server, StartClient() must have been called before.
 		/// </summary>

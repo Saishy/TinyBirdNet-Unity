@@ -22,6 +22,8 @@ namespace TinyBirdNet {
 		protected override void RegisterMessageHandlers() {
 			base.RegisterMessageHandlers();
 
+			TinyNetGameManager.instance.RegisterMessageHandlersServer();
+
 			RegisterHandlerSafe(TinyNetMsgType.Ready, OnClientReadyMessage);
 			RegisterHandlerSafe(TinyNetMsgType.Input, OnPlayerInputMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalPlayerTransform, NetworkTransform.HandleTransform);
@@ -159,7 +161,7 @@ namespace TinyBirdNet {
 
 		// Destroy methods
 
-		void UnSpawnObject(GameObject obj) {
+		public void UnSpawnObject(GameObject obj) {
 			if (obj == null) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer UnspawnObject is null"); }
 				return;
@@ -171,11 +173,11 @@ namespace TinyBirdNet {
 			UnSpawnObject(objTinyNetIdentity);
 		}
 
-		void UnSpawnObject(TinyNetIdentity tni) {
+		public void UnSpawnObject(TinyNetIdentity tni) {
 			DestroyObject(tni, false);
 		}
 
-		void DestroyObject(GameObject obj) {
+		public void DestroyObject(GameObject obj) {
 			if (obj == null) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer DestroyObject is null"); }
 				return;
@@ -187,7 +189,7 @@ namespace TinyBirdNet {
 			DestroyObject(objTinyNetIdentity, true);
 		}
 
-		void DestroyObject(TinyNetIdentity tni, bool destroyServerObject) {
+		public void DestroyObject(TinyNetIdentity tni, bool destroyServerObject) {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("DestroyObject instance:" + tni.NetworkID); }
 
 			if (_localIdentityObjects.ContainsKey(tni.NetworkID)) {
@@ -214,22 +216,22 @@ namespace TinyBirdNet {
 			tni.ReceiveNetworkID(0);
 		}
 
-		public void SendRPCToClientOwner(byte[] stream, int rpcMethodIndex, ITinyNetObject iObj) {
+		public void SendRPCToClientOwner(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.parameters = stream;
+			msg.parameters = stream.Data;
 			
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
 		}
 
-		public void SendRPCToAllCLients(byte[] stream, int rpcMethodIndex, ITinyNetObject iObj) {
+		public void SendRPCToAllCLients(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.parameters = stream;
+			msg.parameters = stream.Data;
 
 			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, SendOptions.ReliableOrdered);
 		}

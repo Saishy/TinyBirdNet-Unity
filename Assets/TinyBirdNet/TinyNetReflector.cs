@@ -35,7 +35,9 @@ namespace TinyBirdNet {
 			foreach (Type type in types) {
 				PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 					.Where(prop => Attribute.IsDefined(prop, typeof(TinyNetSyncVar)))
-					.OrderBy(info => info.Name).ToArray();
+					.ToArray();
+					//.OrderBy(info => info.Name).ToArray();
+				Array.Sort(props, delegate(PropertyInfo x, PropertyInfo y) { return String.Compare(x.Name, y.Name, StringComparison.InvariantCulture); });
 
 				if (props.Length < 32) {
 
@@ -60,7 +62,9 @@ namespace TinyBirdNet {
 				// Time for the RPC methods
 				MethodInfo[] methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 					.Where(method => Attribute.IsDefined(method, typeof(TinyNetRPC)))
-					.OrderBy(info => info.Name).ToArray();
+					.ToArray();
+					//.OrderBy(info => info.Name).ToArray();
+				Array.Sort(methods, delegate (MethodInfo x, MethodInfo y) { return String.Compare(x.Name, y.Name, StringComparison.InvariantCulture); });
 
 				TinyNetStateSyncer.InitializeRPCMethodsOfType(methods.Length, type);
 

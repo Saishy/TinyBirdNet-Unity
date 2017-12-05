@@ -164,6 +164,21 @@ namespace TinyBirdNet {
 			return false;
 		}
 
+		// Get player controller from connection's list
+		public TinyNetPlayerController GetPlayerController(short playerControllerId) {
+			if (playerControllers.Count > 0) {
+				for (int i = 0; i < playerControllers.Count; i++) {
+					if (playerControllers[i].IsValid && playerControllers[i].playerControllerId == playerControllerId) {
+						return playerControllers[i];
+					}
+				}
+
+				return null;
+			}
+
+			return null;
+		}
+
 		public void GetPlayerInputMessage(TinyNetMessageReader netMsg) {
 			_playerControllers[TinyNetInputMessage.PeekAtPlayerControllerId(netMsg)].GetInputMessage(netMsg);
 		}

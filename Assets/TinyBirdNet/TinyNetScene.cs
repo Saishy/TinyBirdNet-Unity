@@ -199,6 +199,14 @@ namespace TinyBirdNet {
 			_localNetObjects.Remove(netObj.NetworkID);
 		}
 
+		public static TinyNetIdentity GetTinyNetIdentityByNetworkID(int nId) {
+			return _localIdentityObjects[nId];
+		}
+
+		public static ITinyNetObject GetTinyNetObjectByNetworkID(int nId) {
+			return _localNetObjects[nId];
+		}
+
 		//============ TinyNetMessages Networking ===========//
 
 		ushort ReadMessageAndCallDelegate(NetDataReader reader, NetPeer peer) {

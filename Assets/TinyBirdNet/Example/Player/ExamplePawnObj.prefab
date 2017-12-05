@@ -25,7 +25,7 @@ GameObject:
   - component: {fileID: 23502684676093564}
   - component: {fileID: 114733409532478982}
   - component: {fileID: 114184574253418120}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: ExamplePawnObj
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -42,7 +42,7 @@ GameObject:
   - component: {fileID: 4991727927988326}
   - component: {fileID: 33556661394196840}
   - component: {fileID: 23639732404243612}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: FrontWeapon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59,7 +59,7 @@ GameObject:
   - component: {fileID: 4823481483729208}
   - component: {fileID: 23889788938153036}
   - component: {fileID: 102258267689067846}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PlayerText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -282,6 +282,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6bec6504f1a0074a9419eecb2ce01c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bulletPrefab: {fileID: 1003412172681446, guid: 2988858db036b6a42a8832c52ac6e5a6,
+    type: 2}
+  bulletSpawnPosition: {fileID: 4991727927988326}
+  movementSpeed: 2
+  shootCooldown: 0
 --- !u!114 &114733409532478982
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -294,6 +299,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _serverOnly: 0
-  _localPlayerAuthority: 0
+  _localPlayerAuthority: 1
   _assetGUID: 3d4ccdbf287c1dc4e910d17a2f69307f
   _sceneID: 0

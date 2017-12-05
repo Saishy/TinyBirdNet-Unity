@@ -91,7 +91,7 @@ namespace TinyBirdNet.Messaging {
 		public const ushort Rpc = 2;
 		public const ushort ObjectSpawnMessage = 3;
 		public const ushort Owner = 4; //Not used
-		public const ushort Command = 5; //Maybe change this to be the Everyone call from a client for the server to pass along
+		public const ushort SpawnPlayer = 5;
 		public const ushort Input = 6;
 		public const ushort SyncEvent = 7;
 		public const ushort StateUpdate = 8;
@@ -145,7 +145,7 @@ namespace TinyBirdNet.Messaging {
 			"ObjectDestroy",
 			"Rpc",
 			"ObjectSpawnMessage",
-			"Owner",
+			"SpawnPlayer",
 			"Command",
 			"LocalPlayerTransform",
 			"SyncEvent",
@@ -430,7 +430,9 @@ namespace TinyBirdNet.Messaging {
 			writer.Put(position.x);
 			writer.Put(position.y);
 			writer.Put(position.z);
-			writer.Put(initialState);
+			if (initialState != null) {
+				writer.Put(initialState);
+			}
 		}
 	}
 
@@ -450,7 +452,9 @@ namespace TinyBirdNet.Messaging {
 		public void Serialize(NetDataWriter writer) {
 			writer.Put(networkID);
 			writer.Put(rpcMethodIndex);
-			writer.Put(parameters);
+			if (parameters != null) {
+				writer.Put(parameters);
+			}
 		}
 	}
 
@@ -532,7 +536,9 @@ namespace TinyBirdNet.Messaging {
 			writer.Put(position.x);
 			writer.Put(position.y);
 			writer.Put(position.z);
-			writer.Put(initialState);
+			if (initialState != null) {
+				writer.Put(initialState);
+			}
 		}
 	}
 
@@ -592,7 +598,10 @@ namespace TinyBirdNet.Messaging {
 
 		public void Serialize(NetDataWriter writer) {
 			writer.Put(playerControllerId);
-			writer.Put(msgData);
+
+			if (msgData != null) {
+				writer.Put(msgData);
+			}
 		}
 	}
 
@@ -638,6 +647,9 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
+	/// <summary>
+	/// This is basically a message that gets delivered directly to the PlayerController
+	/// </summary>
 	public abstract class TinyNetInputMessage : ITinyNetMessage {
 		public short playerControllerId;
 

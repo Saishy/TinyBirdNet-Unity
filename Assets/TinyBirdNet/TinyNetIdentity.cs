@@ -33,6 +33,7 @@ namespace TinyBirdNet {
 
 		//Server shortcuts, prevents you to have to loop through all connections and objects to find owner.
 		TinyNetConnection _ConnectionToOwnerClient;
+		/**<summary>Not implemented yet</summary>*/
 		short _ownerPlayerId = -1;
 
 		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
@@ -44,7 +45,7 @@ namespace TinyBirdNet {
 		public bool hasAuthority { get { return _hasAuthority; } }
 		//public bool hasOwnership { get { return _bIsOwner;  } }
 
-		public short playerControllerId { get { return _ownerPlayerId; } }
+		//public short playerControllerId { get { return _ownerPlayerId; } }
 		public TinyNetConnection connectionToOwnerClient { get { return _ConnectionToOwnerClient; } }
 
 		public int sceneID { get { return _sceneID; } }
@@ -159,7 +160,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Used by the server to have a shortcut in the case a client owns this connection.
+		/// Not yet used. Used by the server to have a shortcut in the case a client owns this object.
 		/// </summary>
 		/// <param name="conn"></param>
 		/// <param name="newPlayerControllerId"></param>

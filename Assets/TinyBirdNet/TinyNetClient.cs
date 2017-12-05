@@ -14,6 +14,8 @@ namespace TinyBirdNet {
 
 		public override string TYPE { get { return "CLIENT"; } }
 
+		public static System.Action OnClientReadyEvent;
+
 		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
 
 		bool _isSpawnFinished;
@@ -31,6 +33,8 @@ namespace TinyBirdNet {
 
 		protected override void RegisterMessageHandlers() {
 			base.RegisterMessageHandlers();
+
+			TinyNetGameManager.instance.RegisterMessageHandlersClient();
 
 			// A local client is basically the client in a listen server.
 			if (TinyNetGameManager.instance.isListenServer) {
@@ -99,12 +103,12 @@ namespace TinyBirdNet {
 
 		//============ Object Networking ====================//
 
-		public void SendRPCToServer(byte[] stream, int rpcMethodIndex, ITinyNetObject iObj) {
+		public void SendRPCToServer(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.parameters = stream;
+			msg.parameters = stream.Data;
 
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);
 		}
@@ -391,6 +395,10 @@ namespace TinyBirdNet {
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);
 
 			connToHost.isReady = true;
+
+			if (OnClientReadyEvent != null) {
+				OnClientReadyEvent();
+			}
 
 			return true;
 		}
