@@ -15,7 +15,12 @@ namespace TinyBirdNet {
 
 		public short playerControllerId = -1;
 
-		/**<summary>Holds a reference to the client connection on the server, and to the server connection on the client.</summary>*/
+		///<summary>
+		/// Holds a reference to the client connection on the server, and to the server connection on the client.
+		///<para>
+		/// In a Listen Server this will only hold a reference to the client connection.
+		///</para>
+		///</summary>
 		protected TinyNetConnection conn;
 
 		public virtual TinyNetConnection Conn { get { return conn; } set { conn = value; } }
@@ -32,8 +37,9 @@ namespace TinyBirdNet {
 			this.playerControllerId = playerControllerId;
 		}*/
 
-		public TinyNetPlayerController(short playerControllerId) : this() {
+		public TinyNetPlayerController(short playerControllerId, TinyNetConnection nConn) : this() {
 			this.playerControllerId = playerControllerId;
+			this.conn = nConn;
 		}
 
 		public virtual void GetInputMessage(TinyNetMessageReader netMsg) {

@@ -16,6 +16,8 @@ namespace TinyBirdNet {
 	[AddComponentMenu("TinyBirdNet/TinyNetIdentity")]
 	public class TinyNetIdentity : MonoBehaviour, ITinyNetInstanceID {
 
+		protected bool bStartClientTwiceTest = false;
+
 		public int NetworkID { get; protected set; }
 
 		[SerializeField] bool _serverOnly;
@@ -173,7 +175,7 @@ namespace TinyBirdNet {
 			CacheTinyNetObjects();
 
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				TinyNetScene.AddTinyNetObjectToList(_tinyNetObjects[i]);
+				_tinyNetObjects[i].OnNetworkCreate();
 			}
 		}
 
@@ -183,6 +185,7 @@ namespace TinyBirdNet {
 		public virtual void OnNetworkDestroy() {
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
 				TinyNetScene.RemoveTinyNetObjectFromList(_tinyNetObjects[i]);
+				_tinyNetObjects[i].OnNetworkDestroy();
 			}
 		}
 
@@ -202,6 +205,10 @@ namespace TinyBirdNet {
 			// If the instance/net ID is invalid here then this is an object instantiated from a prefab and the server should assign a valid ID
 			if (NetworkID == 0) {
 				NetworkID = TinyNetGameManager.instance.NextNetworkID;
+
+				for (int i = 0; i < _tinyNetObjects.Length; i++) {
+					_tinyNetObjects[i].ReceiveNetworkID(TinyNetGameManager.instance.NextNetworkID);
+				}
 			} else {
 				if (allowNonZeroNetId) {
 					//allowed
@@ -212,6 +219,7 @@ namespace TinyBirdNet {
 			}
 
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
+				TinyNetScene.AddTinyNetObjectToList(_tinyNetObjects[i]);
 				_tinyNetObjects[i].OnStartServer();
 			}
 
@@ -226,7 +234,16 @@ namespace TinyBirdNet {
 		/// Called when an object is spawned on the client.
 		/// </summary>
 		public void OnStartClient() {
+			if (bStartClientTwiceTest) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("OnStartClient CALLED TWICE FOR: " + gameObject + " netId:" + NetworkID + " localPlayerAuthority: " + _localPlayerAuthority); }
+			} else {
+				bStartClientTwiceTest = true;
+			}
+
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
+				if (!isServer) {
+					TinyNetScene.AddTinyNetObjectToList(_tinyNetObjects[i]);
+				}
 				_tinyNetObjects[i].OnStartClient();
 			}
 

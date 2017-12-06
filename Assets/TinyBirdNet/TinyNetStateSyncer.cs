@@ -31,11 +31,22 @@ namespace TinyBirdNet {
 				syncVarProps[type].Add(prop);
 			} else {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetSyncVar used on property without get and/or set: " + prop.Name); }
+				return;
 			}
 		}
 
 		public static void AddRPCMethodNameToType(string rpcName, RPCTarget nTarget, RPCCallers nCaller, Type type) {
 			rpcMethods[type].Add(new RPCMethodInfo(rpcName, nTarget, nCaller));
+		}
+
+		public static PropertyInfo GetPropertyInfoFromType(Type type, string propName) {
+			for (int i = 0; i < syncVarProps[type].Count; i++) {
+				if (syncVarProps[type][i].Name == propName) {
+					return syncVarProps[type][i];
+				}
+			}
+
+			return null;
 		}
 
 		public static void OutPropertyNamesFromType(Type type, out string[] propNames) {
@@ -63,7 +74,7 @@ namespace TinyBirdNet {
 		}
 
 		public static int GetRPCMethodIndexFromType(Type type, string rpcName) {
-			for (int i = 0; i < rpcMethods.Count; i++) {
+			for (int i = 0; i < rpcMethods[type].Count; i++) {
 				if (rpcMethods[type][i].name == rpcName) {
 					return i;
 				}
@@ -73,7 +84,7 @@ namespace TinyBirdNet {
 		}
 
 		public static int GetRPCMethodInfoFromType(Type type, string rpcName, ref RPCMethodInfo rpcMethodInfo) {
-			for (int i = 0; i < rpcMethods.Count; i++) {
+			for (int i = 0; i < rpcMethods[type].Count; i++) {
 				if (rpcMethods[type][i].name == rpcName) {
 					rpcMethodInfo = rpcMethods[type][i];
 					return i;

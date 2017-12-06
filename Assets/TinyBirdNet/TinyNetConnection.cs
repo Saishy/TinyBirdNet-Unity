@@ -14,7 +14,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// If using this, always Reset before use!
 		/// </summary>
-		protected static NetDataWriter recycleWriter;
+		protected static NetDataWriter recycleWriter = new NetDataWriter();
 
 		protected NetPeer _peer;
 
@@ -26,7 +26,6 @@ namespace TinyBirdNet {
 
 		/// <summary>
 		/// This is a list of objects the connection is able to observe, aka, are spawned and synced.
-		/// <para>At a client this list would just be a copy of the one in TinyNetScene so it is always empty.</para>
 		/// </summary>
 		protected HashSet<TinyNetIdentity> _observingNetObjects = new HashSet<TinyNetIdentity>();
 		/**<summary>A hash containing the networkIds of objects owned by this connection.</summary>*/
@@ -128,7 +127,6 @@ namespace TinyBirdNet {
 			}
 
 			_playerControllers[player.playerControllerId] = player;
-			_playerControllers[player.playerControllerId].Conn = this;
 		}
 
 		public void RemovePlayerController(short playerControllerId) {
@@ -165,11 +163,11 @@ namespace TinyBirdNet {
 		}
 
 		// Get player controller from connection's list
-		public TinyNetPlayerController GetPlayerController(short playerControllerId) {
+		public T GetPlayerController<T>(short playerControllerId) where T : TinyNetPlayerController {
 			if (playerControllers.Count > 0) {
 				for (int i = 0; i < playerControllers.Count; i++) {
 					if (playerControllers[i].IsValid && playerControllers[i].playerControllerId == playerControllerId) {
-						return playerControllers[i];
+						return (T)playerControllers[i];
 					}
 				}
 

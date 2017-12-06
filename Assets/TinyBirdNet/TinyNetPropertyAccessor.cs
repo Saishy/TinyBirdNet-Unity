@@ -1,31 +1,39 @@
 ﻿using FastMember;
 using System;
+using System.Collections.Generic;
 
 namespace TinyBirdNet {
 
 	public class TinyNetPropertyAccessor<T> {
 
-		TypeAccessor accessor;
+		static Dictionary<Type, TypeAccessor> accessor = new Dictionary<Type, TypeAccessor>();
+
 		string propName;
 		T previousValue;
+		Type objType;
 
-		public TinyNetPropertyAccessor(string newPropName) {
-			accessor = TypeAccessor.Create(typeof(T), true);
+		public TinyNetPropertyAccessor(object obj, string newPropName) {
+			objType = obj.GetType();
+
+			if (!accessor.ContainsKey(objType)) {
+				accessor[objType] = TypeAccessor.Create(objType, true);
+			}
+			
 			propName = newPropName;
 		}
 
 		public T Get(object obj) {
-			return (T)accessor[obj, propName];
+			return (T)accessor[objType][obj, propName];
 		}
 
 		public void Set(object obj, T value) {
-			accessor[obj, propName] = value;
+			accessor[objType][obj, propName] = value;
 		}
 
 		public bool CheckIfChangedAndUpdate(object obj) {
-			T current = (T)accessor[obj, propName];
+			T current = (T)accessor[objType][obj, propName];
 
-			if (current.Equals(previousValue)) {
+			if ((current == null && previousValue == null) || current.Equals(previousValue)) {
 				previousValue = current;
 				return true;
 			}
@@ -34,11 +42,11 @@ namespace TinyBirdNet {
 		}
 
 		public bool WasChanged(object obj) {
-			return accessor[obj, propName].Equals(previousValue);
+			return accessor[objType][obj, propName].Equals(previousValue);
 		}
 
 		public void UpdateValue(object obj) {
-			previousValue = (T)accessor[obj, propName];
+			previousValue = (T)accessor[objType][obj, propName];
 		}
 	}
 }

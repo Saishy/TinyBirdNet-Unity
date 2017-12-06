@@ -42,6 +42,7 @@ namespace TinyBirdNet {
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnMessage, OnLocalClientObjectSpawn);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectSpawnScene, OnLocalClientObjectSpawnScene);
 				RegisterHandlerSafe(TinyNetMsgType.ObjectHide, OnLocalClientObjectHide);
+				RegisterHandlerSafe(TinyNetMsgType.AddPlayer, OnLocalAddPlayerMessage);
 			} else {
 				// LocalClient shares the sim/scene with the server, no need for these events
 				RegisterHandlerSafe(TinyNetMsgType.ObjectDestroy, OnObjectDestroy);
@@ -146,6 +147,7 @@ namespace TinyBirdNet {
 
 			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectSpawnMessage.networkID];
 			if (localObject != null) {
+				localObject.OnStartClient();
 				localObject.OnSetLocalVisibility(true);
 			}
 		}
@@ -273,6 +275,8 @@ namespace TinyBirdNet {
 
 			// when 1, means we have received every single spawn message!
 			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
+				tinyNetId.OnNetworkCreate();
+
 				if (tinyNetId.isClient) {
 					tinyNetId.OnStartClient();
 				}
@@ -334,6 +338,7 @@ namespace TinyBirdNet {
 
 			// If the object was spawned as part of the initial replication (s_TineNetObjectSpawnFinishedMessage.state == 0) it will have it's OnStartClient called by OnObjectSpawnFinished.
 			if (_isSpawnFinished) {
+				tinyNetId.OnNetworkCreate();
 				tinyNetId.OnStartClient();
 			}
 		}
@@ -454,6 +459,21 @@ namespace TinyBirdNet {
 		}
 
 		//============ Players Methods ======================//
+
+		protected override void CreatePlayerAndAdd(TinyNetConnection conn, int playerControllerId) {
+			if (TinyNetGameManager.instance.isListenServer) {
+				conn.SetPlayerController<TinyNetPlayerController>(TinyNetServer.instance.GetPlayerControllerFromConnection(connToHost.ConnectId, (short)playerControllerId));
+				return;
+			}
+
+			base.CreatePlayerAndAdd(conn, playerControllerId);
+		}
+
+		protected virtual void OnLocalAddPlayerMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetAddPlayerMessage);
+
+			CreatePlayerAndAdd(netMsg.tinyNetConn, s_TinyNetAddPlayerMessage.playerControllerId);
+		}
 
 		protected virtual void OnAddPlayerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetAddPlayerMessage);

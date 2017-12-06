@@ -8,7 +8,7 @@ public class ExamplePawn : TinyNetBehaviour {
 
 	string _playerName;
 	[TinyNetSyncVar]
-	string PlayerName { get { return _playerName; } set { _playerName = value; } }
+	public string PlayerName { get { return _playerName; } set { _playerName = value; } }
 
 	Vector3 _networkPosition;
 
@@ -24,6 +24,8 @@ public class ExamplePawn : TinyNetBehaviour {
 
 	public Transform bulletSpawnPosition;
 
+	public TextMesh playerText;
+
 	public float movementSpeed;
 
 	public float shootCooldown;
@@ -36,15 +38,23 @@ public class ExamplePawn : TinyNetBehaviour {
 	protected float timeForNextShoot = 0f;
 	protected float movespeedPow; //Cache used for calculations
 
-	protected byte currentDir;
+	protected byte currentDir = 1;
+
+	protected Transform cameraTransform;
 
 	private void Awake() {
-		xPos = transform.position.x;
-		zPos = transform.position.z;
-
 		rbody = GetComponent<Rigidbody>();
 
 		movespeedPow = movementSpeed * movementSpeed;
+	}
+
+	private void Start() {
+		xPos = transform.position.x;
+		zPos = transform.position.z;
+	}
+
+	public override void OnNetworkCreate() {
+		base.OnNetworkCreate();
 
 		RegisterRPCDelegate(ServerShootReceive, "ServerShoot");
 	}
@@ -52,7 +62,18 @@ public class ExamplePawn : TinyNetBehaviour {
 	public override void OnStartAuthority() {
 		base.OnStartAuthority();
 
-		controller = TinyNetClient.instance.connToHost.GetPlayerController(ownerPlayerControllerId) as ExamplePlayerController;
+		controller = TinyNetClient.instance.connToHost.GetPlayerController<ExamplePlayerController>(ownerPlayerControllerId);
+		controller.GetPawn(this);
+
+		timeForNextShoot = Time.time + 0.1f;
+
+		cameraTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+	}
+
+	public override void OnStartClient() {
+		base.OnStartClient();
+
+		playerText.text = PlayerName;
 	}
 
 	public override void OnNetworkDestroy() {
@@ -73,6 +94,8 @@ public class ExamplePawn : TinyNetBehaviour {
 			}
 
 			transform.position = result;
+		} else {
+			cameraTransform.position = new Vector3(transform.position.x, 10.0f, transform.position.z - 6f);
 		}
 	}
 
@@ -84,30 +107,36 @@ public class ExamplePawn : TinyNetBehaviour {
 			case 1:
 				currentDir = 1;
 				rbody.MovePosition(rbody.position + Vector3.forward * movementSpeed * Time.fixedDeltaTime);
-				return;
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 0f));
+				break;
 			//Right
 			case 2:
 				currentDir = 2;
 				rbody.MovePosition(rbody.position +  Vector3.right * movementSpeed * Time.fixedDeltaTime);
-				return;
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 90f, 0f));
+				break;
 			//Down
 			case 3:
 				currentDir = 3;
 				rbody.MovePosition(rbody.position + Vector3.back * movementSpeed * Time.fixedDeltaTime);
-				return;
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
+				break;
 			//Left
 			case 4:
 				currentDir = 4;
 				rbody.MovePosition(rbody.position + Vector3.left * movementSpeed * Time.fixedDeltaTime);
-				return;
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 270f, 0f));
+				break;
 		}
+
+		playerText.transform.rotation = Quaternion.identity;
 	}
 
 	public void Shoot() {
-		if (Time.time <= timeForNextShoot) {
+		if (timeForNextShoot <= Time.time) {
 			timeForNextShoot = Time.time + shootCooldown;
 
-			ServerShoot(bulletSpawnPosition.position.x, bulletSpawnPosition.position.z);
+			ServerShoot(bulletSpawnPosition.position.x, bulletSpawnPosition.position.z, currentDir);
 		}
 	}
 
@@ -117,22 +146,41 @@ public class ExamplePawn : TinyNetBehaviour {
 	}
 
 	[TinyNetRPC(RPCTarget.Server, RPCCallers.ClientOwner)]
-	void ServerShoot(float xPos, float zPos) {
+	void ServerShoot(float xPos, float zPos, byte dir) {
 		if (!isServer) {
 			rpcRecycleWriter.Reset();
 			rpcRecycleWriter.Put(xPos);
 			rpcRecycleWriter.Put(zPos);
+			rpcRecycleWriter.Put(dir);
 
 			SendRPC(rpcRecycleWriter, "ServerShoot");
 			return;
 		}
 
-		ExampleBullet bullet = Instantiate(bulletPrefab, bulletSpawnPosition).GetComponent<ExampleBullet>();
-		bullet.ownerNetworkId = NetworkID;
+		ExampleBullet bullet = Instantiate(bulletPrefab, bulletSpawnPosition.position, transform.rotation).GetComponent<ExampleBullet>();
+		bullet.ownerNetworkId = NetIdentity.NetworkID;
+		switch (dir) {
+			case 1:
+				bullet.transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 0f));
+				break;
+			//Right
+			case 2:
+				bullet.transform.rotation = Quaternion.Euler(new Vector3(0f, 90f, 0f));
+				break;
+			//Down
+			case 3:
+				bullet.transform.rotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
+				break;
+			//Left
+			case 4:
+				bullet.transform.rotation = Quaternion.Euler(new Vector3(0f, 270f, 0f));
+				break;
+		}
+
 		TinyNetServer.instance.SpawnObject(bullet.gameObject);
 	}
 
 	void ServerShootReceive(NetDataReader reader) {
-		ServerShoot(reader.GetFloat(), reader.GetFloat());
+		ServerShoot(reader.GetFloat(), reader.GetFloat(), reader.GetByte());
 	}
 }

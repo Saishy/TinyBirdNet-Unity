@@ -20,6 +20,8 @@ public class ExamplePlayerController : TinyNetPlayerController {
 
 	public ExamplePawn Pawn { get { return pawn; } }
 
+	public string userName;
+
 	protected float timeForSpawn;
 
 	protected bool bAskedForPawn = false;
@@ -33,7 +35,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		}*/
 	}
 
-	public ExamplePlayerController(short playerControllerId) : base(playerControllerId) {
+	public ExamplePlayerController(short playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
 		//Hacky way, but I want a coroutine...
 		//if (isaclientandnotaserver)
 		fixedUpdateCoroutine = TinyNetGameManager.instance.StartCoroutine(FixedUpdateLoop());
@@ -42,11 +44,11 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	}
 
 	//Finalizer
-	~ExamplePlayerController() {
+	/*~ExamplePlayerController() {
 		if (fixedUpdateCoroutine != null) {
 			TinyNetGameManager.instance.StopCoroutine(fixedUpdateCoroutine);
 		}
-	}
+	}*/
 
 	public static byte VectorToDirection(Vector2 axis) {
 		int type = ((Mathf.RoundToInt(Mathf.Atan2(axis.y, axis.x) / (2f * Mathf.PI / 4f))) + 4) % 4;
@@ -113,7 +115,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 			spawnPawnMsg.msgType = TinyNetMsgType.SpawnPlayer;
 			spawnPawnMsg.value = playerControllerId;
 
-			conn.Send(spawnPawnMsg, LiteNetLib.SendOptions.ReliableOrdered);
+			TinyNetClient.instance.SendMessageByChannelToHost(spawnPawnMsg, LiteNetLib.SendOptions.ReliableOrdered);
 
 			bAskedForPawn = true;
 		}

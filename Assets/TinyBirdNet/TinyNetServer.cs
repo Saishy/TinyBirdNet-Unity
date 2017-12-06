@@ -117,7 +117,11 @@ namespace TinyBirdNet {
 				return;
 			}
 
+			objTinyNetIdentity.OnNetworkCreate();
+
 			objTinyNetIdentity.OnStartServer(false);
+
+			AddTinyNetIdentityToList(objTinyNetIdentity);
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objTinyNetIdentity.NetworkID + " asset GUID " + objTinyNetIdentity.assetGUID); }
 
@@ -464,6 +468,10 @@ namespace TinyBirdNet {
 			// Tell the origin client to remove them too!
 			s_TinyNetRemovePlayerMessage.playerControllerId = s_TinyNetRequestRemovePlayerMessage.playerControllerId;
 			SendMessageByChannelToTargetConnection(s_TinyNetRemovePlayerMessage, SendOptions.ReliableOrdered, netMsg.tinyNetConn);
+		}
+
+		public TinyNetPlayerController GetPlayerControllerFromConnection(long connId, int playerControllerId) {
+			return GetTinyNetConnection(connId).GetPlayerController<TinyNetPlayerController>((short)playerControllerId);
 		}
 	}
 }

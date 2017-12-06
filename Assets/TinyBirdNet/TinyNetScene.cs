@@ -149,6 +149,16 @@ namespace TinyBirdNet {
 			return null;
 		}
 
+		protected TinyNetConnection GetTinyNetConnection(long connId) {
+			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
+				if (tinyNetCon.ConnectId == connId) {
+					return tinyNetCon;
+				}
+			}
+
+			return null;
+		}
+
 		protected TinyNetConnection GetTinyNetConnection(NetPeer peer) {
 			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
 				if (tinyNetCon.netPeer == peer) {
@@ -200,11 +210,11 @@ namespace TinyBirdNet {
 		}
 
 		public static TinyNetIdentity GetTinyNetIdentityByNetworkID(int nId) {
-			return _localIdentityObjects[nId];
+			return _localIdentityObjects.ContainsKey(nId) ? _localIdentityObjects[nId] : null;
 		}
 
 		public static ITinyNetObject GetTinyNetObjectByNetworkID(int nId) {
-			return _localNetObjects[nId];
+			return _localNetObjects.ContainsKey(nId) ? _localNetObjects[nId] : null;
 		}
 
 		//============ TinyNetMessages Networking ===========//
@@ -222,6 +232,15 @@ namespace TinyBirdNet {
 			}
 
 			return msgType;
+		}
+
+		public virtual void SendMessageByChannelToHost(ITinyNetMessage msg, SendOptions sendOptions) {
+			recycleWriter.Reset();
+
+			recycleWriter.Put(msg.msgType);
+			msg.Serialize(recycleWriter);
+
+			connToHost.Send(recycleWriter, sendOptions);
 		}
 
 		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, SendOptions sendOptions, TinyNetConnection tinyNetConn) {
@@ -343,7 +362,7 @@ namespace TinyBirdNet {
 				return;
 			}
 			// If no action is set, we just use default implementation
-			conn.SetPlayerController<TinyNetPlayerController>(new TinyNetPlayerController((short)playerControllerId));
+			conn.SetPlayerController<TinyNetPlayerController>(new TinyNetPlayerController((short)playerControllerId, conn));
 		}
 	}
 }

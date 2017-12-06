@@ -28,7 +28,7 @@ namespace TinyBirdNet {
 		private Dictionary<string, TinyNetPropertyAccessor<bool>> boolAccessor = new Dictionary<string, TinyNetPropertyAccessor<bool>>();
 		private Dictionary<string, TinyNetPropertyAccessor<string>> stringAccessor = new Dictionary<string, TinyNetPropertyAccessor<string>>();
 
-		private List<RPCDelegate> rpcHandlers;
+		private RPCDelegate[] rpcHandlers;
 
 		private string[] propertiesName;
 		private Type[] propertiesTypes;
@@ -69,10 +69,11 @@ namespace TinyBirdNet {
 
 		protected void RegisterRPCDelegate(RPCDelegate rpcDel, string methodName) {
 			if (rpcHandlers == null) {
-				rpcHandlers = new List<RPCDelegate>();
+				rpcHandlers = new RPCDelegate[TinyNetStateSyncer.GetNumberOfRPCMethods(GetType())];
 			}
 
-			rpcHandlers[TinyNetStateSyncer.GetRPCMethodIndexFromType(GetType(), methodName)] = rpcDel;
+			int index = TinyNetStateSyncer.GetRPCMethodIndexFromType(GetType(), methodName);
+			rpcHandlers[index] = new RPCDelegate(rpcDel);
 		}
 
 		/*protected void CreateDirtyFlag() {
@@ -100,29 +101,29 @@ namespace TinyBirdNet {
 				type = propertiesTypes[i];
 
 				if (type == typeof(byte)) {
-					byteAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<byte>(propertiesName[i]));
+					byteAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<byte>(this, propertiesName[i]));
 				} else if (type == typeof(sbyte)) {
-					sbyteAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<sbyte>(propertiesName[i]));
+					sbyteAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<sbyte>(this, propertiesName[i]));
 				} else if (type == typeof(short)) {
-					shortAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<short>(propertiesName[i]));
+					shortAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<short>(this, propertiesName[i]));
 				} else if (type == typeof(ushort)) {
-					ushortAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<ushort>(propertiesName[i]));
+					ushortAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<ushort>(this, propertiesName[i]));
 				} else if (type == typeof(int)) {
-					intAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<int>(propertiesName[i]));
+					intAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<int>(this, propertiesName[i]));
 				} else if (type == typeof(uint)) {
-					uintAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<uint>(propertiesName[i]));
+					uintAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<uint>(this, propertiesName[i]));
 				} else if (type == typeof(long)) {
-					longAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<long>(propertiesName[i]));
+					longAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<long>(this, propertiesName[i]));
 				} else if (type == typeof(ulong)) {
-					ulongAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<ulong>(propertiesName[i]));
+					ulongAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<ulong>(this, propertiesName[i]));
 				} else if (type == typeof(float)) {
-					floatAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<float>(propertiesName[i]));
+					floatAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<float>(this, propertiesName[i]));
 				} else if (type == typeof(double)) {
-					doubleAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<double>(propertiesName[i]));
+					doubleAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<double>(this, propertiesName[i]));
 				} else if (type == typeof(bool)) {
-					boolAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<bool>(propertiesName[i]));
+					boolAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<bool>(this, propertiesName[i]));
 				} else if (type == typeof(string)) {
-					stringAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<string>(propertiesName[i]));
+					stringAccessor.Add(propertiesName[i], new TinyNetPropertyAccessor<string>(this, propertiesName[i]));
 				}
 			}
 		}
@@ -191,6 +192,10 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
+			if (firstStateUpdate) {
+				writer.Put(NetworkID);
+			}
+
 			writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
 
 			Type type;
@@ -232,6 +237,10 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
+			if (firstStateUpdate) {
+				NetworkID = reader.GetInt();
+			}
+
 			TinyNetStateSyncer.IntToDirtyFlag(reader.GetInt(), DirtyFlag);
 
 			Type type;
