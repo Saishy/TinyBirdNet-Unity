@@ -294,6 +294,12 @@ namespace TinyBirdNet {
 			clientManager.ClientConnectTo(hostAddress, hostPort);
 		}
 
+		//============ Server Methods =======================//
+
+		public void OnClientConnectToServer(TinyNetConnection conn) {
+
+		}
+
 		//============ Scenes Methods =======================//
 
 		/// <summary>

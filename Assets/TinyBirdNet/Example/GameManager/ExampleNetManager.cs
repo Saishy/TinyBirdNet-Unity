@@ -21,7 +21,9 @@ class ExampleNetManager : TinyNetGameManager {
 	public override void ClientConnectTo(string hostAddress, int hostPort) {
 		base.ClientConnectTo(hostAddress, hostPort);
 
-		ServerChangeScene("MainScene");
+		if (serverManager != null && serverManager.isRunning) {
+			ServerChangeScene("MainScene");
+		}
 	}
 
 	public override void RegisterMessageHandlersServer() {

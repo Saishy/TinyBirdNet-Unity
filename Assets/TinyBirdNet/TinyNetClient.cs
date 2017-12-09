@@ -98,6 +98,16 @@ namespace TinyBirdNet {
 			return tinyConn;
 		}
 
+		//============ TinyNetEvents ========================//
+
+		protected override void OnConnectionCreated(TinyNetConnection nConn) {
+			base.OnConnectionCreated(nConn);
+
+			TinyNetEmptyMessage msg = new TinyNetEmptyMessage();
+			msg.msgType = TinyNetMsgType.Connect;
+			nConn.Send(msg, SendOptions.ReliableOrdered);
+		}
+
 		//============ Static Methods =======================//
 
 
@@ -214,10 +224,8 @@ namespace TinyBirdNet {
 				}
 
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, obj);
-			}
-
-			// lookup registered factory for type:
-			else if (TinyNetGameManager.instance.GetSpawnHandler(s_TinyNetObjectSpawnMessage.assetIndex, out handler)) {
+			} else if (TinyNetGameManager.instance.GetSpawnHandler(s_TinyNetObjectSpawnMessage.assetIndex, out handler)) {
+				// lookup registered factory for type:
 				GameObject obj = handler(s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.assetIndex);
 				if (obj == null) {
 					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Client spawn handler for " + s_TinyNetObjectSpawnMessage.assetIndex + " returned null"); }

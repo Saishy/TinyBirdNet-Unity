@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 using TinyBirdUtils;
-using UnityEditor;
 using LiteNetLib.Utils;
 using TinyBirdNet.Messaging;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace TinyBirdNet {
 
@@ -154,7 +157,7 @@ namespace TinyBirdNet {
 		}
 #endif
 		public void SetDynamicAssetGUID(string newAssetGUID) {
-			if (!IsValidAssetGUI(_assetGUID) || _assetGUID.Equals(newAssetGUID)) {
+			if (_assetGUID == null || _assetGUID == string.Empty || /*!IsValidAssetGUI(_assetGUID) || */_assetGUID.Equals(newAssetGUID)) {
 				_assetGUID = newAssetGUID;
 			} else {
 				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("SetDynamicAssetId object already has an assetId <" + _assetGUID + ">"); }

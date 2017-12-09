@@ -24,6 +24,7 @@ namespace TinyBirdNet {
 
 			TinyNetGameManager.instance.RegisterMessageHandlersServer();
 
+			RegisterHandlerSafe(TinyNetMsgType.Connect, OnConnectMessage);
 			RegisterHandlerSafe(TinyNetMsgType.Ready, OnClientReadyMessage);
 			RegisterHandlerSafe(TinyNetMsgType.Input, OnPlayerInputMessage);
 			//RegisterHandlerSafe(TinyNetMsgType.LocalPlayerTransform, NetworkTransform.HandleTransform);
@@ -67,6 +68,20 @@ namespace TinyBirdNet {
 			tinyNetConns.Add(tinyConn);
 
 			return tinyConn;
+		}
+
+		//============ TinyNetEvents ========================//
+
+		protected virtual void OnConnectMessage(TinyNetMessageReader netMsg) {
+			if (TinyNetGameManager.instance.isClient && TinyNetClient.instance.connToHost.ConnectId == netMsg.tinyNetConn.ConnectId) {
+				return;
+			}
+
+			if (TinyNetGameManager.networkSceneName != null && TinyNetGameManager.networkSceneName != "") {
+				TinyNetStringMessage msg = new TinyNetStringMessage(TinyNetGameManager.networkSceneName);
+				msg.msgType = TinyNetMsgType.Scene;
+				netMsg.tinyNetConn.Send(msg, SendOptions.ReliableOrdered);
+			}
 		}
 
 		//============ Static Methods =======================//

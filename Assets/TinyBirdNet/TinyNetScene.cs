@@ -169,6 +169,17 @@ namespace TinyBirdNet {
 			return null;
 		}
 
+		protected virtual bool RemoveTinyNetConnection(TinyNetConnection nConn) {
+			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
+				if (tinyNetCon == nConn) {
+					tinyNetConns.Remove(tinyNetCon);
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		protected virtual bool RemoveTinyNetConnection(NetPeer peer) {
 			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
 				if (tinyNetCon.netPeer == peer) {
@@ -296,23 +307,34 @@ namespace TinyBirdNet {
 		public virtual void OnPeerConnected(NetPeer peer) {
 			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId);
 
-			CreateTinyNetConnection(peer);
+			TinyNetConnection nConn = CreateTinyNetConnection(peer);
+
+			OnConnectionCreated(nConn);
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
 			TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + " because " + disconnectInfo.Reason);
 
-			RemoveTinyNetConnection(peer);
+			TinyNetConnection nConn = GetTinyNetConnection(peer);
+			OnDisconnect(nConn);
+
+			RemoveTinyNetConnection(nConn);
 		}
 
 		public virtual void OnNetworkError(NetEndPoint endPoint, int socketErrorCode) {
 			TinyLogger.Log("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint);
 		}
 
-		public void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
+		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
 			TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint);
 		}
 
+		/// <summary>
+		/// Saishy: I literally have no idea what this is.
+		/// </summary>
+		/// <param name="remoteEndPoint"></param>
+		/// <param name="reader"></param>
+		/// <param name="messageType"></param>
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
 			TinyLogger.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint);
 
@@ -329,11 +351,25 @@ namespace TinyBirdNet {
 			TinyLogger.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
 		}*/
 
-		//============ Network Events =======================//
-
 		protected virtual void OnDiscoveryRequestReceived(NetEndPoint remoteEndPoint, NetDataReader reader) {
 			TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response");
 			_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
+		}
+
+		//============ TinyNetEvents ========================//
+
+		/// <summary>
+		/// Called after a peer has connected and a TinyNetConnection was created for it.
+		/// </summary>
+		/// <param name="nConn">The connection created.</param>
+		protected virtual void OnConnectionCreated(TinyNetConnection nConn) {
+		}
+
+		/// <summary>
+		/// Called after a peer has been disconnected but before the TinyNetConnection has been removed from the list.
+		/// </summary>
+		/// <param name="nConn">The connection that disconnected.</param>
+		protected virtual void OnDisconnect(TinyNetConnection nConn) {
 		}
 
 		//============ Players Methods ======================//
