@@ -121,7 +121,7 @@ namespace TinyBirdNet {
 				}
 			}
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("binary dirtyflag: " + Convert.ToString(value,2)); }
+			//if (TinyNetLogLevel.logDev) { TinyLogger.Log("binary dirtyflag: " + Convert.ToString(value,2)); }
 
 			return value;
 		}

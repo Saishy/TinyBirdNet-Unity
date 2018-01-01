@@ -235,12 +235,12 @@ namespace LiteNetLib
 
                 if (NetDebug.Logger == null)
                 {
-#if UNITY_2017_1_OR_NEWER
-                    UnityEngine.Debug.LogFormat(str, args);
+#if UNITY_5_6_OR_NEWER
+                    UnityEngine.Debug.Log(string.Format(str, args));
 #elif WINRT
                     Debug.WriteLine(str, args);
 #else
-                    Console.ForegroundColor = color;
+					Console.ForegroundColor = color;
                     Console.WriteLine(str, args);
                     Console.ForegroundColor = ConsoleColor.Gray;
 #endif

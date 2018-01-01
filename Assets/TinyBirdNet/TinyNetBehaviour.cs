@@ -352,6 +352,9 @@ namespace TinyBirdNet {
 			return false;
 		}*/
 
+		/// <summary>
+		/// Remember that this is called first and before variables are synced.
+		/// </summary>
 		public virtual void OnNetworkCreate() {
 			TinyNetStateSyncer.OutPropertyNamesFromType(GetType(), out propertiesName);
 			TinyNetStateSyncer.OutPropertyTypesFromType(GetType(), out propertiesTypes);

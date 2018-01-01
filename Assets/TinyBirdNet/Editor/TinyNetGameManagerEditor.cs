@@ -47,8 +47,8 @@ namespace TinyBirdNet {
 
 			string[] guids = AssetDatabase.FindAssets("t:GameObject", null);
 
-			foreach (string guid in guids) {
-				GameObject gObj = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+			for (int i = 0; i < guids.Length; i++) {
+				GameObject gObj = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guids[i]));
 
 				if (gObj.GetComponent<TinyNetIdentity>() != null) {
 					result.Add(gObj);

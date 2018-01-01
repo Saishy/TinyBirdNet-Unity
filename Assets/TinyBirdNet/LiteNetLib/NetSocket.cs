@@ -29,13 +29,15 @@ namespace LiteNetLib
         static NetSocket()
         {
 #if UNITY_2017_1_OR_NEWER
-            IPv6Support = Socket.SupportsIPv6;
+			IPv6Support = Socket.OSSupportsIPv6;
+#elif UNITY_5_6_OR_NEWER
+			IPv6Support = Socket.SupportsIPv6;
 #else
-            IPv6Support = Socket.OSSupportsIPv6;
+			IPv6Support = Socket.OSSupportsIPv6;
 #endif
-        }
+		}
 
-        public NetSocket(NetManager.OnMessageReceived onMessageReceived)
+		public NetSocket(NetManager.OnMessageReceived onMessageReceived)
         {
             _onMessageReceived = onMessageReceived;
         }

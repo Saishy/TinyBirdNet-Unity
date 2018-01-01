@@ -32,7 +32,7 @@ namespace TinyBirdNet {
 		//bool IsTimeToUpdate();
 
 		/// <summary>
-		/// Always called, regardless of being a client or server. (order 0)
+		/// Always called, regardless of being a client or server. (order 0) Called before variables are synced.
 		/// </summary>
 		void OnNetworkCreate();
 
@@ -47,7 +47,7 @@ namespace TinyBirdNet {
 		void OnStartServer();
 
 		/// <summary>
-		/// Called on the client when the object is spawned. (order: 2)
+		/// Called on the client when the object is spawned. (order: 2) Called after variables are synced.
 		/// </summary>
 		void OnStartClient();
 

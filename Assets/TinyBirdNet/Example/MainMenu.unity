@@ -315,6 +315,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkEveryXFixedFrames: 20
   registeredPrefabs:
+  - {fileID: 1003412172681446, guid: 2988858db036b6a42a8832c52ac6e5a6, type: 2}
   - {fileID: 1057121294660296, guid: 3d4ccdbf287c1dc4e910d17a2f69307f, type: 2}
   prefabsGUID: []
   currentLogFilter: 0
@@ -343,7 +344,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1148536498}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 244, z: 0}
+  m_LocalPosition: {x: 0, y: 213, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1998987615}
@@ -644,7 +645,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1998987611}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 513, y: 304, z: 0}
+  m_LocalPosition: {x: 526.5, y: 273, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1148536499}

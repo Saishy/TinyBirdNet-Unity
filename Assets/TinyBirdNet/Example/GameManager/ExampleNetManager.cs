@@ -18,12 +18,16 @@ class ExampleNetManager : TinyNetGameManager {
 		conn.SetPlayerController<ExamplePlayerController>(new ExamplePlayerController((short)playerId, conn));
 	}
 
-	public override void ClientConnectTo(string hostAddress, int hostPort) {
-		base.ClientConnectTo(hostAddress, hostPort);
+	public override void StartServer() {
+		base.StartServer();
 
 		if (serverManager != null && serverManager.isRunning) {
 			ServerChangeScene("MainScene");
 		}
+	}
+
+	public override void ClientConnectTo(string hostAddress, int hostPort) {
+		base.ClientConnectTo(hostAddress, hostPort);
 	}
 
 	public override void RegisterMessageHandlersServer() {

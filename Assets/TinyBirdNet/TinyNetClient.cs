@@ -204,7 +204,7 @@ namespace TinyBirdNet {
 			}
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("Client spawn handler instantiating [networkID:" + s_TinyNetObjectSpawnMessage.networkID + " asset ID:" + s_TinyNetObjectSpawnMessage.assetIndex + " pos:" + s_TinyNetObjectSpawnMessage.position + "]"); }
 
-			TinyNetIdentity localTinyNetIdentity = _localIdentityObjects[s_TinyNetObjectDestroyMessage.networkID];
+			TinyNetIdentity localTinyNetIdentity = GetTinyNetIdentityByNetworkID(s_TinyNetObjectSpawnMessage.networkID);
 			if (localTinyNetIdentity != null) {
 				// this object already exists (was in the scene), just apply the update to existing object
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, null);
@@ -250,7 +250,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Client spawn scene handler instantiating [networkID: " + s_TinyNetObjectSpawnSceneMessage.networkID + " sceneId: " + s_TinyNetObjectSpawnSceneMessage.sceneId + " pos: " + s_TinyNetObjectSpawnSceneMessage.position); }
 
-			TinyNetIdentity localTinyNetIdentity = _localIdentityObjects[s_TinyNetObjectSpawnSceneMessage.networkID];
+			TinyNetIdentity localTinyNetIdentity = GetTinyNetIdentityByNetworkID(s_TinyNetObjectSpawnSceneMessage.networkID);
 			if (localTinyNetIdentity != null) {
 				// this object already exists (was in the scene)
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnSceneMessage.position, s_TinyNetObjectSpawnSceneMessage.initialState, s_TinyNetObjectSpawnSceneMessage.networkID, localTinyNetIdentity.gameObject);
@@ -283,8 +283,6 @@ namespace TinyBirdNet {
 
 			// when 1, means we have received every single spawn message!
 			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
-				tinyNetId.OnNetworkCreate();
-
 				if (tinyNetId.isClient) {
 					tinyNetId.OnStartClient();
 				}
@@ -331,6 +329,8 @@ namespace TinyBirdNet {
 
 			tinyNetId.transform.position = position;
 
+			tinyNetId.OnNetworkCreate();
+
 			if (initialState != null && initialState.Length > 0) {
 				var initialStateReader = new NetDataReader(initialState);
 				tinyNetId.DeserializeAllTinyNetObjects(initialStateReader, true);
@@ -346,7 +346,6 @@ namespace TinyBirdNet {
 
 			// If the object was spawned as part of the initial replication (s_TineNetObjectSpawnFinishedMessage.state == 0) it will have it's OnStartClient called by OnObjectSpawnFinished.
 			if (_isSpawnFinished) {
-				tinyNetId.OnNetworkCreate();
 				tinyNetId.OnStartClient();
 			}
 		}

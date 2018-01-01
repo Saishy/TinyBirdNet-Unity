@@ -34,11 +34,11 @@ namespace TinyBirdNet {
 			T current = (T)accessor[objType][obj, propName];
 
 			if ((current == null && previousValue == null) || current.Equals(previousValue)) {
-				previousValue = current;
-				return true;
+				return false;
 			}
 
-			return false;
+			previousValue = current;
+			return true;
 		}
 
 		public bool WasChanged(object obj) {

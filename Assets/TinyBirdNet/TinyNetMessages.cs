@@ -172,7 +172,7 @@ namespace TinyBirdNet.Messaging {
 			"",
 			"",
 			"", // 30
-            "", // - SystemInternalHighest
+            "", // - SystemInternalHighest 31
             "Connect", // 32,
             "Disconnect",
 			"Error",
@@ -181,7 +181,8 @@ namespace TinyBirdNet.Messaging {
 			"AddPlayer",
 			"RemovePlayer",
 			"RequestAddPlayer",
-			"Scene", //40
+			"RequestRemovePlayer", //40
+			"Scene",
 			/*"Animation", // 4
             "AnimationParams",
 			"AnimationTrigger",

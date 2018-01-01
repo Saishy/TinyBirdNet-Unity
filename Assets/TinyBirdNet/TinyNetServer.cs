@@ -63,7 +63,13 @@ namespace TinyBirdNet {
 		}
 
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
-			TinyNetConnection tinyConn = TinyNetGameManager.instance.isListenServer ? new TinyNetLocalConnectionToClient(peer) : new TinyNetConnection(peer);
+			TinyNetConnection tinyConn;
+
+			if (peer.OriginAppGUID.Equals(_netManager.ApplicationGUID)) {
+				tinyConn = new TinyNetLocalConnectionToClient(peer);
+			} else {
+				tinyConn = new TinyNetConnection(peer);
+			}
 
 			tinyNetConns.Add(tinyConn);
 
@@ -143,8 +149,8 @@ namespace TinyBirdNet {
 			//objTinyNetIdentity.RebuildObservers(true);
 			//SendSpawnMessage(objTinyNetIdentity, null);
 			// Using ShowObjectToConnection prevents the server from sending spawn messages of objects that are already spawned.
-			foreach (TinyNetConnection conn in tinyNetConns) {
-				conn.ShowObjectToConnection(objTinyNetIdentity);
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				tinyNetConns[i].ShowObjectToConnection(objTinyNetIdentity);
 			}
 		}
 
@@ -340,6 +346,8 @@ namespace TinyBirdNet {
 
 				conn.ShowObjectToConnection(tinyNetId);
 			}
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning objects for conn " + conn.ConnectId + " finished"); }
 
 			msg.state = 1; //We finished spamming the spawn messages!
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);

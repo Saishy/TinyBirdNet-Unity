@@ -77,7 +77,7 @@ namespace TinyBirdNet {
 					return false;
 				}
 
-				return _netManager.PeersCount > 0;
+				return _tinyNetConns.Count > 0;
 			}
 		}
 
@@ -150,9 +150,9 @@ namespace TinyBirdNet {
 		}
 
 		protected TinyNetConnection GetTinyNetConnection(long connId) {
-			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
-				if (tinyNetCon.ConnectId == connId) {
-					return tinyNetCon;
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i].ConnectId == connId) {
+					return tinyNetConns[i];
 				}
 			}
 
@@ -160,9 +160,9 @@ namespace TinyBirdNet {
 		}
 
 		protected TinyNetConnection GetTinyNetConnection(NetPeer peer) {
-			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
-				if (tinyNetCon.netPeer == peer) {
-					return tinyNetCon;
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i].netPeer == peer) {
+					return tinyNetConns[i];
 				}
 			}
 
@@ -170,9 +170,9 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual bool RemoveTinyNetConnection(TinyNetConnection nConn) {
-			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
-				if (tinyNetCon == nConn) {
-					tinyNetConns.Remove(tinyNetCon);
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i] == nConn) {
+					tinyNetConns.RemoveAt(i);
 					return true;
 				}
 			}
@@ -181,9 +181,9 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual bool RemoveTinyNetConnection(NetPeer peer) {
-			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
-				if (tinyNetCon.netPeer == peer) {
-					tinyNetConns.Remove(tinyNetCon);
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i].netPeer == peer) {
+					tinyNetConns.RemoveAt(i);
 					return true;
 				}
 			}
@@ -192,9 +192,9 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual bool RemoveTinyNetConnection(long connectId) {
-			foreach (TinyNetConnection tinyNetCon in tinyNetConns) {
-				if (tinyNetCon.ConnectId == connectId) {
-					tinyNetConns.Remove(tinyNetCon);
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i].ConnectId == connectId) {
+					tinyNetConns.RemoveAt(i);
 					return true;
 				}
 			}

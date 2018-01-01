@@ -79,6 +79,8 @@ namespace TinyBirdNet {
 
 			TinyNetLogLevel.currentLevel = currentLogFilter;
 
+			MakeListOfPrefabsGUID();
+
 			TinyNetReflector.GetAllSyncVarProps();
 
 			//serverManager = new TinyNetServer();
@@ -315,7 +317,7 @@ namespace TinyBirdNet {
 			if (!s_LoadingSceneAsync.isDone)
 				return;
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("CheckForSceneLoad done readyCon: " + clientManager.tinyNetConns[0]); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("CheckForSceneLoad done"); }
 
 			FinishLoadScene();
 			s_LoadingSceneAsync.allowSceneActivation = true;

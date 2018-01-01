@@ -9,20 +9,21 @@ namespace TinyBirdNet {
 		[PostProcessScene]
 		public static void OnPostProcessScene() {
 			int nextSceneId = 1;
+			TinyNetIdentity[] tnis = MonoBehaviour.FindObjectsOfType<TinyNetIdentity>();
 
-			foreach (TinyNetIdentity tinyNetId in MonoBehaviour.FindObjectsOfType<TinyNetIdentity>()) {
+			for (int i = 0; i < tnis.Length; i++) {
 				// if we had a [ConflictComponent] attribute that would be better than this check.
 				// also there is no context about which scene this is in.
-				if (tinyNetId.GetComponent<TinyNetGameManager>() != null) {
+				if (tnis[i].GetComponent<TinyNetGameManager>() != null) {
 					Debug.LogError("TinyNetGameManager has a TinyNetIdentity component. This will cause the TinyNetGameManager object to be disabled, so it is not recommended.");
 				}
 
-				if (tinyNetId.isClient || tinyNetId.isServer) {
+				if (tnis[i].isClient || tnis[i].isServer) {
 					continue;
 				}
 
-				tinyNetId.gameObject.SetActive(false);
-				tinyNetId.ForceSceneId(nextSceneId++);
+				tnis[i].gameObject.SetActive(false);
+				tnis[i].ForceSceneId(nextSceneId++);
 			}
 		}
 	}
