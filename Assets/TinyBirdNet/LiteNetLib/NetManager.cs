@@ -69,7 +69,7 @@ namespace LiteNetLib
 		/// <summary>
 		/// An unique id per application, generated when started
 		/// </summary>
-		public readonly Guid ApplicationGUID;
+		public static readonly Guid ApplicationGUID = Guid.NewGuid();
 
         private readonly NetPacketPool _netPacketPool;
 
@@ -225,7 +225,6 @@ namespace LiteNetLib
             Statistics = new NetStatistics();
 
             ConnectKey = connectKey;
-			ApplicationGUID = Guid.NewGuid();
 
 			_peers = new NetPeerCollection(maxConnections);
             _maxConnections = maxConnections;

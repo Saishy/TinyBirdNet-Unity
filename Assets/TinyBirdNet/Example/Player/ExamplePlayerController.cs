@@ -37,7 +37,12 @@ public class ExamplePlayerController : TinyNetPlayerController {
 
 	public ExamplePlayerController(short playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
 		//Hacky way, but I want a coroutine...
-		//if (isaclientandnotaserver)
+		if (TinyNetGameManager.instance.isListenServer) {
+			if (!(nConn is TinyNetLocalConnectionToClient)) {
+				return;
+			}
+		}
+
 		fixedUpdateCoroutine = TinyNetGameManager.instance.StartCoroutine(FixedUpdateLoop());
 
 		inputMessageBuffer.playerControllerId = playerControllerId;

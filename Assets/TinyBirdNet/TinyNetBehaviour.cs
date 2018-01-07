@@ -241,7 +241,11 @@ namespace TinyBirdNet {
 				NetworkID = reader.GetInt();
 			}
 
-			TinyNetStateSyncer.IntToDirtyFlag(reader.GetInt(), DirtyFlag);
+			int dFlag = reader.GetInt();
+
+			Debug.Log(TinyNetStateSyncer.Display(dFlag));
+
+			TinyNetStateSyncer.IntToDirtyFlag(dFlag, DirtyFlag);
 
 			Type type;
 			int maxSyncVar = propertiesName.Length;
@@ -360,6 +364,10 @@ namespace TinyBirdNet {
 			TinyNetStateSyncer.OutPropertyTypesFromType(GetType(), out propertiesTypes);
 
 			CreateAccessors();
+
+			if (isServer) {
+				UpdateDirtyFlag();
+			}
 		}
 
 		public virtual void OnNetworkDestroy() {

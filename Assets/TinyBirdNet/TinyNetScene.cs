@@ -35,6 +35,7 @@ namespace TinyBirdNet {
 		protected static TinyNetMessageReader recycleMessageReader = new TinyNetMessageReader();
 
 		// static message objects to avoid runtime-allocations
+		protected static TinyNetRPCMessage s_TinyNetRPCMessage = new TinyNetRPCMessage();
 		protected static TinyNetObjectHideMessage s_TinyNetObjectHideMessage = new TinyNetObjectHideMessage();
 		protected static TinyNetObjectDestroyMessage s_TinyNetObjectDestroyMessage = new TinyNetObjectDestroyMessage();
 		protected static TinyNetObjectSpawnMessage s_TinyNetObjectSpawnMessage = new TinyNetObjectSpawnMessage();
@@ -90,7 +91,7 @@ namespace TinyBirdNet {
 		}
 
 		protected virtual void RegisterMessageHandlers() {
-			//RegisterHandlerSafe(MsgType.Rpc, OnRPCMessage);
+			RegisterHandlerSafe(TinyNetMsgType.Rpc, OnRPCMessage);
 			//RegisterHandlerSafe(MsgType.SyncEvent, OnSyncEventMessage);
 			//RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
 		}
@@ -370,6 +371,22 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="nConn">The connection that disconnected.</param>
 		protected virtual void OnDisconnect(TinyNetConnection nConn) {
+		}
+
+		//============ TinyNetMessages Handlers =============//
+
+		protected virtual void OnRPCMessage(TinyNetMessageReader netMsg) {
+			netMsg.ReadMessage(s_TinyNetRPCMessage);
+
+			ITinyNetObject iObj = GetTinyNetObjectByNetworkID(s_TinyNetRPCMessage.networkID);
+
+			if (iObj == null) {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetScene::OnRPCMessage No ITinyNetObject with the HNetworkID: " + s_TinyNetRPCMessage.networkID); }
+				return;
+			}
+
+			recycleMessageReader.reader.SetSource(s_TinyNetRPCMessage.parameters);
+			iObj.InvokeRPC(s_TinyNetRPCMessage.rpcMethodIndex, recycleMessageReader.reader);
 		}
 
 		//============ Players Methods ======================//

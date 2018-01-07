@@ -88,6 +88,14 @@ namespace TinyBirdNet {
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
 			TinyNetConnection tinyConn = TinyNetGameManager.instance.isListenServer ? new TinyNetLocalConnectionToServer(peer) : new TinyNetConnection(peer);
 
+			/*TinyNetConnection tinyConn;
+
+			if (TinyNetGameManager.instance.isServer && peer.OriginAppGUID.Equals(NetManager.ApplicationGUID)) {
+				tinyConn = new TinyNetLocalConnectionToServer(peer);
+			} else {
+				tinyConn = new TinyNetConnection(peer);
+			}*/
+
 			tinyNetConns.Add(tinyConn);
 
 			//First connection is to host:

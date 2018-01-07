@@ -54,6 +54,44 @@ public class ExampleBullet : TinyNetBehaviour {
 		rbody.MovePosition(rbody.position + transform.forward * movementSpeed * Time.fixedDeltaTime);
 	}
 
+	/*public override void OnNetworkCreate() {
+		base.OnNetworkCreate();
+
+		for (int i = 0; i < 32; i++) {
+			DirtyFlag.Set(i, Random.Range(0, 2) == 0);
+			if (i == 0) {
+				DirtyFlag.Set(0, true);
+			}
+		}
+
+		int test = TinyNetStateSyncer.DirtyFlagToInt(DirtyFlag);
+		Debug.Log(TinyNetStateSyncer.Display(test));
+
+		TinyNetStateSyncer.IntToDirtyFlag(test, DirtyFlag);
+
+		string stest = "";
+		for (int i = 0; i < 32; i++) {
+			if (i != 0 && i % 8 == 0) {
+				stest += " ";
+			}
+			if (DirtyFlag[i]) {
+				stest += "1";
+			} else {
+				stest += "0";
+			}
+		}
+		Debug.Log(stest);
+		Debug.Log("==============================");
+
+		//DirtyFlag.SetAll(false);
+		DirtyFlag.Set(0, true);
+		test = TinyNetStateSyncer.DirtyFlagToInt(DirtyFlag);
+		Debug.Log(TinyNetStateSyncer.Display(test));
+		TinyNetStateSyncer.IntToDirtyFlag(test, DirtyFlag);
+		test = TinyNetStateSyncer.DirtyFlagToInt(DirtyFlag);
+		Debug.Log(TinyNetStateSyncer.Display(test));
+	}*/
+
 	public override void OnStartClient() {
 		base.OnStartClient();
 

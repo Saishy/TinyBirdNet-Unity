@@ -65,7 +65,7 @@ namespace TinyBirdNet {
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
 			TinyNetConnection tinyConn;
 
-			if (peer.OriginAppGUID.Equals(_netManager.ApplicationGUID)) {
+			if (peer.OriginAppGUID.Equals(NetManager.ApplicationGUID)) {
 				tinyConn = new TinyNetLocalConnectionToClient(peer);
 			} else {
 				tinyConn = new TinyNetConnection(peer);
@@ -152,6 +152,9 @@ namespace TinyBirdNet {
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				tinyNetConns[i].ShowObjectToConnection(objTinyNetIdentity);
 			}
+			/*foreach (TinyNetConnection conn in tinyNetConns) {
+				conn.ShowObjectToConnection(objTinyNetIdentity);
+			}*/
 		}
 
 		/// <summary>

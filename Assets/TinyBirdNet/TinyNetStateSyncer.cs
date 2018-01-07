@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using TinyBirdUtils;
+using System.Text.RegularExpressions;
 
 namespace TinyBirdNet {
 
@@ -14,6 +15,8 @@ namespace TinyBirdNet {
 
 		protected static Dictionary<Type, List<PropertyInfo>> syncVarProps = new Dictionary<Type, List<PropertyInfo>>();
 		protected static Dictionary<Type, List<RPCMethodInfo>> rpcMethods = new Dictionary<Type, List<RPCMethodInfo>>(); //Maybe we have to change this
+
+		protected static int[] tempIntArray = new int[1];
 
 		public static void InitializePropertyInfoListOfType(int size, Type type) {
 			syncVarProps.Add(type, new List<PropertyInfo>(size));
@@ -112,6 +115,39 @@ namespace TinyBirdNet {
 		}
 
 		public static int DirtyFlagToInt(BitArray bitArray) {
+			if (bitArray.Length > 32) {
+				throw new ArgumentException("Argument length shall be at most 32 bits.");
+			}
+
+			int output = 0;
+
+			for (int i = 0; i < 32; i++) {
+				if (bitArray[i]) { //check the first bit 
+					output |= 1 << i;
+				} else {
+					output |= 0 << i;
+				}
+			}
+
+			//bitArray.CopyTo(tempIntArray, 0);
+			//return tempIntArray[0];
+
+			return output;
+		}
+
+		public static void IntToDirtyFlag(int input, BitArray bitArray) {
+			//bitArray = new BitArray(new[] { input });
+			for (int i = 0; i < 32; i++) {
+				if ((input & 1) == 1) { //check the first bit 
+					bitArray[i] = true;
+				} else {
+					bitArray[i] = false;
+				}
+				input >>= 1; // move all bits right 1 so the next first bit from 110 becomes 11
+			}
+		}
+
+		/*public static int DirtyFlagToInt(BitArray bitArray) {
 			int value = 0;
 
 			for (var i = 0; i < bitArray.Count; i++) {
@@ -137,8 +173,8 @@ namespace TinyBirdNet {
 				input >>= 1;
 			}
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("bitArray: " + bitArray); }
-		}
+			//if (TinyNetLogLevel.logDev) { TinyLogger.Log("bitArray: " + bitArray); }
+		}*/
 
 		public static int GetNumberOfSyncedProperties(Type type) {
 			return syncVarProps[type].Count;
@@ -146,6 +182,23 @@ namespace TinyBirdNet {
 
 		public static int GetNumberOfRPCMethods(Type type) {
 			return rpcMethods[type].Count;
+		}
+
+		public static string Display(int value, bool cull = false) {
+			int i = Convert.ToString(value, 2).Length;
+
+			var m = i % 8;
+			int padding = 0;
+			if (m != 0) {
+				padding = 8 - m;
+			}
+			if (cull) {
+				return Regex.Replace(Convert.ToString(value, 2), ".{8}", "$0 ");
+			}
+
+			string s = new String('0', padding) + Convert.ToString(value, 2);
+			s = Regex.Replace(s, ".{8}", "$0 ");
+			return s;
 		}
 	}
 }

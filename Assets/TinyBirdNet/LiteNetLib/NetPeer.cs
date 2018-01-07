@@ -213,7 +213,7 @@ namespace LiteNetLib
         {
             //Get connect key bytes
             byte[] keyData = Encoding.UTF8.GetBytes(_peerListener.ConnectKey);
-			byte[] appID = _peerListener.ApplicationGUID.ToByteArray();
+			byte[] appID = NetManager.ApplicationGUID.ToByteArray();
 
             //Make initial packet
             var connectPacket = _packetPool.Get(PacketProperty.ConnectRequest, 12 + keyData.Length + appID.Length);
