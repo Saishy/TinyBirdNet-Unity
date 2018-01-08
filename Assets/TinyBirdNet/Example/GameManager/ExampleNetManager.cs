@@ -52,7 +52,7 @@ class ExampleNetManager : TinyNetGameManager {
 
 		ExamplePawn newPawn = Instantiate(GameManager.instance.pawnPrefab, SpawnPointManager.GetSpawnPoint(), Quaternion.identity);
 		newPawn.ownerPlayerControllerId = shortMessage.value;
-		newPawn.PlayerName = netMsg.tinyNetConn.GetPlayerController<ExamplePlayerController>(0).userName;
+		newPawn.PlayerName = ((ExamplePlayerController)netMsg.tinyNetConn.GetFirstPlayerController()).userName;
 
 		serverManager.SpawnWithClientAuthority(newPawn.gameObject, netMsg.tinyNetConn);
 	}
@@ -60,7 +60,8 @@ class ExampleNetManager : TinyNetGameManager {
 	protected void OnPlayerNameReceive(TinyNetMessageReader netMsg) {
 		netMsg.ReadMessage(stringMsg);
 
-		netMsg.tinyNetConn.GetPlayerController<ExamplePlayerController>(0).userName = stringMsg.value;
+		//This only works because this game uses only one controller per connection!
+		((ExamplePlayerController)netMsg.tinyNetConn.GetFirstPlayerController()).userName = stringMsg.value;
 	}
 }
 

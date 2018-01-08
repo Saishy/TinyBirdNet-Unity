@@ -122,15 +122,16 @@ namespace TinyBirdNet {
 		//============ Player Controllers ===================//
 
 		public void SetPlayerController<T>(TinyNetPlayerController player) where T : TinyNetPlayerController, new() {
-			while (player.playerControllerId >= _playerControllers.Count) {
+			/*while (player.playerControllerId >= _playerControllers.Count) {
 				_playerControllers.Add(new T());
 			}
 
-			_playerControllers[player.playerControllerId] = player;
+			_playerControllers[player.playerControllerId] = player;*/
+			_playerControllers.Add(player);
 		}
 
 		public void RemovePlayerController(short playerControllerId) {
-			int count = _playerControllers.Count;
+			/*int count = _playerControllers.Count;
 
 			while (count >= 0) {
 				if (playerControllerId == count && playerControllerId == _playerControllers[count].playerControllerId) {
@@ -138,25 +139,48 @@ namespace TinyBirdNet {
 					return;
 				}
 				count -= 1;
+			}*/
+			TinyNetPlayerController tPC;
+			if (GetPlayerController(playerControllerId, out tPC)) {
+				_playerControllers.Remove(tPC);
+				return;
 			}
 
 			if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemovePlayerController for playerControllerId " + playerControllerId + " not found"); }
+		}
+
+		public TinyNetPlayerController GetPlayerController(short playerControllerId) {
+			for (int i = 0; i < _playerControllers.Count; i++) {
+				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
+					return _playerControllers[i];
+				}
+			}
+
+			return null;
 		}
 
 		// Get player controller from connection's list
 		public bool GetPlayerController(short playerControllerId, out TinyNetPlayerController playerController) {
 			playerController = null;
 
-			if (playerControllers.Count > 0) {
+			/*if (_playerControllers.Count > playerControllerId) {
 				for (int i = 0; i < playerControllers.Count; i++) {
 					if (playerControllers[i].IsValid && playerControllers[i].playerControllerId == playerControllerId) {
 						playerController = playerControllers[i];
 
 						return true;
 					}
-				}
+				}				
 
 				return false;
+			}*/
+
+			for (int i = 0; i < _playerControllers.Count; i++) {
+				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
+					playerController = _playerControllers[i];
+
+					return true;
+				}
 			}
 
 			return false;
@@ -164,21 +188,29 @@ namespace TinyBirdNet {
 
 		// Get player controller from connection's list
 		public T GetPlayerController<T>(short playerControllerId) where T : TinyNetPlayerController {
-			if (playerControllers.Count > 0) {
-				for (int i = 0; i < playerControllers.Count; i++) {
-					if (playerControllers[i].IsValid && playerControllers[i].playerControllerId == playerControllerId) {
-						return (T)playerControllers[i];
-					}
+			for (int i = 0; i < _playerControllers.Count; i++) {
+				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
+					return (T)_playerControllers[i];
+				}
+			}
+
+			/*if (_playerControllers.Count > playerControllerId) {
+				if (_playerControllers[playerControllerId] != null && _playerControllers[playerControllerId].IsValid) {
+					return (T)_playerControllers[playerControllerId];
 				}
 
 				return null;
-			}
+			}*/
 
 			return null;
 		}
 
+		public TinyNetPlayerController GetFirstPlayerController() {
+			return _playerControllers[0];
+		}
+
 		public void GetPlayerInputMessage(TinyNetMessageReader netMsg) {
-			_playerControllers[TinyNetInputMessage.PeekAtPlayerControllerId(netMsg)].GetInputMessage(netMsg);
+			GetPlayerController(TinyNetInputMessage.PeekAtPlayerControllerId(netMsg)).GetInputMessage(netMsg);
 		}
 	}
 }

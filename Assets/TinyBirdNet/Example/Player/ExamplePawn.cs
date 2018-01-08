@@ -16,6 +16,8 @@ public class ExamplePawn : TinyNetBehaviour {
 	float xPos { get { return _networkPosition.x; } set { _networkPosition.x = value; } }
 	[TinyNetSyncVar]
 	float zPos { get { return _networkPosition.z; } set { _networkPosition.z = value; } }
+	[TinyNetSyncVar]
+	byte netDir { get; set; }
 
 	[TinyNetSyncVar]
 	public short ownerPlayerControllerId { get; set; }
@@ -59,13 +61,17 @@ public class ExamplePawn : TinyNetBehaviour {
 		RegisterRPCDelegate(ServerShootReceive, "ServerShoot");
 	}
 
+	public override void OnStartServer() {
+		base.OnStartServer();
+
+		timeForNextShoot = Time.time + 0.3f;
+	}
+
 	public override void OnStartAuthority() {
 		base.OnStartAuthority();
 
 		controller = TinyNetClient.instance.connToHost.GetPlayerController<ExamplePlayerController>(ownerPlayerControllerId);
 		controller.GetPawn(this);
-
-		timeForNextShoot = Time.time + 0.1f;
 
 		cameraTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
 	}
@@ -86,8 +92,10 @@ public class ExamplePawn : TinyNetBehaviour {
 	public override void OnNetworkDestroy() {
 		base.OnNetworkDestroy();
 
-		controller.LosePawn();
-		controller = null;
+		if (hasAuthority) {
+			controller.LosePawn();
+			controller = null;
+		}
 	}
 
 	private void FixedUpdate() {
@@ -100,7 +108,7 @@ public class ExamplePawn : TinyNetBehaviour {
 				result = _networkPosition;
 			}
 
-			FaceDir(ExamplePlayerController.VectorToDirection(new Vector2(xPos - pos.x, zPos - pos.z)));
+			FaceDir(netDir);
 
 			transform.position = result;
 		} else {
@@ -134,6 +142,7 @@ public class ExamplePawn : TinyNetBehaviour {
 
 		xPos = transform.position.x;
 		zPos = transform.position.z;
+		netDir = direction;
 	}
 
 	private void FaceDir(byte direction) {
@@ -173,10 +182,11 @@ public class ExamplePawn : TinyNetBehaviour {
 		}
 	}
 
-	public void ServerSyncPosFromOwner(float nPosX, float nPosZ) {
-		TinyBirdUtils.TinyLogger.Log("ExamplePawn::ServerSyncPosFromOwner called with: " + nPosX + "/" + nPosZ);
+	public void ServerSyncPosFromOwner(float nPosX, float nPosZ, byte dir) {
+		//TinyBirdUtils.TinyLogger.Log("ExamplePawn::ServerSyncPosFromOwner called with: " + nPosX + "/" + nPosZ + " dir: " + dir);
 		xPos = nPosX;
 		zPos = nPosZ;
+		netDir = dir;
 	}
 
 	[TinyNetRPC(RPCTarget.Server, RPCCallers.ClientOwner)]
@@ -217,5 +227,9 @@ public class ExamplePawn : TinyNetBehaviour {
 
 	void ServerShootReceive(NetDataReader reader) {
 		ServerShoot(reader.GetFloat(), reader.GetFloat(), reader.GetByte());
+	}
+
+	public void Killed() {
+		TinyNetServer.instance.DestroyObject(gameObject);
 	}
 }

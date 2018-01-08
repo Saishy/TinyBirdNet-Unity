@@ -77,7 +77,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		while (true) {
 			Vector2 axis = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
 
-			MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
+			byte nDir = MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
 
 			if (Input.GetButton("Fire1")) {
 				Shoot();
@@ -86,6 +86,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 			if (pawn != null) {
 				inputMessageBuffer.xPos = pawn.transform.position.x;
 				inputMessageBuffer.zPos = pawn.transform.position.z;
+				inputMessageBuffer.dir = nDir;
 
 				if (!TinyNetGameManager.instance.isServer) {
 					conn.Send(inputMessageBuffer, LiteNetLib.SendOptions.Sequenced);
@@ -102,7 +103,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		netMsg.ReadMessage(inputMessageReader);
 
 		if (pawn != null) {
-			pawn.ServerSyncPosFromOwner(inputMessageReader.xPos, inputMessageReader.zPos);
+			pawn.ServerSyncPosFromOwner(inputMessageReader.xPos, inputMessageReader.zPos, inputMessageReader.dir);
 			return;
 		}
 
@@ -146,12 +147,14 @@ public class ExamplePlayerController : TinyNetPlayerController {
 public class ExampleInputMessage : TinyNetInputMessage {
 	public float xPos;
 	public float zPos;
+	public byte dir;
 
 	public override void Deserialize(NetDataReader reader) {
 		base.Deserialize(reader);
 
 		xPos = reader.GetFloat();
 		zPos = reader.GetFloat();
+		dir = reader.GetByte();
 	}
 
 	public override void Serialize(NetDataWriter writer) {
@@ -159,5 +162,6 @@ public class ExampleInputMessage : TinyNetInputMessage {
 
 		writer.Put(xPos);
 		writer.Put(zPos);
+		writer.Put(dir);
 	}
 }

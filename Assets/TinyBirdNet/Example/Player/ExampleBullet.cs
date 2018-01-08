@@ -39,6 +39,7 @@ public class ExampleBullet : TinyNetBehaviour {
 
 			if (isServer) {
 				TinyNetServer.instance.DestroyObject(gameObject);
+				pawn.Killed();
 			} else {
 				gameObject.SetActive(false);
 			}

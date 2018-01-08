@@ -37,6 +37,8 @@ namespace TinyBirdNet {
 		}
 
 		public override void TinyNetUpdate() {
+			currentFixedFrame++;
+
 			if (currentFixedFrame % TinyNetGameManager.instance.NetworkEveryXFixedFrames != 0) {
 				return;
 			}
@@ -472,7 +474,7 @@ namespace TinyBirdNet {
 
 			// Check here if you should create another player controller for that connection.
 
-			int playerId = netMsg.tinyNetConn.playerControllers.Count;
+			int playerId = TinyNetGameManager.instance.NextPlayerID;//netMsg.tinyNetConn.playerControllers.Count;
 
 			AddPlayerControllerToConnection(netMsg.tinyNetConn, playerId);
 
@@ -496,8 +498,20 @@ namespace TinyBirdNet {
 			SendMessageByChannelToTargetConnection(s_TinyNetRemovePlayerMessage, SendOptions.ReliableOrdered, netMsg.tinyNetConn);
 		}
 
+		public TinyNetPlayerController GetPlayerController(int playerControllerId) {
+			TinyNetPlayerController tPC = null;
+
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i].GetPlayerController((short)playerControllerId, out tPC)) {
+					break;
+				}
+			}
+
+			return tPC;
+		}
+
 		public TinyNetPlayerController GetPlayerControllerFromConnection(long connId, int playerControllerId) {
-			return GetTinyNetConnection(connId).GetPlayerController<TinyNetPlayerController>((short)playerControllerId);
+			return GetTinyNetConnection(connId).GetPlayerController((short)playerControllerId);
 		}
 	}
 }

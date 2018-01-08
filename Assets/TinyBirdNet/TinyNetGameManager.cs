@@ -74,6 +74,13 @@ namespace TinyBirdNet {
 			}
 		}
 
+		private int _nextPlayerID = 0;
+		public int NextPlayerID {
+			get {
+				return _nextPlayerID++;
+			}
+		}
+
 		void Awake() {
 			instance = this;
 

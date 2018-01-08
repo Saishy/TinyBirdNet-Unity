@@ -21,7 +21,7 @@ namespace TinyBirdNet {
 			TinyNetGameManager netGameManager = target as TinyNetGameManager;
 
 			EditorGUILayout.LabelField("Update Network every X Fixed Frames");
-			EditorGUILayout.IntSlider(netGameManager.NetworkEveryXFixedFrames, 1, 60);
+			netGameManager.NetworkEveryXFixedFrames = EditorGUILayout.IntSlider(netGameManager.NetworkEveryXFixedFrames, 1, 60);
 
 			EditorGUILayout.Space();
 
