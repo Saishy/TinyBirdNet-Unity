@@ -57,14 +57,24 @@ namespace TinyBirdNet {
 		void OnStartLocalPlayer();
 
 		/// <summary>
-		/// Not implemented
+		/// Called on the client that receives authorithy of this object.
 		/// </summary>
 		void OnStartAuthority();
 
 		/// <summary>
-		/// Not implemented
+		/// Called on the client that loses authorithy of this object.
 		/// </summary>
 		void OnStopAuthority();
+
+		/// <summary>
+		/// Called on the server when giving authority of this object to a client.
+		/// </summary>
+		void OnGiveAuthority();
+
+		/// <summary>
+		/// Called on the server when removing authority of a client to this object.
+		/// </summary>
+		void OnRemoveAuthority();
 
 		/// <summary>
 		/// This is only called on a listen server, for spawn and hide messages. Objects being destroyed will trigger OnNetworkDestroy as normal.

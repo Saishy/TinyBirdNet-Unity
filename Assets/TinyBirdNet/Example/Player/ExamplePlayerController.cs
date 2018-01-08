@@ -97,11 +97,16 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	}
 
 	public override void GetInputMessage(TinyNetMessageReader netMsg) {
+		TinyBirdUtils.TinyLogger.Log("ExamplePlayerController::GetInputMessage called");
+
 		netMsg.ReadMessage(inputMessageReader);
 
 		if (pawn != null) {
 			pawn.ServerSyncPosFromOwner(inputMessageReader.xPos, inputMessageReader.zPos);
+			return;
 		}
+
+		TinyBirdUtils.TinyLogger.Log("ExamplePlayerController::GetInputMessage no pawn?");
 	}
 
 	protected byte MoveToDir(byte direction) {

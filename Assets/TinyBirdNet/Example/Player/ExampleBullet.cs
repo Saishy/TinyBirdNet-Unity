@@ -17,6 +17,9 @@ public class ExampleBullet : TinyNetBehaviour {
 	[TinyNetSyncVar]
 	public int ownerNetworkId { get; set; }
 
+	[TinyNetSyncVar]
+	public byte direction { get; set; }
+
 	private void Awake() {
 		cMeshRender = GetComponent<MeshRenderer>();
 		rbody = GetComponent<Rigidbody>();
@@ -94,6 +97,24 @@ public class ExampleBullet : TinyNetBehaviour {
 
 	public override void OnStartClient() {
 		base.OnStartClient();
+
+		switch (direction) {
+			case 1:
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 0f));
+				break;
+			//Right
+			case 2:
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 90f, 0f));
+				break;
+			//Down
+			case 3:
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
+				break;
+			//Left
+			case 4:
+				transform.rotation = Quaternion.Euler(new Vector3(0f, 270f, 0f));
+				break;
+		}
 
 		if (TinyNetScene.GetTinyNetIdentityByNetworkID(ownerNetworkId).hasAuthority) {
 			cMeshRender.material = friendlyMat;

@@ -70,6 +70,13 @@ public class ExamplePawn : TinyNetBehaviour {
 		cameraTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
 	}
 
+	public override void OnGiveAuthority() {
+		base.OnGiveAuthority();
+
+		controller = NetIdentity.connectionToOwnerClient.GetPlayerController<ExamplePlayerController>(ownerPlayerControllerId);
+		controller.GetPawn(this);
+	}
+
 	public override void OnStartClient() {
 		base.OnStartClient();
 
@@ -93,6 +100,8 @@ public class ExamplePawn : TinyNetBehaviour {
 				result = _networkPosition;
 			}
 
+			FaceDir(ExamplePlayerController.VectorToDirection(new Vector2(xPos - pos.x, zPos - pos.z)));
+
 			transform.position = result;
 		} else {
 			cameraTransform.position = new Vector3(transform.position.x, 10.0f, transform.position.z - 6f);
@@ -100,31 +109,55 @@ public class ExamplePawn : TinyNetBehaviour {
 	}
 
 	public void MoveToDir(byte direction) {
+		FaceDir(direction);
+
+		switch (direction) {
+			case 0:
+				return;
+			//Top
+			case 1:
+				rbody.MovePosition(rbody.position + Vector3.forward * movementSpeed * Time.fixedDeltaTime);
+				break;
+			//Right
+			case 2:
+				rbody.MovePosition(rbody.position +  Vector3.right * movementSpeed * Time.fixedDeltaTime);
+				break;
+			//Down
+			case 3:
+				rbody.MovePosition(rbody.position + Vector3.back * movementSpeed * Time.fixedDeltaTime);
+				break;
+			//Left
+			case 4:
+				rbody.MovePosition(rbody.position + Vector3.left * movementSpeed * Time.fixedDeltaTime);
+				break;
+		}
+
+		xPos = transform.position.x;
+		zPos = transform.position.z;
+	}
+
+	private void FaceDir(byte direction) {
 		switch (direction) {
 			case 0:
 				return;
 			//Top
 			case 1:
 				currentDir = 1;
-				rbody.MovePosition(rbody.position + Vector3.forward * movementSpeed * Time.fixedDeltaTime);
 				transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 0f));
 				break;
 			//Right
 			case 2:
 				currentDir = 2;
-				rbody.MovePosition(rbody.position +  Vector3.right * movementSpeed * Time.fixedDeltaTime);
 				transform.rotation = Quaternion.Euler(new Vector3(0f, 90f, 0f));
 				break;
 			//Down
 			case 3:
 				currentDir = 3;
-				rbody.MovePosition(rbody.position + Vector3.back * movementSpeed * Time.fixedDeltaTime);
 				transform.rotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
 				break;
 			//Left
 			case 4:
 				currentDir = 4;
-				rbody.MovePosition(rbody.position + Vector3.left * movementSpeed * Time.fixedDeltaTime);
 				transform.rotation = Quaternion.Euler(new Vector3(0f, 270f, 0f));
 				break;
 		}
@@ -141,6 +174,7 @@ public class ExamplePawn : TinyNetBehaviour {
 	}
 
 	public void ServerSyncPosFromOwner(float nPosX, float nPosZ) {
+		TinyBirdUtils.TinyLogger.Log("ExamplePawn::ServerSyncPosFromOwner called with: " + nPosX + "/" + nPosZ);
 		xPos = nPosX;
 		zPos = nPosZ;
 	}
@@ -159,6 +193,7 @@ public class ExamplePawn : TinyNetBehaviour {
 
 		ExampleBullet bullet = Instantiate(bulletPrefab, bulletSpawnPosition.position, transform.rotation).GetComponent<ExampleBullet>();
 		bullet.ownerNetworkId = NetIdentity.NetworkID;
+		bullet.direction = dir;
 		switch (dir) {
 			case 1:
 				bullet.transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 0f));

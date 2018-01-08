@@ -388,6 +388,12 @@ namespace TinyBirdNet {
 		public virtual void OnStopAuthority() {
 		}
 
+		public virtual void OnGiveAuthority() {
+		}
+
+		public virtual void OnRemoveAuthority() {
+		}
+
 		public virtual void OnSetLocalVisibility(bool vis) {
 		}
 

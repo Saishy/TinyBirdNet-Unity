@@ -271,6 +271,18 @@ namespace TinyBirdNet {
 			}
 		}
 
+		public virtual void OnGiveAuthority() {
+			for (int i = 0; i < _tinyNetObjects.Length; i++) {
+				_tinyNetObjects[i].OnGiveAuthority();
+			}
+		}
+
+		public virtual void OnRemoveAuthority() {
+			for (int i = 0; i < _tinyNetObjects.Length; i++) {
+				_tinyNetObjects[i].OnRemoveAuthority();
+			}
+		}
+
 		public virtual void OnSetLocalVisibility(bool vis) {
 			for (int i = 0; i < _tinyNetObjects.Length; i++) {
 				_tinyNetObjects[i].OnSetLocalVisibility(vis);
@@ -312,6 +324,8 @@ namespace TinyBirdNet {
 			// server now has authority (this is only called on server)
 			ForceAuthority(true);
 
+			OnRemoveAuthority();
+
 			// send msg to that client
 			var msg = new TinyNetClientAuthorityMessage();
 			msg.networkID = NetworkID;
@@ -350,6 +364,8 @@ namespace TinyBirdNet {
 
 			// server no longer has authority (this is called on server). Note that local client could re-acquire authority below
 			ForceAuthority(false);
+
+			OnGiveAuthority();
 
 			// send msg to that client
 			var msg = new TinyNetClientAuthorityMessage();
