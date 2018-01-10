@@ -137,7 +137,7 @@ namespace TinyBirdNet {
 		void OnLocalClientObjectDestroy(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetObjectDestroyMessage);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnLocalObjectObjDestroy netId:" + s_TinyNetObjectDestroyMessage.networkID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnLocalObjectObjDestroy netId:" + s_TinyNetObjectDestroyMessage.networkID); }
 
 			// Removing from the tinynetidentitylist is already done at OnNetworkDestroy() at the TinyNetIdentity.
 
@@ -152,9 +152,9 @@ namespace TinyBirdNet {
 		void OnLocalClientObjectHide(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetObjectHideMessage);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnLocalObjectObjHide netId:" + s_TinyNetObjectHideMessage.networkID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnLocalObjectObjHide netId:" + s_TinyNetObjectHideMessage.networkID); }
 
-			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectHideMessage.networkID];
+			TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(s_TinyNetObjectHideMessage.networkID);
 			if (localObject != null) {
 				localObject.OnSetLocalVisibility(false);
 			}
@@ -163,10 +163,12 @@ namespace TinyBirdNet {
 		void OnLocalClientObjectSpawn(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetObjectSpawnMessage);
 
-			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectSpawnMessage.networkID];
+			TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(s_TinyNetObjectSpawnMessage.networkID);
 			if (localObject != null) {
 				localObject.OnStartClient();
 				localObject.OnSetLocalVisibility(true);
+			} else {
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnLocalClientObjectSpawn called but object has never been spawned to client netId:" + s_TinyNetObjectSpawnMessage.networkID); }
 			}
 		}
 
@@ -182,7 +184,7 @@ namespace TinyBirdNet {
 		void OnObjectDestroy(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetObjectDestroyMessage);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnObjDestroy networkID:" + s_TinyNetObjectDestroyMessage.networkID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnObjDestroy networkID:" + s_TinyNetObjectDestroyMessage.networkID); }
 
 			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectDestroyMessage.networkID];
 			if (localObject != null) {
@@ -302,7 +304,7 @@ namespace TinyBirdNet {
 		void OnClientAuthorityMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetClientAuthorityMessage);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::OnClientAuthority for  connectionId=" + netMsg.tinyNetConn.ConnectId + " netId: " + s_TinyNetClientAuthorityMessage.networkID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnClientAuthority for  connectionId=" + netMsg.tinyNetConn.ConnectId + " netId: " + s_TinyNetClientAuthorityMessage.networkID); }
 
 			TinyNetIdentity tni = _localIdentityObjects[s_TinyNetClientAuthorityMessage.networkID];
 
@@ -318,7 +320,7 @@ namespace TinyBirdNet {
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
 			int networkID = netMsg.reader.GetInt();
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("ClientScene::OnUpdateVarsMessage " + networkID + " channel:" + netMsg.channelId); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnUpdateVarsMessage " + networkID + " channel:" + netMsg.channelId); }
 
 			ITinyNetObject localObject = _localNetObjects[networkID];
 			if (localObject != null) {
@@ -378,7 +380,7 @@ namespace TinyBirdNet {
 
 				_sceneIdentityObjectsToSpawn[tinyNetId.sceneID] = tinyNetId;
 
-				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::PrepareSpawnObjects sceneId: " + tinyNetId.sceneID); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::PrepareSpawnObjects sceneId: " + tinyNetId.sceneID); }
 			}
 		}
 
@@ -409,7 +411,7 @@ namespace TinyBirdNet {
 				return false;
 			}			
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientScene::Ready() called with connection [" + connToHost + "]"); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::Ready() called with connection [" + connToHost + "]"); }
 
 			var msg = new TinyNetReadyMessage();
 			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);

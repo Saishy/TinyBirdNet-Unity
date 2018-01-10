@@ -286,8 +286,8 @@ MonoBehaviour:
     type: 2}
   bulletSpawnPosition: {fileID: 4991727927988326}
   playerText: {fileID: 102258267689067846}
-  movementSpeed: 6
-  shootCooldown: 2
+  movementSpeed: 10
+  shootCooldown: 0.8
 --- !u!114 &114733409532478982
 MonoBehaviour:
   m_ObjectHideFlags: 1

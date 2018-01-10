@@ -129,7 +129,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   friendlyMat: {fileID: 2100000, guid: 4ffc746ee164dc746bb3717ef44e4deb, type: 2}
   enemyMat: {fileID: 2100000, guid: 2fbf9103b612b714ab42412f303ae697, type: 2}
-  movementSpeed: 10
+  movementSpeed: 15
 --- !u!135 &135383651712295228
 SphereCollider:
   m_ObjectHideFlags: 1

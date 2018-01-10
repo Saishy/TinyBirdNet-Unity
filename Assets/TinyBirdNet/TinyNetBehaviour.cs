@@ -339,7 +339,7 @@ namespace TinyBirdNet {
 			UpdateDirtyFlag();
 
 			if (_bIsDirty) {
-				TinyNetServer.instance.SendStateUpdateToAllConnections(this, GetNetworkChannel());
+				TinyNetServer.instance.SendStateUpdateToAllObservers(this, GetNetworkChannel());
 
 				_bIsDirty = false;
 			}

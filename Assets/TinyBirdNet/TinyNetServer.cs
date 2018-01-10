@@ -234,12 +234,17 @@ namespace TinyBirdNet {
 			msg.networkID = tni.NetworkID;
 			SendMessageByChannelToAllObserversOf(tni, msg, SendOptions.ReliableOrdered);
 
-			if (TinyNetGameManager.instance.isListenServer) {
-				tni.OnNetworkDestroy();
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				tinyNetConns[i].HideObjectToConnection(tni, true);
 			}
+
+			/*if (TinyNetGameManager.instance.isListenServer) {
+				tni.OnNetworkDestroy();
+			}*/
 
 			// when unspawning, dont destroy the server's object
 			if (destroyServerObject) {
+				tni.OnNetworkDestroy();
 				Object.Destroy(tni.gameObject);
 			}
 
@@ -268,6 +273,23 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Networking ===========//
 
+		public virtual void SendStateUpdateToAllObservers(TinyNetBehaviour netBehaviour, SendOptions sendOptions) {
+			recycleWriter.Reset();
+
+			recycleWriter.Put(TinyNetMsgType.StateUpdate);
+			recycleWriter.Put(netBehaviour.NetworkID);
+
+			netBehaviour.TinySerialize(recycleWriter, false);
+
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (!tinyNetConns[i].IsObservingNetIdentity(netBehaviour.NetIdentity)) {
+					return;
+				}
+				tinyNetConns[i].Send(recycleWriter, sendOptions);
+			}
+		}
+
+		/*
 		public virtual void SendStateUpdateToAllConnections(TinyNetBehaviour netBehaviour, SendOptions sendOptions) {
 			recycleWriter.Reset();
 
@@ -279,7 +301,7 @@ namespace TinyBirdNet {
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				tinyNetConns[i].Send(recycleWriter, sendOptions);
 			}
-		}
+		}*/
 
 		//============ TinyNetMessages Handlers =============//
 

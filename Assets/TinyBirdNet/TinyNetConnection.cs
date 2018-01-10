@@ -91,7 +91,7 @@ namespace TinyBirdNet {
 		/// <param name="tni"></param>
 		public void HideObjectToConnection(TinyNetIdentity tni, bool isDestroyed) {
 			if (!_observingNetObjects.Contains(tni)) {
-				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.NetworkID + " is not shown"); }
+				if (TinyNetLogLevel.logDev) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.NetworkID + " is not shown"); }
 				return;
 			}
 

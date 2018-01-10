@@ -222,11 +222,17 @@ namespace TinyBirdNet {
 		}
 
 		public static TinyNetIdentity GetTinyNetIdentityByNetworkID(int nId) {
-			return _localIdentityObjects.ContainsKey(nId) ? _localIdentityObjects[nId] : null;
+			TinyNetIdentity reference = null;
+			_localIdentityObjects.TryGetValue(nId, out reference);
+			//return _localIdentityObjects.ContainsKey(nId) ? _localIdentityObjects[nId] : null;
+			return reference;
 		}
 
 		public static ITinyNetObject GetTinyNetObjectByNetworkID(int nId) {
-			return _localNetObjects.ContainsKey(nId) ? _localNetObjects[nId] : null;
+			ITinyNetObject reference = null;
+			//return _localNetObjects.ContainsKey(nId) ? _localNetObjects[nId] : null;
+			_localNetObjects.TryGetValue(nId, out reference);
+			return reference;
 		}
 
 		//============ TinyNetMessages Networking ===========//
