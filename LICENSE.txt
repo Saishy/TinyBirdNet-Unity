@@ -1,0 +1,197 @@
+TinyBirdNet by Saishy Calmon is licensed under the following license:
+
+TinyBirdNet License Version 0.1
+
+1. Definitions
+--------------
+
+1.1. "Contributor"
+    means each individual or legal entity that creates, contributes to
+    the creation of, or owns Covered Software.
+
+1.2. "Contributor Version"
+    means the combination of the Contributions of others (if any) used
+    by a Contributor and that particular Contributor's Contribution.
+
+1.3. "Contribution"
+    means Covered Software of a particular Contributor.
+
+1.4. "Covered Software"
+    means Source Code Form to which the initial Contributor has attached
+    the notice in Exhibit A, the Executable Form of such Source Code
+    Form, and Modifications of such Source Code Form, in each case
+    including portions thereof.
+
+1.5. "Incompatible With Secondary Licenses"
+    means
+
+    (a) that the initial Contributor has attached the notice described
+        in Exhibit B to the Covered Software; or
+
+    (b) that the Covered Software was made available under the terms of
+        version 1.1 or earlier of the License, but not also under the
+        terms of a Secondary License.
+
+1.6. "Executable Form"
+    means any form of the work other than Source Code Form.
+
+1.7. "Larger Work"
+    means a work that combines Covered Software with other material, in
+    a separate file or files, that is not Covered Software.
+
+1.8. "License"
+    means this document.
+
+1.9. "Licensable"
+    means having the right to grant, to the maximum extent possible,
+    whether at the time of the initial grant or subsequently, any and
+    all of the rights conveyed by this License.
+
+1.10. "Modifications"
+    means any of the following:
+
+    (a) any file in Source Code Form that results from an addition to,
+        deletion from, or modification of the contents of Covered
+        Software; or
+
+    (b) any new file in Source Code Form that contains any Covered
+        Software.
+
+1.11. "Patent Claims" of a Contributor
+    means any patent claim(s), including without limitation, method,
+    process, and apparatus claims, in any patent Licensable by such
+    Contributor that would be infringed, but for the grant of the
+    License, by the making, using, selling, offering for sale, having
+    made, import, or transfer of either its Contributions or its
+    Contributor Version.
+
+1.12. "Secondary License"
+    means either the GNU General Public License, Version 2.0, the GNU
+    Lesser General Public License, Version 2.1, the GNU Affero General
+    Public License, Version 3.0, or any later versions of those
+    licenses.
+
+1.13. "Source Code Form"
+    means the form of the work preferred for making modifications.
+	
+1.15 "Licensor"
+	means the individual(s) or entity(ies) granting rights under this
+	License, therefore; Saishy Calmon.
+
+1.16. "You" (or "Your")
+    means an individual or a legal entity exercising rights under this
+    License. For legal entities, "You" includes any entity that
+    controls, is controlled by, or is under common control with You. For
+    purposes of this definition, "control" means (a) the power, direct
+    or indirect, to cause the direction or management of such entity,
+    whether by contract or otherwise, or (b) ownership of more than
+    fifty percent (50%) of the outstanding shares or beneficial
+    ownership of such entity.
+	
+1.17 "Commercial"	
+	primarily intended for or directed toward commercial advantage or
+	private monetary compensation.
+	
+1.18 "Noncommercial"
+	not primarily intended for or directed toward commercial advantage or
+	private monetary compensation.
+	
+	
+2. License Grants and Conditions
+--------------------------------
+
+2.1. Grants
+
+The Licensor grants you a worldwide, royalty-free, non-sublicensable,
+non-exclusive license to:
+
+(a) Use, modify, display, perform, the Covered Software alone or as
+	part of a Larger Work for Noncommercial purposes.
+
+2.2 Conditions
+
+(a) You may not use this work for Commercial purposes.
+
+(b) The rights to use for Commercial purposes may be granted solely by
+	the Licensor. This permission override the (a) Condition.
+	
+(d) All Modifications are under this License.
+	
+	
+3. Use
+--------------------------------
+
+3.1 Distribution
+
+(a) You may create and distribute a Larger Work under terms of Your choice,
+provided that You also comply with the 2.2 Conditions of this License for
+the Covered Software.
+
+3.2 Notices
+
+(a) You may not remove or alter the substance of any license notices
+(including copyright notices, patent notices, disclaimers of warranty,
+or limitations of liability) contained within the Source Code Form of
+the Covered Software, except that You may alter any license notices to
+the extent required to remedy known factual inaccuracies.
+
+
+4. Terms and Termination
+--------------------------------
+
+4.1 Terms
+
+(a)	The Licensor shall not be bound by any additional or different terms or
+	conditions communicated by You unless expressly agreed.
+    
+(b)	Any arrangements, understandings, or agreements regarding the Covered Software 
+	not stated herein are separate from and independent of the terms and conditions
+	of this License.
+
+4.2 Termination
+
+(a) If You fail to comply with this License, then Your rights under this
+	License terminate automatically.
+	
+(b) No term or condition of this License will be waived and no failure
+	to comply consented to unless expressly agreed to by the Licensor.
+	
+4.3 Patent claims
+
+(a) If You initiate litigation against any entity by asserting a patent
+	infringement claim (excluding declaratory judgment actions,
+	counter-claims, and cross-claims) alleging that a Contributor Version
+	directly or indirectly infringes any patent, then the rights granted to
+	You for the Covered Software under Section 2 of this License shall terminate.
+	
+5. Liability
+--------------------------------
+
+5.1 Limitation of Liability
+
+(a) In no event will the Licensor be liable to You on any legal theory (including,
+	without limitation, negligence) or otherwise for any direct, special, indirect,
+	incidental, consequential, punitive, exemplary, or other losses, costs, expenses,
+	or damages arising out of this License or use of the Covered Software, even if the
+	Licensor has been advised of the possibility of such losses, costs, expenses, or damages.
+	Where a limitation of liability is not allowed in full or in part,
+	this limitation may not apply to You.
+	
+(b) Unless otherwise separately undertaken by the Licensor, to the extent possible,
+	the Licensor offers the Covered Software as-is and as-available, and makes no
+	representations or warranties of any kind concerning the Covered Software,
+	whether express, implied, statutory, or other. This includes, without limitation,
+	warranties of title, merchantability, fitness for a particular purpose, non-infringement,
+	absence of latent or other defects, accuracy, or the presence or absence of errors,
+	whether or not known or discoverable. Where disclaimers of warranties are not allowed
+	in full or in part, this disclaimer may not apply to You.
+	
+6. License Version
+--------------------------------
+
+6.1 Effect of New Versions
+
+(a) You will abide by the terms of the License under which You originally received the Covered Software,
+	or under the terms of any subsequent version published by the Licensor.
+
+(b) Any changes made to the license applies immediately for the Covered Software.
