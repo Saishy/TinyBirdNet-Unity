@@ -1,0 +1,4 @@
+[ 1.1.0] 
+	- Updated LiteNetLib to master branch commit 282a1e52b0158182afe7ec22ebe8a2ea09dcb437
+	- Now uses pure LiteNetLib, no custom modifications.
+	- Application GUID is now stored into peer.Tag.

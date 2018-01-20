@@ -4,9 +4,12 @@ A high level API for making networking games in Unity, utilizes [RevenantX/LiteN
 The goal of TinyBirdNet is to create an API similar to Unet's HLAPI while using the LiteNetLib behind the scenes.
 
 
-**Version: 1.0.0**
+**Version: 1.1.0**
+- Updated LiteNetLib to master branch commit 282a1e52b0158182afe7ec22ebe8a2ea09dcb437
+- Now uses pure LiteNetLib, no custom modifications.
+- Application GUID is now stored into peer.Tag.
 
-**Supports Unity 2017 and above.**
+**Supports Unity 2017 and above**
 
 Current version has been tested across Windows and Linux, please open an issue if you find any bugs.
 
