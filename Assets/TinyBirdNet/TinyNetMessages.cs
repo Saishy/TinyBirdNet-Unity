@@ -216,7 +216,7 @@ namespace TinyBirdNet.Messaging {
 		public ushort msgType;
 		public TinyNetConnection tinyNetConn;
 		public NetDataReader reader;
-		public SendOptions channelId;
+		public DeliveryMethod channelId;
 
 		public static string Dump(byte[] payload, int sz) {
 			string outStr = "[";

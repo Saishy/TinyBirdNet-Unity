@@ -69,7 +69,7 @@ namespace TinyBirdNet {
 				return false;
 			}
 
-			_netManager = new NetManager(this, Application.version);
+			_netManager = new NetManager(this);
 			_netManager.Start();
 
 			ConfigureNetManager(true);
@@ -82,7 +82,11 @@ namespace TinyBirdNet {
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
 			TinyLogger.Log("[CLIENT] Attempt to connect at adress: " + hostAddress + ":" + hostPort);
 
-			_netManager.Connect(hostAddress, hostPort);
+			recycleWriter.Reset();
+			recycleWriter.Put(TinyNetGameManager.instance.multiplayerConnectKey);
+			recycleWriter.Put(TinyNetGameManager.ApplicationGUIDString);
+
+			_netManager.Connect(hostAddress, hostPort, recycleWriter);
 		}
 
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
@@ -113,7 +117,7 @@ namespace TinyBirdNet {
 
 			TinyNetEmptyMessage msg = new TinyNetEmptyMessage();
 			msg.msgType = TinyNetMsgType.Connect;
-			nConn.Send(msg, SendOptions.ReliableOrdered);
+			nConn.Send(msg, DeliveryMethod.ReliableOrdered);
 		}
 
 		//============ Static Methods =======================//
@@ -129,7 +133,7 @@ namespace TinyBirdNet {
 			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream.Data;
 
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);
 		}
 
 		//============ TinyNetMessages Handlers =============//
@@ -414,7 +418,7 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::Ready() called with connection [" + connToHost + "]"); }
 
 			var msg = new TinyNetReadyMessage();
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, connToHost);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);
 
 			connToHost.isReady = true;
 
@@ -512,7 +516,7 @@ namespace TinyBirdNet {
 			}
 
 			s_TinyNetRequestAddPlayerMessage.amountOfPlayers = (ushort)amountPlayers;
-			SendMessageByChannelToTargetConnection(s_TinyNetRequestAddPlayerMessage, SendOptions.ReliableOrdered, connToHost);
+			SendMessageByChannelToTargetConnection(s_TinyNetRequestAddPlayerMessage, DeliveryMethod.ReliableOrdered, connToHost);
 		}
 	}
 }

@@ -244,7 +244,7 @@ namespace TinyBirdNet {
 				recycleMessageReader.msgType = msgType;
 				recycleMessageReader.reader = reader;
 				recycleMessageReader.tinyNetConn = GetTinyNetConnection(peer);
-				recycleMessageReader.channelId = SendOptions.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
+				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
 
 				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
 			}
@@ -252,7 +252,7 @@ namespace TinyBirdNet {
 			return msgType;
 		}
 
-		public virtual void SendMessageByChannelToHost(ITinyNetMessage msg, SendOptions sendOptions) {
+		public virtual void SendMessageByChannelToHost(ITinyNetMessage msg, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
@@ -261,7 +261,7 @@ namespace TinyBirdNet {
 			connToHost.Send(recycleWriter, sendOptions);
 		}
 
-		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, SendOptions sendOptions, TinyNetConnection tinyNetConn) {
+		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, DeliveryMethod sendOptions, TinyNetConnection tinyNetConn) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
@@ -270,7 +270,7 @@ namespace TinyBirdNet {
 			tinyNetConn.Send(recycleWriter, sendOptions);
 		}
 
-		public virtual void SendMessageByChannelToAllConnections(ITinyNetMessage msg, SendOptions sendOptions) {
+		public virtual void SendMessageByChannelToAllConnections(ITinyNetMessage msg, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
@@ -281,7 +281,7 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public virtual void SendMessageByChannelToAllReadyConnections(ITinyNetMessage msg, SendOptions sendOptions) {
+		public virtual void SendMessageByChannelToAllReadyConnections(ITinyNetMessage msg, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
@@ -295,7 +295,7 @@ namespace TinyBirdNet {
 			}
 		}
 
-		public virtual void SendMessageByChannelToAllObserversOf(TinyNetIdentity tni, ITinyNetMessage msg, SendOptions sendOptions) {
+		public virtual void SendMessageByChannelToAllObserversOf(TinyNetIdentity tni, ITinyNetMessage msg, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
@@ -310,6 +310,19 @@ namespace TinyBirdNet {
 		}
 
 		//============ INetEventListener methods ============//
+
+		public virtual void OnConnectionRequest(ConnectionRequest request) {
+			NetDataReader dataReader = request.Data;
+
+			string key = dataReader.GetString();
+
+			if (key != TinyNetGameManager.instance.multiplayerConnectKey) {
+				request.Reject();
+			}
+
+			NetPeer peer = request.Accept();
+			peer.Tag = dataReader.GetString();
+		}
 
 		public virtual void OnPeerConnected(NetPeer peer) {
 			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId);
@@ -332,8 +345,8 @@ namespace TinyBirdNet {
 			TinyLogger.Log("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint);
 		}
 
-		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
-			TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint);
+		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod) {
+			TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint + " method: " + deliveryMethod.ToString());
 		}
 
 		/// <summary>

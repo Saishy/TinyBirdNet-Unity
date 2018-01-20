@@ -89,7 +89,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 				inputMessageBuffer.dir = nDir;
 
 				if (!TinyNetGameManager.instance.isServer) {
-					conn.Send(inputMessageBuffer, LiteNetLib.SendOptions.Sequenced);
+					conn.Send(inputMessageBuffer, LiteNetLib.DeliveryMethod.Sequenced);
 				}
 			}
 
@@ -126,7 +126,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 			spawnPawnMsg.msgType = TinyNetMsgType.SpawnPlayer;
 			spawnPawnMsg.value = playerControllerId;
 
-			TinyNetClient.instance.SendMessageByChannelToHost(spawnPawnMsg, LiteNetLib.SendOptions.ReliableOrdered);
+			TinyNetClient.instance.SendMessageByChannelToHost(spawnPawnMsg, LiteNetLib.DeliveryMethod.ReliableOrdered);
 
 			bAskedForPawn = true;
 		}

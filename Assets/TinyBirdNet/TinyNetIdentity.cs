@@ -330,7 +330,7 @@ namespace TinyBirdNet {
 			var msg = new TinyNetClientAuthorityMessage();
 			msg.networkID = NetworkID;
 			msg.authority = false;
-			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.SendOptions.ReliableOrdered, conn);
+			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.DeliveryMethod.ReliableOrdered, conn);
 
 			//Saishy: Still don't have an authority callback
 			/*if (clientAuthorityCallback != null) {
@@ -371,7 +371,7 @@ namespace TinyBirdNet {
 			var msg = new TinyNetClientAuthorityMessage();
 			msg.networkID = NetworkID;
 			msg.authority = true;
-			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.SendOptions.ReliableOrdered, conn);
+			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.DeliveryMethod.ReliableOrdered, conn);
 
 			//Saishy: Still don't have an authority callback
 			/*if (clientAuthorityCallback != null) {

@@ -46,15 +46,15 @@ namespace TinyBirdNet {
 
 		//============ Network Data =========================//
 
-		public void Send(byte[] data, SendOptions options) {
+		public void Send(byte[] data, DeliveryMethod options) {
 			_peer.Send(data, options);
 		}
 
-		public void Send(NetDataWriter dataWriter, SendOptions options) {
+		public void Send(NetDataWriter dataWriter, DeliveryMethod options) {
 			_peer.Send(dataWriter, options);
 		}
 
-		public void Send(ITinyNetMessage msg, SendOptions options) {
+		public void Send(ITinyNetMessage msg, DeliveryMethod options) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);

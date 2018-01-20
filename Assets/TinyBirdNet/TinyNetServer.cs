@@ -54,7 +54,7 @@ namespace TinyBirdNet {
 				return false;
 			}
 
-			_netManager = new NetManager(this, maxNumberOfPlayers, Application.version);
+			_netManager = new NetManager(this, maxNumberOfPlayers);
 			_netManager.Start(port);
 
 			ConfigureNetManager(true);
@@ -67,10 +67,12 @@ namespace TinyBirdNet {
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
 			TinyNetConnection tinyConn;
 
-			if (peer.OriginAppGUID.Equals(NetManager.ApplicationGUID)) {
+			if ( ((string)peer.Tag).Equals(TinyNetGameManager.ApplicationGUIDString) ) {
 				tinyConn = new TinyNetLocalConnectionToClient(peer);
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetServer::CreateTinyNetConnection created new TinyNetLocalConnectionToClient."); }
 			} else {
 				tinyConn = new TinyNetConnection(peer);
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetServer::CreateTinyNetConnection created new TinyNetConnection."); }
 			}
 
 			tinyNetConns.Add(tinyConn);
@@ -88,7 +90,7 @@ namespace TinyBirdNet {
 			if (TinyNetGameManager.networkSceneName != null && TinyNetGameManager.networkSceneName != "") {
 				TinyNetStringMessage msg = new TinyNetStringMessage(TinyNetGameManager.networkSceneName);
 				msg.msgType = TinyNetMsgType.Scene;
-				netMsg.tinyNetConn.Send(msg, SendOptions.ReliableOrdered);
+				netMsg.tinyNetConn.Send(msg, DeliveryMethod.ReliableOrdered);
 			}
 		}
 
@@ -183,9 +185,9 @@ namespace TinyBirdNet {
 			}
 
 			if (targetConn != null) {
-				SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, targetConn);
+				SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, targetConn);
 			} else {
-				SendMessageByChannelToAllConnections(msg, SendOptions.ReliableOrdered);
+				SendMessageByChannelToAllConnections(msg, DeliveryMethod.ReliableOrdered);
 			}
 		}
 
@@ -232,7 +234,7 @@ namespace TinyBirdNet {
 
 			TinyNetObjectDestroyMessage msg = new TinyNetObjectDestroyMessage();
 			msg.networkID = tni.NetworkID;
-			SendMessageByChannelToAllObserversOf(tni, msg, SendOptions.ReliableOrdered);
+			SendMessageByChannelToAllObserversOf(tni, msg, DeliveryMethod.ReliableOrdered);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				tinyNetConns[i].HideObjectToConnection(tni, true);
@@ -258,7 +260,7 @@ namespace TinyBirdNet {
 			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream.Data;
 			
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
 		}
 
 		public void SendRPCToAllCLients(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
@@ -268,12 +270,12 @@ namespace TinyBirdNet {
 			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream.Data;
 
-			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, SendOptions.ReliableOrdered);
+			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, DeliveryMethod.ReliableOrdered);
 		}
 
 		//============ TinyNetMessages Networking ===========//
 
-		public virtual void SendStateUpdateToAllObservers(TinyNetBehaviour netBehaviour, SendOptions sendOptions) {
+		public virtual void SendStateUpdateToAllObservers(TinyNetBehaviour netBehaviour, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(TinyNetMsgType.StateUpdate);
@@ -290,7 +292,7 @@ namespace TinyBirdNet {
 		}
 
 		/*
-		public virtual void SendStateUpdateToAllConnections(TinyNetBehaviour netBehaviour, SendOptions sendOptions) {
+		public virtual void SendStateUpdateToAllConnections(TinyNetBehaviour netBehaviour, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(TinyNetMsgType.StateUpdate);
@@ -357,7 +359,7 @@ namespace TinyBirdNet {
 
 			TinyNetObjectSpawnFinishedMessage msg = new TinyNetObjectSpawnFinishedMessage();
 			msg.state = 0; //State 0 means we are starting the spawn messages 'spam'.
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 
 			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
 
@@ -377,7 +379,7 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning objects for conn " + conn.ConnectId + " finished"); }
 
 			msg.state = 1; //We finished spamming the spawn messages!
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 		}
 
 		public void SetAllClientsNotReady() {
@@ -397,7 +399,7 @@ namespace TinyBirdNet {
 				conn.isReady = false;
 
 				TinyNetNotReadyMessage msg = new TinyNetNotReadyMessage();
-				SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+				SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 			}
 		}
 
@@ -423,7 +425,7 @@ namespace TinyBirdNet {
 			TinyNetObjectHideMessage msg = new TinyNetObjectHideMessage();
 			msg.networkID = tinyNetId.NetworkID;
 
-			SendMessageByChannelToTargetConnection(msg, SendOptions.ReliableOrdered, conn);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 		}
 
 		//============ Objects Methods ======================//
@@ -502,7 +504,7 @@ namespace TinyBirdNet {
 
 			// Tell the origin client to add them too!
 			s_TinyNetAddPlayerMessage.playerControllerId = (short)playerId;
-			SendMessageByChannelToTargetConnection(s_TinyNetAddPlayerMessage, SendOptions.ReliableOrdered, netMsg.tinyNetConn);
+			SendMessageByChannelToTargetConnection(s_TinyNetAddPlayerMessage, DeliveryMethod.ReliableOrdered, netMsg.tinyNetConn);
 		}
 
 		void OnRequestRemovePlayerMessage(TinyNetMessageReader netMsg) {
@@ -517,7 +519,7 @@ namespace TinyBirdNet {
 
 			// Tell the origin client to remove them too!
 			s_TinyNetRemovePlayerMessage.playerControllerId = s_TinyNetRequestRemovePlayerMessage.playerControllerId;
-			SendMessageByChannelToTargetConnection(s_TinyNetRemovePlayerMessage, SendOptions.ReliableOrdered, netMsg.tinyNetConn);
+			SendMessageByChannelToTargetConnection(s_TinyNetRemovePlayerMessage, DeliveryMethod.ReliableOrdered, netMsg.tinyNetConn);
 		}
 
 		public TinyNetPlayerController GetPlayerController(int playerControllerId) {

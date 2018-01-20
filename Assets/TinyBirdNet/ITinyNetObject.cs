@@ -82,7 +82,7 @@ namespace TinyBirdNet {
 		/// <param name="vis"></param>
 		void OnSetLocalVisibility(bool vis);
 
-		LiteNetLib.SendOptions GetNetworkChannel();
+		LiteNetLib.DeliveryMethod GetNetworkChannel();
 
 		/// <summary>
 		/// Sets how frequently a state update is checked and sent. (1f = One time per second)

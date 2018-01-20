@@ -6,7 +6,7 @@ namespace LiteNetLib
     internal enum PacketProperty : byte
     {
         Unreliable,             //0
-        Reliable,               //1
+        ReliableUnordered,      //1
         Sequenced,              //2
         ReliableOrdered,        //3
         AckReliable,            //4
@@ -24,12 +24,14 @@ namespace LiteNetLib
         MtuOk,                  //16
         DiscoveryRequest,       //17
         DiscoveryResponse,      //18
-        Merged                  //19
+        Merged,                 //19
+        ShutdownOk,             //20     
+        ReliableSequenced       //21
     }
 
     internal sealed class NetPacket
     {
-        private const int LastProperty = 19;
+        private const int LastProperty = 21;
 
         //Header
         public PacketProperty Property
@@ -94,29 +96,18 @@ namespace LiteNetLib
             return false;
         }
 
-        public static bool GetPacketProperty(byte[] data, out PacketProperty property)
-        {
-            byte properyByte = (byte)(data[0] & 0x7F);
-            if (properyByte > LastProperty)
-            {
-                property = PacketProperty.Unreliable;
-                return false;
-            }
-            property = (PacketProperty)properyByte;
-            return true;
-        }
-
         public static int GetHeaderSize(PacketProperty property)
         {
             switch (property)
             {
                 case PacketProperty.ReliableOrdered:
-                case PacketProperty.Reliable:
+                case PacketProperty.ReliableUnordered:
                 case PacketProperty.Sequenced:
                 case PacketProperty.Ping:
                 case PacketProperty.Pong:
                 case PacketProperty.AckReliable:
                 case PacketProperty.AckReliableOrdered:
+                case PacketProperty.ReliableSequenced:
                     return NetConstants.SequencedHeaderSize;
                 default:
                     return NetConstants.HeaderSize;
@@ -128,22 +119,13 @@ namespace LiteNetLib
             return GetHeaderSize(Property);
         }
 
-        public byte[] GetPacketData()
+        public byte[] CopyPacketData()
         {
             int headerSize = GetHeaderSize(Property);
             int dataSize = Size - headerSize;
             byte[] data = new byte[dataSize];
             Buffer.BlockCopy(RawData, headerSize, data, 0, dataSize);
             return data;
-        }
-
-        public bool IsClientData()
-        {
-            var property = Property;
-            return property == PacketProperty.Reliable ||
-                   property == PacketProperty.ReliableOrdered ||
-                   property == PacketProperty.Unreliable ||
-                   property == PacketProperty.Sequenced;
         }
 
         //Packet contstructor from byte array
@@ -157,7 +139,7 @@ namespace LiteNetLib
             if (property > LastProperty ||
                 packetSize > NetConstants.PacketSizeLimit ||
                 packetSize < headerSize ||
-                (fragmented && packetSize < headerSize + NetConstants.FragmentHeaderSize))
+                fragmented && packetSize < headerSize + NetConstants.FragmentHeaderSize)
             {
                 return false;
             }

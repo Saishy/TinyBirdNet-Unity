@@ -7,6 +7,8 @@ namespace TinyBirdNet {
 	[CustomEditor(typeof(TinyNetGameManager), true)]
 	public class TinyNetGameManagerEditor : Editor {
 
+		static GUIContent connectKeyLabel = new GUIContent("Connect Key:", "Insert here a unique key per version of your game, if the key mismatches the player will be denied connection.");
+
 		SerializedProperty _registeredPrefabs;
 		SerializedProperty _maxNumberOfPlayers;
 
@@ -26,6 +28,8 @@ namespace TinyBirdNet {
 			EditorGUILayout.Space();
 
 			EditorGUILayout.PropertyField(_maxNumberOfPlayers);
+
+			netGameManager.multiplayerConnectKey = EditorGUILayout.TextField(connectKeyLabel, netGameManager.multiplayerConnectKey);
 
 			EditorGUILayout.Space();
 

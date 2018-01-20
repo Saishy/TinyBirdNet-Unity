@@ -397,8 +397,8 @@ namespace TinyBirdNet {
 		public virtual void OnSetLocalVisibility(bool vis) {
 		}
 
-		public virtual LiteNetLib.SendOptions GetNetworkChannel() {
-			return LiteNetLib.SendOptions.ReliableOrdered;
+		public virtual LiteNetLib.DeliveryMethod GetNetworkChannel() {
+			return LiteNetLib.DeliveryMethod.ReliableOrdered;
 		}
 
 		public virtual float GetNetworkSendInterval() {

@@ -44,7 +44,7 @@ class ExampleNetManager : TinyNetGameManager {
 		stringMsg.msgType = TinyNetMsgType.Highest + 1;
 		stringMsg.value = System.Environment.UserName;
 
-		TinyNetClient.instance.connToHost.Send(stringMsg, LiteNetLib.SendOptions.ReliableOrdered);
+		TinyNetClient.instance.connToHost.Send(stringMsg, LiteNetLib.DeliveryMethod.ReliableOrdered);
 	}
 
 	protected void OnPawnRequestMessage(TinyNetMessageReader netMsg) {

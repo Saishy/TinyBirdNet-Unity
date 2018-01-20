@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LiteNetLib;
@@ -12,6 +13,14 @@ namespace TinyBirdNet {
 	public class TinyNetGameManager : MonoBehaviour {
 
 		public static TinyNetGameManager instance;
+
+		public static readonly Guid ApplicationGUID = Guid.NewGuid();
+		public static readonly string ApplicationGUIDString = ApplicationGUID.ToString();
+
+		/// <summary>
+		/// Insert here a unique key per version of your game, if the key mismatches the player will be denied connection.
+		/// </summary>
+		public string multiplayerConnectKey = "TinyBirdNet TPS Example 1.1";
 
 		[Range(1, 60)]
 		public int NetworkEveryXFixedFrames = 15;
@@ -351,7 +360,7 @@ namespace TinyBirdNet {
 
 			TinyNetStringMessage msg = new TinyNetStringMessage(networkSceneName);
 			msg.msgType = TinyNetMsgType.Scene;
-			serverManager.SendMessageByChannelToAllConnections(msg, SendOptions.ReliableOrdered);
+			serverManager.SendMessageByChannelToAllConnections(msg, DeliveryMethod.ReliableOrdered);
 		}
 
 		public virtual void ClientChangeScene(string newSceneName, bool forceReload) {

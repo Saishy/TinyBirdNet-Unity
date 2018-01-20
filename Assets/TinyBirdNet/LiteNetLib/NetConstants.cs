@@ -3,7 +3,7 @@ namespace LiteNetLib
     /// <summary>
     /// Sending method type
     /// </summary>
-    public enum SendOptions
+    public enum DeliveryMethod
     {
         /// <summary>
         /// Unreliable. Packets can be dropped, duplicated or arrive without order
@@ -23,7 +23,12 @@ namespace LiteNetLib
         /// <summary>
         /// Reliable and ordered. All packets will be sent and received in order
         /// </summary>
-        ReliableOrdered
+        ReliableOrdered,
+
+        /// <summary>
+        /// Reliable only last packet
+        /// </summary>
+        //ReliableSequenced
     }
 
     /// <summary>
@@ -33,7 +38,11 @@ namespace LiteNetLib
     {
         //can be tuned
         public const int DefaultWindowSize = 64;
+#if UNITY_PS4
         public const int SocketBufferSize = 1024 * 1024; //1mb
+#else
+        public const int SocketBufferSize = 1024 * 1024 * 4; //4mb
+#endif
         public const int SocketTTL = 255;
 
         public const int HeaderSize = 1;
@@ -50,7 +59,7 @@ namespace LiteNetLib
         internal const string MulticastGroupIPv6 = "FF02:0:0:0:0:0:0:1";
 
         //protocol
-        internal const int ProtocolId = 1;
+        internal const int ProtocolId = 2;
         internal const int MaxUdpHeaderSize = 68;
         internal const int PacketSizeLimit = ushort.MaxValue - MaxUdpHeaderSize;
         internal const int RequestConnectIdIndex = 5;

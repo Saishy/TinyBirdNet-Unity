@@ -1,3 +1,4 @@
+using System;
 using LiteNetLib.Utils;
 
 namespace LiteNetLib
@@ -7,7 +8,7 @@ namespace LiteNetLib
     /// </summary>
     public enum UnconnectedMessageType
     {
-        Default,
+        BasicMessage,
         DiscoveryRequest,
         DiscoveryResponse
     }
@@ -23,6 +24,13 @@ namespace LiteNetLib
         SocketSendError,
         RemoteConnectionClose,
         DisconnectPeerCalled
+    }
+
+    public enum ConnectionRequestResult
+    {
+        None,
+        Accept,
+        Reject
     }
 
     /// <summary>
@@ -44,6 +52,76 @@ namespace LiteNetLib
         /// Additional data that can be accessed (only if reason is RemoteConnectionClose)
         /// </summary>
         public NetDataReader AdditionalData;
+    }
+
+    public class ConnectionRequest
+    {
+        private readonly Func<ConnectionRequest, NetPeer> _onUserAction;
+        private bool _used;
+
+        public readonly long ConnectionId;
+        public readonly NetEndPoint RemoteEndPoint;
+        public readonly NetDataReader Data;
+        public ConnectionRequestResult Result { get; private set; }
+
+        internal ConnectionRequest(
+            long connectionId, 
+            NetEndPoint remoteEndPoint, 
+            NetDataReader netDataReader,
+            Func<ConnectionRequest, NetPeer> onUserAction)
+        {
+            ConnectionId = connectionId;
+            RemoteEndPoint = remoteEndPoint;
+            Data = netDataReader;
+            _onUserAction = onUserAction;
+        }
+
+        public bool AcceptIfKey(string key)
+        {
+            if (_used)
+                return false;
+            string dataKey;
+            try
+            {
+                dataKey = Data.GetString(key.Length);
+            }
+            catch
+            {
+                Reject();
+                return false;
+            }
+
+            if (dataKey == key)
+            {
+                Accept();
+                return true;
+            }
+
+            Reject();
+            return false;
+        }
+
+        /// <summary>
+        /// Accept connection and get new NetPeer as result
+        /// </summary>
+        /// <returns>Connected NetPeer</returns>
+        public NetPeer Accept()
+        {
+            if (_used)
+                return null;
+            _used = true;
+            Result = ConnectionRequestResult.Accept;
+            return _onUserAction(this);
+        }
+
+        public void Reject()
+        {
+            if (_used)
+                return;
+            _used = true;
+            Result = ConnectionRequestResult.Reject;
+            _onUserAction(this);
+        }
     }
 
     public interface INetEventListener
@@ -73,7 +151,8 @@ namespace LiteNetLib
         /// </summary>
         /// <param name="peer">From peer</param>
         /// <param name="reader">DataReader containing all received data</param>
-        void OnNetworkReceive(NetPeer peer, NetDataReader reader);
+        /// <param name="deliveryMethod">Type of received packet</param>
+        void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod);
 
         /// <summary>
         /// Received unconnected message
@@ -89,6 +168,12 @@ namespace LiteNetLib
         /// <param name="peer">Peer with updated latency</param>
         /// <param name="latency">latency value in milliseconds</param>
         void OnNetworkLatencyUpdate(NetPeer peer, int latency);
+
+        /// <summary>
+        /// On peer connection requested
+        /// </summary>
+        /// <param name="request">Request information (EndPoint, internal id, additional data)</param>
+        void OnConnectionRequest(ConnectionRequest request);
     }
 
     public class EventBasedNetListener : INetEventListener
@@ -96,17 +181,20 @@ namespace LiteNetLib
         public delegate void OnPeerConnected(NetPeer peer);
         public delegate void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo);
         public delegate void OnNetworkError(NetEndPoint endPoint, int socketErrorCode);
-        public delegate void OnNetworkReceive(NetPeer peer, NetDataReader reader);
+        public delegate void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod);
         public delegate void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType);
         public delegate void OnNetworkLatencyUpdate(NetPeer peer, int latency);
+
+        public delegate void OnConnectionRequest(ConnectionRequest request);
 
         public event OnPeerConnected PeerConnectedEvent;
         public event OnPeerDisconnected PeerDisconnectedEvent;
         public event OnNetworkError NetworkErrorEvent;
         public event OnNetworkReceive NetworkReceiveEvent;
         public event OnNetworkReceiveUnconnected NetworkReceiveUnconnectedEvent;
-        public event OnNetworkLatencyUpdate NetworkLatencyUpdateEvent; 
-         
+        public event OnNetworkLatencyUpdate NetworkLatencyUpdateEvent;
+        public event OnConnectionRequest ConnectionRequestEvent;
+
         void INetEventListener.OnPeerConnected(NetPeer peer)
         {
             if (PeerConnectedEvent != null)
@@ -125,10 +213,10 @@ namespace LiteNetLib
                 NetworkErrorEvent(endPoint, socketErrorCode);
         }
 
-        void INetEventListener.OnNetworkReceive(NetPeer peer, NetDataReader reader)
+        void INetEventListener.OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod)
         {
             if (NetworkReceiveEvent != null)
-                NetworkReceiveEvent(peer, reader);
+                NetworkReceiveEvent(peer, reader, deliveryMethod);
         }
 
         void INetEventListener.OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType)
@@ -141,6 +229,12 @@ namespace LiteNetLib
         {
             if (NetworkLatencyUpdateEvent != null)
                 NetworkLatencyUpdateEvent(peer, latency);
+        }
+
+        void INetEventListener.OnConnectionRequest(ConnectionRequest request)
+        {
+            if (ConnectionRequestEvent != null)
+                ConnectionRequestEvent(request);
         }
     }
 }

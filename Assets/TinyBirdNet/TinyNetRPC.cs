@@ -26,7 +26,7 @@ namespace TinyBirdNet {
 		private RPCTarget targets;
 		private RPCCallers callers;
 
-		private SendOptions sendOption;
+		private DeliveryMethod sendOption;
 
 		public RPCTarget Targets {
 			get { return targets; }
@@ -36,7 +36,7 @@ namespace TinyBirdNet {
 			get { return callers; }
 		}
 
-		public SendOptions SendOption {
+		public DeliveryMethod SendOption {
 			get { return sendOption; }
 			set { sendOption = value; }
 		}
