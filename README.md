@@ -23,6 +23,7 @@ Adding the TinyBirdNet folder under Assets to your project will give you everyth
 Inside the Examples folder you will find a simple working demo of a networked game.
 
 You will need a `TinyNetGameManager` or derived instance always enabled on your game, so please add one to your first scene and mark it as [Don't Destroy on Load](https://docs.unity3d.com/ScriptReference/Object.DontDestroyOnLoad.html).
+An unique "ConnectKey" is required for your game to be able to connect, preferably include the current version of your application on the key string.
 
 The recommended workflow is to create a class derived from `TinyNetPlayerController` and implement your player control logic there, for each new player on the game a new `TinyNetPlayerController` is spawned. You are able to send messages between the client Player Controllers and the server one by using an `TinyNetInputMessage`.
 
