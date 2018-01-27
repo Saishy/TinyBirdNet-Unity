@@ -8,13 +8,25 @@ namespace TinyBirdNet {
 	public class TinyNetGameManagerEditor : Editor {
 
 		static GUIContent connectKeyLabel = new GUIContent("Connect Key:", "Insert here a unique key per version of your game, if the key mismatches the player will be denied connection.");
+		static GUIContent networkFramesLabel = new GUIContent("Update Network every X Fixed Frames", "This will change how often the server sends the current state of the game to clients.");
+		static GUIContent logFilterLabel = new GUIContent("LogFilter:", "Your console will only display logs of this level or higher.");
 
 		SerializedProperty _registeredPrefabs;
 		SerializedProperty _maxNumberOfPlayers;
+		SerializedProperty _networkEveryXFixedFrames;
+		SerializedProperty _multiplayerConnectKey;
+		SerializedProperty _currentLogFilter;
 
 		void OnEnable() {
 			_registeredPrefabs = serializedObject.FindProperty("registeredPrefabs");
+
 			_maxNumberOfPlayers = serializedObject.FindProperty("maxNumberOfPlayers");
+
+			_networkEveryXFixedFrames = serializedObject.FindProperty("NetworkEveryXFixedFrames");
+
+			_multiplayerConnectKey = serializedObject.FindProperty("multiplayerConnectKey");
+
+			_currentLogFilter = serializedObject.FindProperty("currentLogFilter");
 		}
 
 		public override void OnInspectorGUI() {
@@ -22,14 +34,17 @@ namespace TinyBirdNet {
 
 			TinyNetGameManager netGameManager = target as TinyNetGameManager;
 
-			EditorGUILayout.LabelField("Update Network every X Fixed Frames");
-			netGameManager.NetworkEveryXFixedFrames = EditorGUILayout.IntSlider(netGameManager.NetworkEveryXFixedFrames, 1, 60);
+			//EditorGUILayout.LabelField("Update Network every X Fixed Frames");
+			EditorGUILayout.LabelField(networkFramesLabel);
+			EditorGUILayout.PropertyField(_networkEveryXFixedFrames, GUIContent.none);
+			//netGameManager.NetworkEveryXFixedFrames = EditorGUILayout.IntSlider(netGameManager.NetworkEveryXFixedFrames, 1, 60);
 
 			EditorGUILayout.Space();
 
 			EditorGUILayout.PropertyField(_maxNumberOfPlayers);
 
-			netGameManager.multiplayerConnectKey = EditorGUILayout.TextField(connectKeyLabel, netGameManager.multiplayerConnectKey);
+			EditorGUILayout.PropertyField(_multiplayerConnectKey, connectKeyLabel);
+			//netGameManager.multiplayerConnectKey = EditorGUILayout.TextField(connectKeyLabel, netGameManager.multiplayerConnectKey);
 
 			EditorGUILayout.Space();
 
@@ -41,7 +56,8 @@ namespace TinyBirdNet {
 
 			EditorGUILayout.Space();
 
-			netGameManager.currentLogFilter = (LogFilter)EditorGUILayout.EnumPopup("LogFilter:", netGameManager.currentLogFilter);
+			EditorGUILayout.PropertyField(_currentLogFilter, logFilterLabel);
+			//netGameManager.currentLogFilter = (LogFilter)EditorGUILayout.EnumPopup("LogFilter:", netGameManager.currentLogFilter);
 
 			serializedObject.ApplyModifiedProperties();
 		}

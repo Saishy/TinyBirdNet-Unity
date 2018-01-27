@@ -143,7 +143,7 @@ namespace TinyBirdNet {
 
 		void OnValidate() {
 			if (_serverOnly && _localPlayerAuthority) {
-				TinyLogger.LogWarning("Disabling Local Player Authority for " + gameObject + " because it is server-only.");
+				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Disabling Local Player Authority for " + gameObject + " because it is server-only."); }
 				_localPlayerAuthority = false;
 			}
 

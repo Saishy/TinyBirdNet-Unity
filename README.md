@@ -9,10 +9,10 @@ The goal of TinyBirdNet is to create an API similar to Unet's HLAPI while using 
 - Free for noncommercial projects! Try it fully without paying.
 - No additional charges for CCU, bandwith, nothing, it's yours to use.
 
-**Version: 1.1.1**
-- Updated LiteNetLib to master branch commit 74160c322ba4c94da1df0d395d2e012b020e68f1
-- Now uses pure LiteNetLib, no custom modifications.
-- Application GUID is now stored into peer.Tag.
+**Version: 1.1.2**
+- Fixed initial serialization not sending all properties.
+- Fixed many logs without a log filter.
+- Fixed some changes made to the TinyNetGameManagerEditor not being saved.
 
 **Supports Unity 2017 and above**
 

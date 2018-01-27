@@ -53,7 +53,7 @@ namespace TinyBirdNet {
 					_netIdentity = GetComponent<TinyNetIdentity>();
 
 					if (_netIdentity == null) {
-						TinyLogger.LogError("There is no TinyNetIdentity on this object. Please add one.");
+						if (TinyNetLogLevel.logError) { TinyLogger.LogError("There is no TinyNetIdentity on this object. Please add one."); }
 					}
 
 					return _netIdentity;
@@ -196,13 +196,15 @@ namespace TinyBirdNet {
 				writer.Put(NetworkID);
 			}
 
-			writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
+			if (!firstStateUpdate) {
+				writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
+			}
 
 			Type type;
 			int maxSyncVar = propertiesName.Length;
 
 			for (int i = 0; i < maxSyncVar; i++) {
-				if (_dirtyFlag[i] == false) {
+				if (!firstStateUpdate && _dirtyFlag[i] == false) {
 					continue;
 				}
 
@@ -241,17 +243,17 @@ namespace TinyBirdNet {
 				NetworkID = reader.GetInt();
 			}
 
-			int dFlag = reader.GetInt();
+			if (!firstStateUpdate) {
+				int dFlag = reader.GetInt();
 
-			Debug.Log(TinyNetStateSyncer.Display(dFlag));
-
-			TinyNetStateSyncer.IntToDirtyFlag(dFlag, DirtyFlag);
+				TinyNetStateSyncer.IntToDirtyFlag(dFlag, _dirtyFlag);
+			}
 
 			Type type;
 			int maxSyncVar = propertiesName.Length;
 
 			for (int i = 0; i < maxSyncVar; i++) {
-				if (DirtyFlag[i] == false) {
+				if (!firstStateUpdate && _dirtyFlag[i] == false) {
 					continue;
 				}
 

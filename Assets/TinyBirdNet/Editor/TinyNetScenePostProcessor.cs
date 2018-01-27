@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using TinyBirdUtils;
+using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
 
@@ -15,7 +16,7 @@ namespace TinyBirdNet {
 				// if we had a [ConflictComponent] attribute that would be better than this check.
 				// also there is no context about which scene this is in.
 				if (tnis[i].GetComponent<TinyNetGameManager>() != null) {
-					Debug.LogError("TinyNetGameManager has a TinyNetIdentity component. This will cause the TinyNetGameManager object to be disabled, so it is not recommended.");
+					if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetGameManager has a TinyNetIdentity component. This will cause the TinyNetGameManager object to be disabled, so it is not recommended."); }
 				}
 
 				if (tnis[i].isClient || tnis[i].isServer) {

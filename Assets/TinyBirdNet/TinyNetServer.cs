@@ -50,7 +50,7 @@ namespace TinyBirdNet {
 
 		public virtual bool StartServer(int port, int maxNumberOfPlayers) {
 			if (_netManager != null) {
-				TinyLogger.LogError("StartServer() called multiple times.");
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("StartServer() called multiple times."); }
 				return false;
 			}
 
@@ -59,7 +59,7 @@ namespace TinyBirdNet {
 
 			ConfigureNetManager(true);
 
-			TinyLogger.Log("[SERVER] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers);
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[SERVER] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers); }
 
 			return true;
 		}
@@ -463,7 +463,7 @@ namespace TinyBirdNet {
 						continue;
 
 					if (tni2.gameObject == null) {
-						if (TinyNetLogLevel.logDebug) { TinyLogger.LogError("Log this? Something is wrong if this happens?"); }
+						if (TinyNetLogLevel.logError) { TinyLogger.LogError("Log this? Something is wrong if this happens?"); }
 						continue;
 					}
 
@@ -492,7 +492,7 @@ namespace TinyBirdNet {
 			netMsg.ReadMessage(s_TinyNetRequestAddPlayerMessage);
 
 			if (s_TinyNetRequestAddPlayerMessage.amountOfPlayers <= 0) {
-				if (TinyNetLogLevel.logDebug) { TinyLogger.LogError("OnRequestAddPlayerMessage() called with amountOfPlayers <= 0"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("OnRequestAddPlayerMessage() called with amountOfPlayers <= 0"); }
 				return;
 			}
 
@@ -511,7 +511,7 @@ namespace TinyBirdNet {
 			netMsg.ReadMessage(s_TinyNetRequestRemovePlayerMessage);
 
 			if (s_TinyNetRequestRemovePlayerMessage.playerControllerId <= 0) {
-				if (TinyNetLogLevel.logDebug) { TinyLogger.LogError("OnRequestRemovePlayerMessage() called with playerControllerId <= 0"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("OnRequestRemovePlayerMessage() called with playerControllerId <= 0"); }
 				return;
 			}
 

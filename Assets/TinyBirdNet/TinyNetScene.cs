@@ -325,7 +325,7 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void OnPeerConnected(NetPeer peer) {
-			TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId);
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId); }
 
 			TinyNetConnection nConn = CreateTinyNetConnection(peer);
 
@@ -333,7 +333,7 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
-			TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + " because " + disconnectInfo.Reason);
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + " because " + disconnectInfo.Reason); }
 
 			TinyNetConnection nConn = GetTinyNetConnection(peer);
 			OnDisconnect(nConn);
@@ -342,11 +342,11 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void OnNetworkError(NetEndPoint endPoint, int socketErrorCode) {
-			TinyLogger.Log("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint);
+			if (TinyNetLogLevel.logError) { TinyLogger.LogError("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint); }
 		}
 
 		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod) {
-			TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint + " method: " + deliveryMethod.ToString());
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint + " method: " + deliveryMethod.ToString()); }
 		}
 
 		/// <summary>
@@ -356,7 +356,7 @@ namespace TinyBirdNet {
 		/// <param name="reader"></param>
 		/// <param name="messageType"></param>
 		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
-			TinyLogger.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint);
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint); }
 
 			if (messageType == UnconnectedMessageType.DiscoveryRequest) {
 				OnDiscoveryRequestReceived(remoteEndPoint, reader);
@@ -364,7 +364,7 @@ namespace TinyBirdNet {
 		}
 
 		public virtual void OnNetworkLatencyUpdate(NetPeer peer, int latency) {
-			TinyLogger.Log("[" + TYPE + "] Latency update for peer: " + peer.EndPoint + " " + latency + "ms");
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Latency update for peer: " + peer.EndPoint + " " + latency + "ms"); }
 		}
 
 		/*public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
@@ -372,7 +372,7 @@ namespace TinyBirdNet {
 		}*/
 
 		protected virtual void OnDiscoveryRequestReceived(NetEndPoint remoteEndPoint, NetDataReader reader) {
-			TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response");
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response"); }
 			_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
 		}
 

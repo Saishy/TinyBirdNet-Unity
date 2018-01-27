@@ -65,7 +65,7 @@ namespace TinyBirdNet {
 
 		public virtual bool StartClient() {
 			if (_netManager != null) {
-				TinyLogger.LogError("StartClient() called multiple times.");
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("StartClient() called multiple times."); }
 				return false;
 			}
 
@@ -74,13 +74,13 @@ namespace TinyBirdNet {
 
 			ConfigureNetManager(true);
 
-			TinyLogger.Log("[CLIENT] Started client");
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[CLIENT] Started client"); }
 
 			return true;
 		}
 
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
-			TinyLogger.Log("[CLIENT] Attempt to connect at adress: " + hostAddress + ":" + hostPort);
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[CLIENT] Attempt to connect at adress: " + hostAddress + ":" + hostPort); }
 
 			recycleWriter.Reset();
 			recycleWriter.Put(TinyNetGameManager.instance.multiplayerConnectKey);
