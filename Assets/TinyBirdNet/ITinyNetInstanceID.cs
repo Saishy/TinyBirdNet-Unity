@@ -13,6 +13,10 @@ namespace TinyBirdNet {
 		/// </summary>
 		int NetworkID { get; }
 
+		/// <summary>
+		/// Receives the network identifier.
+		/// </summary>
+		/// <param name="newID">The new identifier.</param>
 		void ReceiveNetworkID(int newID);
 	}
 }

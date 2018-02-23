@@ -7,9 +7,20 @@ using TinyBirdUtils;
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// A class that represents a container for <see cref="TinyNetMessageDelegate"/>.
+	/// </summary>
 	public class TinyNetMessageHandlers {
+		/// <summary>
+		/// The delegate handlers for <see cref="ITinyNetMessage"/>.
+		/// </summary>
 		Dictionary<ushort, TinyNetMessageDelegate> _msgHandlers = new Dictionary<ushort, TinyNetMessageDelegate>();
 
+		/// <summary>
+		/// Registers a handler for a message, if another handler is already registered it will log an error.
+		/// </summary>
+		/// <param name="msgType">Type of the <see cref="ITinyNetMessage"/>.</param>
+		/// <param name="handler">The delegate.</param>
 		internal void RegisterHandlerSafe(ushort msgType, TinyNetMessageDelegate handler) {
 			if (handler == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RegisterHandlerSafe id:" + msgType + " handler is null"); }
@@ -24,6 +35,11 @@ namespace TinyBirdNet {
 			_msgHandlers.Add(msgType, handler);
 		}
 
+		/// <summary>
+		/// Registers a handler for a message, it will not check for conflicts, but cannot be used for system messages.
+		/// </summary>
+		/// <param name="msgType">Type of the <see cref="ITinyNetMessage"/>.</param>
+		/// <param name="handler">The delegate.</param>
 		public void RegisterHandler(ushort msgType, TinyNetMessageDelegate handler) {
 			if (handler == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RegisterHandler id:" + msgType + " handler is null"); }
@@ -44,14 +60,30 @@ namespace TinyBirdNet {
 			_msgHandlers.Add(msgType, handler);
 		}
 
+		/// <summary>
+		/// Unregisters a handler.
+		/// </summary>
+		/// <param name="msgType">Type of the <see cref="ITinyNetMessage"/>.</param>
 		public void UnregisterHandler(ushort msgType) {
 			_msgHandlers.Remove(msgType);
 		}
 
+		/// <summary>
+		/// Determines whether this instance contains a handler for the specified <see cref="ITinyNetMessage"/> type.
+		/// </summary>
+		/// <param name="msgType">Type of the <see cref="ITinyNetMessage"/>.</param>
+		/// <returns>
+		///   <c>true</c> if it contains a handler for it; otherwise, <c>false</c>.
+		/// </returns>
 		public bool Contains(ushort msgType) {
 			return _msgHandlers.ContainsKey(msgType);
 		}
 
+		/// <summary>
+		/// Gets the handler for a <see cref="ITinyNetMessage"/>.
+		/// </summary>
+		/// <param name="msgType">Type of the <see cref="ITinyNetMessage"/>.</param>
+		/// <returns></returns>
 		internal TinyNetMessageDelegate GetHandler(ushort msgType) {
 			if (_msgHandlers.ContainsKey(msgType)) {
 				return _msgHandlers[msgType];
@@ -59,10 +91,17 @@ namespace TinyBirdNet {
 			return null;
 		}
 
+		/// <summary>
+		/// Gets the handlers dictionary.
+		/// </summary>
+		/// <returns></returns>
 		internal Dictionary<ushort, TinyNetMessageDelegate> GetHandlers() {
 			return _msgHandlers;
 		}
 
+		/// <summary>
+		/// Clears the handlers dictionary.
+		/// </summary>
 		internal void ClearMessageHandlers() {
 			_msgHandlers.Clear();
 		}
@@ -71,20 +110,34 @@ namespace TinyBirdNet {
 
 namespace TinyBirdNet.Messaging {
 
+	/// <summary>
+	/// An interface used by all messages.
+	/// </summary>
 	public interface ITinyNetMessage {
-		// De-serialize the contents of the reader into this message
+		/// <summary>
+		/// Deserializes the contents of the <see cref="NetDataReader"/> into this message.
+		/// </summary>
+		/// <param name="reader">The <see cref="NetDataReader"/>.</param>
 		void Deserialize(NetDataReader reader);
 
-		// Serialize the contents of this message into the writer
+		/// <summary>
+		/// Serializes the contents of this message into the <see cref="NetDataWriter"/>.
+		/// </summary>
+		/// <param name="writer">The <see cref="NetDataWriter"/>.</param>
 		void Serialize(NetDataWriter writer);
 
 		ushort msgType { get; }
 	}
 
-	// Handles network messages on client and server
+	/// <summary>
+	/// The delegate used for message handlers.
+	/// </summary>
+	/// <param name="netMsg">The <see cref="TinyNetMessageReader"/>.</param>
 	public delegate void TinyNetMessageDelegate(TinyNetMessageReader netMsg);
 
-	// built-in system network messages
+	/// <summary>
+	/// built-in system network messages
+	/// </summary>
 	public class TinyNetMsgType {
 		// internal system messages - cannot be replaced by user code
 		public const ushort ObjectDestroy = 1;
@@ -137,6 +190,9 @@ namespace TinyBirdNet.Messaging {
 #endif*/
 
 		//NOTE: update msgLabels below if this is changed.
+		/// <summary>
+		/// The highest system message id used.
+		/// </summary>
 		public const ushort Highest = 41;
 
 		static internal string[] msgLabels =
@@ -195,6 +251,11 @@ namespace TinyBirdNet.Messaging {
 #endif*/
         };
 
+		/// <summary>
+		/// Converts the type id to a readable string.
+		/// </summary>
+		/// <param name="value">The message type id.</param>
+		/// <returns></returns>
 		static public string MsgTypeToString(ushort value) {
 			if (value < 0 || value > Highest) {
 				return string.Empty;
@@ -210,14 +271,39 @@ namespace TinyBirdNet.Messaging {
 		}
 	}
 
+	/// <summary>
+	/// Used to provide an easy way to read different messages.
+	/// </summary>
 	public class TinyNetMessageReader {
+		/// <summary>
+		/// The maximum message size allowed.
+		/// </summary>
 		public const int MaxMessageSize = (64 * 1024) - 1;
 
+		/// <summary>
+		/// The message type id
+		/// </summary>
 		public ushort msgType;
+		/// <summary>
+		/// The connection from where this message came from.
+		/// </summary>
 		public TinyNetConnection tinyNetConn;
+		/// <summary>
+		/// A reader with data stream of the message to read.
+		/// </summary>
 		public NetDataReader reader;
+		/// <summary>
+		/// The delivery method of this message.
+		/// <para>Not implemmented yet.</para>
+		/// </summary>
 		public DeliveryMethod channelId;
 
+		/// <summary>
+		/// Dumps the specified payload.
+		/// </summary>
+		/// <param name="payload">The payload.</param>
+		/// <param name="sz">The size of the payload.</param>
+		/// <returns></returns>
 		public static string Dump(byte[] payload, int sz) {
 			string outStr = "[";
 
@@ -229,12 +315,22 @@ namespace TinyBirdNet.Messaging {
 			return outStr;
 		}
 
+		/// <summary>
+		/// Reads the message.
+		/// </summary>
+		/// <typeparam name="TMsg">The type id of the message.</typeparam>
+		/// <returns></returns>
 		public TMsg ReadMessage<TMsg>() where TMsg : ITinyNetMessage, new() {
 			var msg = new TMsg();
 			msg.Deserialize(reader);
 			return msg;
 		}
 
+		/// <summary>
+		/// Reads the message.
+		/// </summary>
+		/// <typeparam name="TMsg">The type id of the message.</typeparam>
+		/// <param name="msg">A message where the data will be deserialized to.</param>
 		public void ReadMessage<TMsg>(TMsg msg) where TMsg : ITinyNetMessage {
 			msg.Deserialize(reader);
 		}
@@ -649,8 +745,9 @@ namespace TinyBirdNet.Messaging {
 	}
 
 	/// <summary>
-	/// This is basically a message that gets delivered directly to the PlayerController
+	/// This is basically a message that gets delivered directly to a <see cref="TinyNetPlayerController"/>.
 	/// </summary>
+	/// <seealso cref="TinyBirdNet.Messaging.ITinyNetMessage" />
 	public abstract class TinyNetInputMessage : ITinyNetMessage {
 		public short playerControllerId;
 

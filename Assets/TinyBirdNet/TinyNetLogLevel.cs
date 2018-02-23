@@ -2,6 +2,9 @@
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// A simple log filter level to use in debug logs.
+	/// </summary>
 	public class TinyNetLogLevel {
 
 		static public LogFilter currentLevel = LogFilter.Dev;
@@ -13,6 +16,9 @@ namespace TinyBirdNet {
 		static public bool logError { get { return currentLevel <= LogFilter.Error; } }
 	}
 
+	/// <summary>
+	/// The available levels of filter.
+	/// </summary>
 	public enum LogFilter {
 		Dev = 0,
 		Debug = 1,

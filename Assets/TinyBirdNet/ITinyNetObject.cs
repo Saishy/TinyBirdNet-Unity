@@ -7,16 +7,55 @@ namespace TinyBirdNet {
 	/// </summary>
 	public interface ITinyNetObject : ITinyNetInstanceID {
 
+		/// <summary>
+		/// Gets a value indicating whether this instance is server.
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is server; otherwise, <c>false</c>.
+		/// </value>
 		bool isServer { get; }
+		/// <summary>
+		/// Gets a value indicating whether this instance is client.
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is client; otherwise, <c>false</c>.
+		/// </value>
 		bool isClient { get; }
 
 		// Saishy: You don't need to use a netidentity if you don't want and have implemmented your own way of spawning netobjects
+		/// <summary>
+		/// Gets the net identity.
+		/// </summary>
+		/// <value>
+		/// The net identity.
+		/// </value>
 		TinyNetIdentity NetIdentity { get; }
 
+		/// <summary>
+		/// Serializates the data.
+		/// </summary>
+		/// <param name="writer">The writer.</param>
+		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
 		void TinySerialize(NetDataWriter writer, bool firstStateUpdate);
+		/// <summary>
+		/// Deserializations the data received.
+		/// </summary>
+		/// <param name="reader">The reader.</param>
+		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
 		void TinyDeserialize(NetDataReader reader, bool firstStateUpdate);
 
+		/// <summary>
+		/// Sends the RPC.
+		/// </summary>
+		/// <param name="stream">The stream.</param>
+		/// <param name="rpcName">Name of the RPC.</param>
 		void SendRPC(NetDataWriter stream, string rpcName);
+		/// <summary>
+		/// Invokes the RPC.
+		/// </summary>
+		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
+		/// <param name="reader">The reader.</param>
+		/// <returns></returns>
 		bool InvokeRPC(int rpcMethodIndex, NetDataReader reader);
 
 		/// <summary>
@@ -25,39 +64,40 @@ namespace TinyBirdNet {
 		/// </summary>
 		void TinyNetUpdate();
 
-		/// <summary>
-		/// Used to check if 
-		/// </summary>
-		/// <returns></returns>
+		// <summary>
+		// Used to check if 
+		// </summary>
+		// <returns></returns>
 		//bool IsTimeToUpdate();
 
 		/// <summary>
-		/// Always called, regardless of being a client or server. (order 0) Called before variables are synced.
+		/// Always called, regardless of being a client or server. Called before variables are synced. (Order: 0)
 		/// </summary>
 		void OnNetworkCreate();
 
 		/// <summary>
-		/// Called when the object receives an order to be destroyed from the network, in a listen server the object could just be unspawned witout being destroyed.
+		/// Called when the object receives an order to be destroyed from the network,
+		/// in a listen server the object could just be unspawned without being actually destroyed.
 		/// </summary>
 		void OnNetworkDestroy();
 
 		/// <summary>
-		/// Called on the server when Spawn is called for this object. (order 1)
+		/// Called on the server when Spawn is called for this object. (Order: 1)
 		/// </summary>
 		void OnStartServer();
 
 		/// <summary>
-		/// Called on the client when the object is spawned. (order: 2) Called after variables are synced.
+		/// Called on the client when the object is spawned. Called after variables are synced. (Order: 2)
 		/// </summary>
 		void OnStartClient();
 
 		/// <summary>
-		/// Not implemented
+		/// Not implemented yet.
 		/// </summary>
 		void OnStartLocalPlayer();
 
 		/// <summary>
-		/// Called on the client that receives authorithy of this object.
+		/// Called on the client that receives authority of this object.
 		/// </summary>
 		void OnStartAuthority();
 
@@ -84,10 +124,10 @@ namespace TinyBirdNet {
 
 		LiteNetLib.DeliveryMethod GetNetworkChannel();
 
-		/// <summary>
-		/// Sets how frequently a state update is checked and sent. (1f = One time per second)
-		/// </summary>
-		/// <returns></returns>
+		// <summary>
+		// Sets how frequently a state update is checked and sent. (1f = One time per second)
+		// </summary>
+		// <returns></returns>
 		//float GetNetworkSendInterval();
 	}
 }

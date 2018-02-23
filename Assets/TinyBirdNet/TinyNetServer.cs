@@ -7,18 +7,30 @@ using TinyBirdNet.Messaging;
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// Represents the Scene of a server.
+	/// </summary>
+	/// <seealso cref="TinyBirdNet.TinyNetScene" />
 	public class TinyNetServer : TinyNetScene {
 
+		/// <summary>
+		/// The singleton instance.
+		/// </summary>
 		public static TinyNetServer instance;
 
+		/// <inheritdoc />
 		public override string TYPE { get { return "SERVER"; } }
 
 		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="TinyNetServer"/> class.
+		/// </summary>
 		public TinyNetServer() : base() {
 			instance = this;
 		}
 
+		/// <inheritdoc />
 		protected override void RegisterMessageHandlers() {
 			base.RegisterMessageHandlers();
 
@@ -36,6 +48,7 @@ namespace TinyBirdNet {
 			//RegisterHandlerSafe(TinyNetMsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerServerMessage);
 		}
 
+		/// <inheritdoc />
 		public override void TinyNetUpdate() {
 			currentFixedFrame++;
 
@@ -48,6 +61,12 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <summary>
+		/// Starts the server.
+		/// </summary>
+		/// <param name="port">The port.</param>
+		/// <param name="maxNumberOfPlayers">The maximum number of players.</param>
+		/// <returns></returns>
 		public virtual bool StartServer(int port, int maxNumberOfPlayers) {
 			if (_netManager != null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("StartServer() called multiple times."); }
@@ -64,6 +83,7 @@ namespace TinyBirdNet {
 			return true;
 		}
 
+		/// <inheritdoc />
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
 			TinyNetConnection tinyConn;
 
@@ -82,6 +102,10 @@ namespace TinyBirdNet {
 
 		//============ TinyNetEvents ========================//
 
+		/// <summary>
+		/// Called when a connection message is received.
+		/// </summary>
+		/// <param name="netMsg">The net message.</param>
 		protected virtual void OnConnectMessage(TinyNetMessageReader netMsg) {
 			if (TinyNetGameManager.instance.isClient && TinyNetClient.instance.connToHost.ConnectId == netMsg.tinyNetConn.ConnectId) {
 				return;
@@ -99,7 +123,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Just a shortcut to SpawnObject(obj)
 		/// </summary>
-		/// <param name="obj"></param>
+		/// <param name="obj">The object to spawn.</param>
 		static public void Spawn(GameObject obj) {
 			instance.SpawnObject(obj);
 		}
@@ -117,6 +141,12 @@ namespace TinyBirdNet {
 
 		//============ Object Networking ====================//
 
+		/// <summary>
+		/// Spawns the object with client authority.
+		/// </summary>
+		/// <param name="obj">The object to spawn.</param>
+		/// <param name="conn">The connection that will own it.</param>
+		/// <returns></returns>
 		public bool SpawnWithClientAuthority(GameObject obj, TinyNetConnection conn) {
 			Spawn(obj);
 
@@ -129,6 +159,10 @@ namespace TinyBirdNet {
 			return tni.AssignClientAuthority(conn);
 		}
 
+		/// <summary>
+		/// Spawns the object.
+		/// </summary>
+		/// <param name="obj">The object to spawn.</param>
 		public void SpawnObject(GameObject obj) {
 			if (!isRunning) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("SpawnObject for " + obj + ", NetworkServer is not active. Cannot spawn objects without an active server."); }
@@ -193,6 +227,10 @@ namespace TinyBirdNet {
 
 		// Destroy methods
 
+		/// <summary>
+		/// Unspawn an object.
+		/// </summary>
+		/// <param name="obj">The object to unspawn.</param>
 		public void UnSpawnObject(GameObject obj) {
 			if (obj == null) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer UnspawnObject is null"); }
@@ -205,10 +243,18 @@ namespace TinyBirdNet {
 			UnSpawnObject(objTinyNetIdentity);
 		}
 
+		/// <summary>
+		/// Unspawn an object.
+		/// </summary>
+		/// <param name="obj">The <see cref="TinyNetIdentity"/> to unspawn.</param>
 		public void UnSpawnObject(TinyNetIdentity tni) {
 			DestroyObject(tni, false);
 		}
 
+		/// <summary>
+		/// Destroys the object.
+		/// </summary>
+		/// <param name="obj">The object to destroy.</param>
 		public void DestroyObject(GameObject obj) {
 			if (obj == null) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer DestroyObject is null"); }
@@ -221,6 +267,11 @@ namespace TinyBirdNet {
 			DestroyObject(objTinyNetIdentity, true);
 		}
 
+		/// <summary>
+		/// Destroys the object.
+		/// </summary>
+		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object.</param>
+		/// <param name="destroyServerObject">if set to <c>true</c> destroy the object on server too.</param>
 		public void DestroyObject(TinyNetIdentity tni, bool destroyServerObject) {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("DestroyObject instance:" + tni.NetworkID); }
 
@@ -253,6 +304,12 @@ namespace TinyBirdNet {
 			tni.ReceiveNetworkID(0);
 		}
 
+		/// <summary>
+		/// Sends the RPC to the client owner of an object.
+		/// </summary>
+		/// <param name="stream">The stream.</param>
+		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
+		/// <param name="iObj">The object.</param>
 		public void SendRPCToClientOwner(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
@@ -263,7 +320,13 @@ namespace TinyBirdNet {
 			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
 		}
 
-		public void SendRPCToAllCLients(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
+		/// <summary>
+		/// Sends the RPC to all clients.
+		/// </summary>
+		/// <param name="stream">The stream.</param>
+		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
+		/// <param name="iObj">The object.</param>
+		public void SendRPCToAllClients(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
 			var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
@@ -275,6 +338,11 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Networking ===========//
 
+		/// <summary>
+		/// Sends the state update to all observers of an object.
+		/// </summary>
+		/// <param name="netBehaviour">The TinyNetBehaviour.</param>
+		/// <param name="sendOptions">The send options.</param>
 		public virtual void SendStateUpdateToAllObservers(TinyNetBehaviour netBehaviour, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
@@ -308,6 +376,10 @@ namespace TinyBirdNet {
 		//============ TinyNetMessages Handlers =============//
 
 		// default ready handler.
+		/// <summary>
+		/// Called when we receive a client ready message.
+		/// </summary>
+		/// <param name="netMsg">The net MSG.</param>
 		void OnClientReadyMessage(TinyNetMessageReader netMsg) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("Default handler for ready message from " + netMsg.tinyNetConn); }
 
@@ -316,6 +388,10 @@ namespace TinyBirdNet {
 
 		//============ Clients Functions ====================//
 
+		/// <summary>
+		/// Sets the client as ready.
+		/// </summary>
+		/// <param name="conn">The connection.</param>
 		void SetClientReady(TinyNetConnection conn) {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SetClientReady for conn:" + conn.ConnectId); }
 
@@ -382,6 +458,9 @@ namespace TinyBirdNet {
 			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 		}
 
+		/// <summary>
+		/// Sets all clients as not ready.
+		/// </summary>
 		public void SetAllClientsNotReady() {
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				var conn = tinyNetConns[i];
@@ -392,6 +471,10 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <summary>
+		/// Sets the client as not ready.
+		/// </summary>
+		/// <param name="conn">The connection.</param>
 		void SetClientNotReady(TinyNetConnection conn) {
 			if (conn.isReady) {
 				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("PlayerNotReady " + conn); }
@@ -408,8 +491,8 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Always call this from a TinyNetConnection ShowObjectToConnection, or you will have sync issues.
 		/// </summary>
-		/// <param name="tinyNetId"></param>
-		/// <param name="conn"></param>
+		/// <param name="tinyNetId">The tiny net identifier.</param>
+		/// <param name="conn">The connection.</param>
 		public void ShowForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
 			if (conn.isReady) {
 				instance.SendSpawnMessage(tinyNetId, conn);
@@ -419,8 +502,8 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Always call this from a TinyNetConnection RemoveFromVisList, or you will have sync issues.
 		/// </summary>
-		/// <param name="tinyNetId"></param>
-		/// <param name="conn"></param>
+		/// <param name="tinyNetId">The tiny net identifier.</param>
+		/// <param name="conn">The connection.</param>
 		public void HideForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
 			TinyNetObjectHideMessage msg = new TinyNetObjectHideMessage();
 			msg.networkID = tinyNetId.NetworkID;
@@ -433,7 +516,9 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Spawns all TinyNetIdentity objects in the scene.
 		/// </summary>
-		/// <returns>This actually always return true?</returns>
+		/// <returns>
+		/// This actually always return true?
+		/// </returns>
 		public bool SpawnAllObjects() {
 			if (isRunning) {
 				TinyNetIdentity[] tnis = Resources.FindObjectsOfTypeAll<TinyNetIdentity>();
@@ -479,15 +564,27 @@ namespace TinyBirdNet {
 
 		//============ Scenes Methods =======================//
 
+		/// <summary>
+		/// Called when the server scene is changed.
+		/// </summary>
+		/// <param name="sceneName">Name of the scene.</param>
 		public virtual void OnServerSceneChanged(string sceneName) {
 		}
 
 		//============ Players Methods ======================//
 
+		/// <summary>
+		/// Called when a <see cref="TinyNetInputMessage"/> is received.
+		/// </summary>
+		/// <param name="netMsg">The net message.</param>
 		void OnPlayerInputMessage(TinyNetMessageReader netMsg) {
 			netMsg.tinyNetConn.GetPlayerInputMessage(netMsg);
 		}
 
+		/// <summary>
+		/// Called when a <see cref="TinyNetRequestAddPlayerMessage"/> is received.
+		/// </summary>
+		/// <param name="netMsg">The net message.</param>
 		void OnRequestAddPlayerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetRequestAddPlayerMessage);
 
@@ -507,6 +604,10 @@ namespace TinyBirdNet {
 			SendMessageByChannelToTargetConnection(s_TinyNetAddPlayerMessage, DeliveryMethod.ReliableOrdered, netMsg.tinyNetConn);
 		}
 
+		/// <summary>
+		/// Called when a <see cref="TinyNetRequestRemovePlayerMessage"/> is received.
+		/// </summary>
+		/// <param name="netMsg">The net message.</param>
 		void OnRequestRemovePlayerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetRequestRemovePlayerMessage);
 
@@ -522,6 +623,11 @@ namespace TinyBirdNet {
 			SendMessageByChannelToTargetConnection(s_TinyNetRemovePlayerMessage, DeliveryMethod.ReliableOrdered, netMsg.tinyNetConn);
 		}
 
+		/// <summary>
+		/// Gets the player controller that have the given identifier.
+		/// </summary>
+		/// <param name="playerControllerId">The player controller identifier.</param>
+		/// <returns></returns>
 		public TinyNetPlayerController GetPlayerController(int playerControllerId) {
 			TinyNetPlayerController tPC = null;
 
@@ -534,6 +640,12 @@ namespace TinyBirdNet {
 			return tPC;
 		}
 
+		/// <summary>
+		/// Gets the player controller from a specific connection.
+		/// </summary>
+		/// <param name="connId">The connection identifier.</param>
+		/// <param name="playerControllerId">The player controller identifier.</param>
+		/// <returns></returns>
 		public TinyNetPlayerController GetPlayerControllerFromConnection(long connId, int playerControllerId) {
 			return GetTinyNetConnection(connId).GetPlayerController((short)playerControllerId);
 		}

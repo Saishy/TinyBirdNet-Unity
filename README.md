@@ -9,10 +9,9 @@ The goal of TinyBirdNet is to create an API similar to Unet's HLAPI while using 
 - Free for noncommercial projects! Try it fully without paying.
 - No additional charges for CCU, bandwith, nothing, it's yours to use.
 
-**Version: 1.1.2**
-- Fixed initial serialization not sending all properties.
-- Fixed many logs without a log filter.
-- Fixed some changes made to the TinyNetGameManagerEditor not being saved.
+**Version: 1.1.3**
+- Added documentation to most parts of the code.
+- Fixed minor typos.
 
 **Supports Unity 2017 and above**
 

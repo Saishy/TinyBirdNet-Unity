@@ -3,15 +3,29 @@ using System;
 using UnityEngine;
 
 namespace TinyBirdNet {
-	// Handles requests to spawn objects on the client
+	/// <summary>
+	/// Handles requests to spawn objects on the client
+	/// </summary>
+	/// <param name="position">The position.</param>
+	/// <param name="assetIndex">Index of the asset.</param>
+	/// <returns></returns>
 	public delegate GameObject SpawnDelegate(Vector3 position, int assetIndex);
 
-	// Handles requests to unspawn objects on the client
+	/// <summary>
+	/// Handles requests to unspawn objects on the client
+	/// </summary>
+	/// <param name="gObj">The GameObject.</param>
 	public delegate void UnSpawnDelegate(GameObject gObj);
 
-	// Handles RPC calls
+	/// <summary>
+	/// Handles RPC calls
+	/// </summary>
+	/// <param name="reader">The reader.</param>
 	public delegate void RPCDelegate(NetDataReader reader);
 
+	/// <summary>
+	/// A data storage class for RPC methods information.
+	/// </summary>
 	public class RPCMethodInfo {
 		public RPCTarget target { private set; get; }
 		public RPCCallers caller { private set; get; }

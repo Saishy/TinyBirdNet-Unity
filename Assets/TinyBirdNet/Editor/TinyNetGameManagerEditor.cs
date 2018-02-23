@@ -4,6 +4,10 @@ using System.Collections.Generic;
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// Custom inspector for the <see cref="TinyNetGameManager"/> class.
+	/// </summary>
+	/// <seealso cref="UnityEditor.Editor" />
 	[CustomEditor(typeof(TinyNetGameManager), true)]
 	public class TinyNetGameManagerEditor : Editor {
 

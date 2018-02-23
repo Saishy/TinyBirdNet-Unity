@@ -8,11 +8,25 @@ using UnityEngine;
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// A TinyNetBehaviour is a MonoBehaviour who implements the interface ITinyNetObject.
+	/// <para>In addition, TinyBirdNet handles it's spawning, serialization, RPC, and mostly anything you need to create
+	/// a new instance of it in a multiplayer game and have it automatically synced.</para>
+	/// </summary>
+	/// <seealso cref="UnityEngine.MonoBehaviour" />
+	/// <seealso cref="TinyBirdNet.ITinyNetObject" />
+	/// <seealso cref="TinyBirdNet.ITinyNetInstanceID" />
 	[RequireComponent(typeof(TinyNetIdentity))]
 	public class TinyNetBehaviour : MonoBehaviour, ITinyNetObject {
 
+		/// <summary>
+		/// A static NetDataWriter that can be used to convert most Objects to bytes.
+		/// </summary>
 		protected static NetDataWriter rpcRecycleWriter = new NetDataWriter();
 
+		/// <summary>
+		/// The ID of an instance in the network, given by the server on spawn.
+		/// </summary>
 		public int NetworkID { get; protected set; }
 
 		private Dictionary<string, TinyNetPropertyAccessor<byte>> byteAccessor = new Dictionary<string, TinyNetPropertyAccessor<byte>>();
@@ -35,18 +49,48 @@ namespace TinyBirdNet {
 
 		// Used for comparisson.
 		private bool _bIsDirty = false;
+		/// <summary>
+		/// Gets or sets a value indicating whether this instance is dirty.
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if instance is dirty; otherwise, <c>false</c>.
+		/// </value>
 		public bool bIsDirty { get { return _bIsDirty; } set { _bIsDirty = value; } }
 
+		/// <summary>
+		/// The dirty flag is a BitArray of size 32 that represents if a TinyNetSyncVar is dirty.
+		/// </summary>
 		private BitArray _dirtyFlag = new BitArray(32);
+		/// <summary>
+		/// Gets the dirty flag.
+		/// </summary>
+		/// <value>
+		/// The dirty flag.
+		/// </value>
 		public BitArray DirtyFlag { get { return _dirtyFlag; } private set { _dirtyFlag = value; } }
 
+		/// <summary>
+		/// [Server Only] The last Time.time registered at an UpdateDirtyFlag call.
+		/// </summary>
 		protected float _lastSendTime;
 
+		/// <inheritdoc />
 		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
+		/// <inheritdoc />
 		public bool isClient { get { return TinyNetGameManager.instance.isClient; } }
+		/// <inheritdoc />
 		public bool hasAuthority { get { return NetIdentity.hasAuthority; } }
 
+		/// <summary>
+		/// The net identity in this GameObject.
+		/// </summary>
 		TinyNetIdentity _netIdentity;
+		/// <summary>
+		/// Gets the net identity.
+		/// </summary>
+		/// <value>
+		/// The net identity.
+		/// </value>
 		public TinyNetIdentity NetIdentity {
 			get {
 				if (_netIdentity == null) {
@@ -63,10 +107,19 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <summary>
+		/// Receives the network identifier.
+		/// </summary>
+		/// <param name="newID">The new identifier.</param>
 		public void ReceiveNetworkID(int newID) {
 			NetworkID = newID;
 		}
 
+		/// <summary>
+		/// Registers the RPC delegate.
+		/// </summary>
+		/// <param name="rpcDel">The RPC delegate.</param>
+		/// <param name="methodName">Name of the method.</param>
 		protected void RegisterRPCDelegate(RPCDelegate rpcDel, string methodName) {
 			if (rpcHandlers == null) {
 				rpcHandlers = new RPCDelegate[TinyNetStateSyncer.GetNumberOfRPCMethods(GetType())];
@@ -80,6 +133,11 @@ namespace TinyBirdNet {
 			_dirtyFlag = new BitArray(TinyNetStateSyncer.GetNumberOfSyncedProperties(GetType()));
 		}*/
 
+		/// <summary>
+		/// Sets the bit value on the dirty flag at the given index.
+		/// </summary>
+		/// <param name="index">The index.</param>
+		/// <param name="bValue">The new bool value.</param>
 		protected void SetDirtyFlag(int index, bool bValue) {
 			_dirtyFlag[index] = bValue;
 
@@ -88,12 +146,18 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <summary>
+		/// Updates the dirty flag.
+		/// </summary>
 		private void UpdateDirtyFlag() {
 			TinyNetStateSyncer.UpdateDirtyFlagOf(this, _dirtyFlag);
 
 			_lastSendTime = Time.time;
 		}
 
+		/// <summary>
+		/// Creates the TinyNetSyncVar property accessors.
+		/// </summary>
 		public void CreateAccessors() {
 			Type type;
 
@@ -161,6 +225,12 @@ namespace TinyBirdNet {
 			return tinyAccessor;
 		}*/
 
+		/// <summary>
+		/// Checks if a TinyNetSyncVar property updated.
+		/// </summary>
+		/// <param name="propName">Name of the property.</param>
+		/// <param name="type">The type.</param>
+		/// <returns></returns>
 		public bool CheckIfPropertyUpdated(string propName, Type type) {
 			if (type == typeof(byte)) {
 				return byteAccessor[propName].CheckIfChangedAndUpdate(this);
@@ -191,6 +261,7 @@ namespace TinyBirdNet {
 			return false;
 		}
 
+		/// <inheritdoc />
 		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
 			if (firstStateUpdate) {
 				writer.Put(NetworkID);
@@ -238,6 +309,7 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <inheritdoc />
 		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
 			if (firstStateUpdate) {
 				NetworkID = reader.GetInt();
@@ -287,6 +359,7 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <inheritdoc />
 		public virtual void SendRPC(NetDataWriter stream, string rpcName) {
 			RPCMethodInfo rpcMethodInfo = null;
 			int rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodInfoFromType(GetType(), rpcName, ref rpcMethodInfo);
@@ -294,6 +367,13 @@ namespace TinyBirdNet {
 			SendRPC(stream, rpcMethodInfo.target, rpcMethodInfo.caller, rpcMethodIndex);
 		}
 
+		/// <summary>
+		/// Sends the RPC.
+		/// </summary>
+		/// <param name="stream">The stream.</param>
+		/// <param name="target">The target.</param>
+		/// <param name="caller">The caller.</param>
+		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		public virtual void SendRPC(NetDataWriter stream, RPCTarget target, RPCCallers caller, int rpcMethodIndex) {
 			if (target == RPCTarget.ClientOwner) {
 				if (!isServer || _netIdentity.hasAuthority) {
@@ -320,11 +400,12 @@ namespace TinyBirdNet {
 					TinyNetServer.instance.SendRPCToClientOwner(stream, rpcMethodIndex, this);
 					return;
 				case RPCTarget.Everyone:
-					TinyNetServer.instance.SendRPCToAllCLients(stream, rpcMethodIndex, this);
+					TinyNetServer.instance.SendRPCToAllClients(stream, rpcMethodIndex, this);
 					return;
 			}
 		}
 
+		/// <inheritdoc />
 		public virtual bool InvokeRPC(int rpcMethodIndex, NetDataReader reader) {
 			if (rpcHandlers[rpcMethodIndex] == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::InvokeRPC netId:" + NetworkID + " RPCDelegate is not registered."); }
@@ -336,6 +417,7 @@ namespace TinyBirdNet {
 			return true;
 		}
 
+		/// <inheritdoc />
 		public void TinyNetUpdate() {
 			//if (IsTimeToUpdate()) {
 			UpdateDirtyFlag();
@@ -359,6 +441,7 @@ namespace TinyBirdNet {
 		}*/
 
 		/// <summary>
+		/// <inheritdoc />
 		/// Remember that this is called first and before variables are synced.
 		/// </summary>
 		public virtual void OnNetworkCreate() {
@@ -372,37 +455,51 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <inheritdoc />
 		public virtual void OnNetworkDestroy() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnStartServer() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnStartClient() {
 		}
 
 		public virtual void OnStartLocalPlayer() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnStartAuthority() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnStopAuthority() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnGiveAuthority() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnRemoveAuthority() {
 		}
 
+		/// <inheritdoc />
 		public virtual void OnSetLocalVisibility(bool vis) {
 		}
 
+		/// <inheritdoc />
 		public virtual LiteNetLib.DeliveryMethod GetNetworkChannel() {
 			return LiteNetLib.DeliveryMethod.ReliableOrdered;
 		}
 
+
+		/// <summary>
+		/// Not implemented yet.
+		/// </summary>
+		/// <returns></returns>
 		public virtual float GetNetworkSendInterval() {
 			return 0.1f;
 		}

@@ -9,7 +9,7 @@ using UnityEngine;
 namespace TinyBirdNet {
 
 	/// <summary>
-	/// This class is used to get all properties marked as SyncVar.
+	/// This class is used to get all <see cref="TinyNetSyncVar"/> properties and <see cref="TinyNetRPC"/> methods and store their info.
 	/// </summary>
 	public static class TinyNetReflector {
 
@@ -17,6 +17,11 @@ namespace TinyBirdNet {
 
 		//public static Dictionary<Type, PropertyInfo> SyncVarProps { get { return syncVarProps; } }
 
+		/// <summary>
+		/// Gets all classes and childs of the given class.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
 		public static List<Type> GetAllClassesAndChildsOf<T>() where T : class {
 			List<Type> types = new List<Type>();
 
@@ -29,6 +34,9 @@ namespace TinyBirdNet {
 			return types;
 		}
 
+		/// <summary>
+		/// Does the reflection process.
+		/// </summary>
 		public static void GetAllSyncVarProps() {
 			List<Type> types = GetAllClassesAndChildsOf<TinyNetBehaviour>();
 

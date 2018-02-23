@@ -5,12 +5,18 @@ using LiteNetLib;
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// Identifies the target of a RPC.
+	/// </summary>
 	public enum RPCTarget {
 		Server,
 		ClientOwner,
 		Everyone
 	}
 
+	/// <summary>
+	/// Identifies the caller of a RPC.
+	/// </summary>
 	public enum RPCCallers {
 		Server,
 		ClientOwner,
@@ -18,8 +24,9 @@ namespace TinyBirdNet {
 	}
 
 	/// <summary>
-	/// When used on a method allows it to be executed remotely on another machine when called.
+	/// When used on a method, allows it to be executed remotely on another machine when called.
 	/// </summary>
+	/// <seealso cref="System.Attribute" />
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
 	public class TinyNetRPC : Attribute {
 

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace TinyBirdNet {
 
 	/// <summary>
-	/// A container for a connection to a NetPeer.
+	/// A container for a connection to a <see cref="NetPeer"/>.
 	/// </summary>
 	public class TinyNetConnection {
 
@@ -16,44 +16,96 @@ namespace TinyBirdNet {
 		/// </summary>
 		protected static NetDataWriter recycleWriter = new NetDataWriter();
 
+		/// <summary>
+		/// The <see cref="NetPeer"/> of this connection.
+		/// </summary>
 		protected NetPeer _peer;
 
+		/// <summary>
+		/// Gets the <see cref="NetPeer"/>.
+		/// </summary>
+		/// <value>
+		/// The <see cref="NetPeer"/>.
+		/// </value>
 		public NetPeer netPeer { get { return _peer; } }
 
+		/// <summary>
+		/// A list of <see cref="TinyNetPlayerController"/> of this connection.
+		/// </summary>
 		List<TinyNetPlayerController> _playerControllers = new List<TinyNetPlayerController>();
 
+		/// <summary>
+		/// Gets the <see cref="TinyNetPlayerController"/>.
+		/// </summary>
+		/// <value>
+		/// The <see cref="TinyNetPlayerController"/>.
+		/// </value>
 		public List<TinyNetPlayerController> playerControllers { get { return _playerControllers; } }
 
 		/// <summary>
 		/// This is a list of objects the connection is able to observe, aka, are spawned and synced.
 		/// </summary>
 		protected HashSet<TinyNetIdentity> _observingNetObjects = new HashSet<TinyNetIdentity>();
-		/**<summary>A hash containing the networkIds of objects owned by this connection.</summary>*/
+		///<summary>A hash containing the NetworkIDs of objects owned by this connection.</summary>
 		protected HashSet<int> _ownedObjectsId;
 
+		/// <summary>
+		/// If this instance is ready
+		/// </summary>
 		public bool isReady;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="TinyNetConnection"/> class.
+		/// </summary>
+		/// <param name="newPeer">The <see cref="NetPeer"/>.</param>
 		public TinyNetConnection(NetPeer newPeer) {
 			_peer = newPeer;
 		}
 
+		/// <summary>
+		/// Gets the connect identifier.
+		/// </summary>
+		/// <value>
+		/// The connect identifier.
+		/// </value>
 		public long ConnectId {	get { return _peer.ConnectId; }
 		}
 
+		/// <summary>
+		/// Returns a <see cref="System.String" /> that represents this instance.
+		/// </summary>
+		/// <returns>
+		/// A <see cref="System.String" /> that represents this instance.
+		/// </returns>
 		public override string ToString() {
 			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", netPeer.EndPoint, ConnectId, isReady);
 		}
 
 		//============ Network Data =========================//
 
+		/// <summary>
+		/// Sends the specified data.
+		/// </summary>
+		/// <param name="data">The data.</param>
+		/// <param name="options">The options.</param>
 		public void Send(byte[] data, DeliveryMethod options) {
 			_peer.Send(data, options);
 		}
 
+		/// <summary>
+		/// Sends the specified data.
+		/// </summary>
+		/// <param name="dataWriter">The data writer.</param>
+		/// <param name="options">The options.</param>
 		public void Send(NetDataWriter dataWriter, DeliveryMethod options) {
 			_peer.Send(dataWriter, options);
 		}
 
+		/// <summary>
+		/// Sends the specified <see cref="ITinyNetMessage"/>.
+		/// </summary>
+		/// <param name="msg">The message.</param>
+		/// <param name="options">The options.</param>
 		public void Send(ITinyNetMessage msg, DeliveryMethod options) {
 			recycleWriter.Reset();
 
@@ -65,6 +117,13 @@ namespace TinyBirdNet {
 
 		//============ Network Identity =====================//
 
+		/// <summary>
+		/// Determines whether this instance is observing the specified <see cref="TinyNetIdentity"/>.
+		/// </summary>
+		/// <param name="tni">The <see cref="TinyNetIdentity"/>.</param>
+		/// <returns>
+		///   <c>true</c> if is observing the specified <see cref="TinyNetIdentity"/>; otherwise, <c>false</c>.
+		/// </returns>
 		public bool IsObservingNetIdentity(TinyNetIdentity tni) {
 			return _observingNetObjects.Contains(tni);
 		}
@@ -72,7 +131,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Always call this to spawn an object to a client, or you will have sync issues.
 		/// </summary>
-		/// <param name="tni"></param>
+		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object to spawn.</param>
 		public void ShowObjectToConnection(TinyNetIdentity tni) {
 			if (_observingNetObjects.Contains(tni)) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("ShowObjectToConnection() called but object with networkdID: " + tni.NetworkID + " is already shown"); }
@@ -88,7 +147,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Always call this to hide an object from a client, or you will have sync issues.
 		/// </summary>
-		/// <param name="tni"></param>
+		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object to hide.</param>
 		public void HideObjectToConnection(TinyNetIdentity tni, bool isDestroyed) {
 			if (!_observingNetObjects.Contains(tni)) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.NetworkID + " is not shown"); }
@@ -103,6 +162,10 @@ namespace TinyBirdNet {
 			}
 		}
 
+		/// <summary>
+		/// Adds an object to the list of owned objects.
+		/// </summary>
+		/// <param name="obj">The <see cref="TinyNetIdentity"/> of the object to own.</param>
 		public void AddOwnedObject(TinyNetIdentity obj) {
 			if (_ownedObjectsId == null) {
 				_ownedObjectsId = new HashSet<int>();
@@ -111,6 +174,10 @@ namespace TinyBirdNet {
 			_ownedObjectsId.Add(obj.NetworkID);
 		}
 
+		/// <summary>
+		/// Removes the owned object from the list.
+		/// </summary>
+		/// <param name="obj">The <see cref="TinyNetIdentity"/> of the object to remove.</param>
 		public void RemoveOwnedObject(TinyNetIdentity obj) {
 			if (_ownedObjectsId == null) {
 				return;
@@ -121,6 +188,11 @@ namespace TinyBirdNet {
 
 		//============ Player Controllers ===================//
 
+		/// <summary>
+		/// Adds a <see cref="TinyNetPlayerController"/> to the list of player controllers of this connection.
+		/// </summary>
+		/// <typeparam name="T">A type derived from <see cref="TinyNetPlayerController"/>.</typeparam>
+		/// <param name="player">The player controller to add.</param>
 		public void SetPlayerController<T>(TinyNetPlayerController player) where T : TinyNetPlayerController, new() {
 			/*while (player.playerControllerId >= _playerControllers.Count) {
 				_playerControllers.Add(new T());
@@ -130,6 +202,10 @@ namespace TinyBirdNet {
 			_playerControllers.Add(player);
 		}
 
+		/// <summary>
+		/// Removes the player controller from this connection.
+		/// </summary>
+		/// <param name="playerControllerId">The player controller identifier.</param>
 		public void RemovePlayerController(short playerControllerId) {
 			/*int count = _playerControllers.Count;
 
@@ -149,6 +225,11 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemovePlayerController for playerControllerId " + playerControllerId + " not found"); }
 		}
 
+		/// <summary>
+		/// Returns a <see cref="TinyNetPlayerController"/>, given an identifier.
+		/// </summary>
+		/// <param name="playerControllerId">The player controller identifier.</param>
+		/// <returns></returns>
 		public TinyNetPlayerController GetPlayerController(short playerControllerId) {
 			for (int i = 0; i < _playerControllers.Count; i++) {
 				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
@@ -159,7 +240,14 @@ namespace TinyBirdNet {
 			return null;
 		}
 
-		// Get player controller from connection's list
+		/// <summary>
+		/// Outs a player controller, given an identifier. Returns true if one was found.
+		/// </summary>
+		/// <param name="playerControllerId">The player controller identifier.</param>
+		/// <param name="playerController">The player controller found.</param>
+		/// <returns>
+		///	  <c>true</c> if a player controller was found; otherwise, <c>false</c>.
+		/// </returns>
 		public bool GetPlayerController(short playerControllerId, out TinyNetPlayerController playerController) {
 			playerController = null;
 
@@ -187,6 +275,12 @@ namespace TinyBirdNet {
 		}
 
 		// Get player controller from connection's list
+		/// <summary>
+		/// Returns a player controller cast to the type given.
+		/// </summary>
+		/// <typeparam name="T">A type derived from <see cref="TinyNetPlayerController"/>.</typeparam>
+		/// <param name="playerControllerId">The player controller identifier.</param>
+		/// <returns>A player controller cast to T.</returns>
 		public T GetPlayerController<T>(short playerControllerId) where T : TinyNetPlayerController {
 			for (int i = 0; i < _playerControllers.Count; i++) {
 				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
@@ -205,10 +299,19 @@ namespace TinyBirdNet {
 			return null;
 		}
 
+		/// <summary>
+		/// Gets the first player controller.
+		/// <para>Useful if your game only have one player per connection.</para>
+		/// </summary>
+		/// <returns></returns>
 		public TinyNetPlayerController GetFirstPlayerController() {
 			return _playerControllers[0];
 		}
 
+		/// <summary>
+		/// Redirects an <see cref="TinyNetInputMessage"/> to the correct player controller.
+		/// </summary>
+		/// <param name="netMsg">The <see cref="TinyNetInputMessage"/>.</param>
 		public void GetPlayerInputMessage(TinyNetMessageReader netMsg) {
 			GetPlayerController(TinyNetInputMessage.PeekAtPlayerControllerId(netMsg)).GetInputMessage(netMsg);
 		}

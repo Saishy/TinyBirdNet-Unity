@@ -9,6 +9,9 @@ namespace TinyBirdNet {
 	[AttributeUsage(AttributeTargets.Property)]
 	public class TinyNetSyncVar : Attribute {
 
+		/// <summary>
+		/// The types allowed for this attribute.
+		/// </summary>
 		public static HashSet<Type> allowedTypes = new HashSet<Type> { typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string) };
 	}
 }

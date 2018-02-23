@@ -5,8 +5,15 @@ using UnityEngine;
 
 namespace TinyBirdNet {
 
+	/// <summary>
+	/// Used to run a method on the PostProcessScene.
+	/// </summary>
 	public class NetworkScenePostProcess {
 
+		/// <summary>
+		/// Called when [PostProcessScene].
+		/// <para>Checks all scene objects.</para>
+		/// </summary>
 		[PostProcessScene]
 		public static void OnPostProcessScene() {
 			int nextSceneId = 1;

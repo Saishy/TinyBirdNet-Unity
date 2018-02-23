@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Assets.TinyBirdNet.Utils {
+
 	public static class PropertyInfoExtensions {
 
 		public static Func<T, object> GetValueGetter<T>(this PropertyInfo propertyInfo) {

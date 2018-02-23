@@ -313,7 +313,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6dbe83d791db234d8c50fdc1e46609e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  multiplayerConnectKey: TinyBirdNet TPS Example 1.1
+  multiplayerConnectKey: TinyBirdNet TPS Example 1.1.3
   NetworkEveryXFixedFrames: 1
   registeredPrefabs:
   - {fileID: 1003412172681446, guid: 2988858db036b6a42a8832c52ac6e5a6, type: 2}
@@ -646,7 +646,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1998987611}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 478.5, y: 273, z: 0}
+  m_LocalPosition: {x: 486.5, y: 273, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1148536499}
