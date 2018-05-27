@@ -78,7 +78,7 @@ namespace TinyBirdNet {
 		/// A <see cref="System.String" /> that represents this instance.
 		/// </returns>
 		public override string ToString() {
-			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", netPeer.EndPoint, ConnectId, isReady);
+			return string.Format("{0} EndPoint: {1} ConnectId: {2} isReady: {3}", GetType(), netPeer.EndPoint, ConnectId, isReady);
 		}
 
 		//============ Network Data =========================//

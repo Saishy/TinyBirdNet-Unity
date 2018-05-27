@@ -265,6 +265,20 @@ namespace TinyBirdNet {
 			return null;
 		}
 
+		protected TinyNetLocalConnection GetTinyNetLocalConnection() {
+			TinyNetLocalConnection localConn = null;
+
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				localConn = tinyNetConns[i] as TinyNetLocalConnection;
+
+				if (localConn != null) {
+					break;
+				}
+			}
+
+			return localConn;
+		}
+
 		/// <summary>
 		/// Removes the connection.
 		/// </summary>
@@ -394,17 +408,24 @@ namespace TinyBirdNet {
 			return msgType;
 		}
 
-		public virtual void ReceiveMessageSinglePlayer(NetDataReader reader, TinyNetLocalConnection tinyConn) {
+		/// <summary>
+		/// Calls the message deletage.
+		/// </summary>
+		/// <param name="reader">The reader.</param>
+		/// <param name="tinyConn">The tiny connection.</param>
+		public virtual ushort ReadMessageLocalConnection(NetDataReader reader) {
 			ushort msgType = reader.GetUShort();
 
 			if (_tinyMessageHandlers.Contains(msgType)) {
 				recycleMessageReader.msgType = msgType;
 				recycleMessageReader.reader = reader;
-				recycleMessageReader.tinyNetConn = tinyConn;
+				recycleMessageReader.tinyNetConn = GetTinyNetLocalConnection();
 				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
 
 				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
 			}
+
+			return msgType;
 		}
 
 		/// <summary>

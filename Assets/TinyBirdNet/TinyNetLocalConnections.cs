@@ -41,7 +41,7 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public override string ToString() {
-			return string.Format("EndPoint: {0} ConnectId: {1} isReady: {2}", "localhost", ConnectId, isReady);
+			return string.Format("{0} EndPoint: {0} ConnectId: {1} isReady: {2}", GetType(), "localhost", ConnectId, isReady);
 		}
 	}
 
@@ -61,7 +61,7 @@ namespace TinyBirdNet {
 			s_recycleReader.Clear();
 			s_recycleReader.SetSource(data);
 
-			TinyNetClient.instance.ReceiveMessageSinglePlayer(s_recycleReader, this);
+			TinyNetClient.instance.ReadMessageLocalConnection(s_recycleReader);
 		}
 
 		/// <inheritdoc />
@@ -69,7 +69,7 @@ namespace TinyBirdNet {
 			s_recycleReader.Clear();
 			s_recycleReader.SetSource(dataWriter);
 
-			TinyNetClient.instance.ReceiveMessageSinglePlayer(s_recycleReader, this);
+			TinyNetClient.instance.ReadMessageLocalConnection(s_recycleReader);
 		}
 
 		/// <inheritdoc />
@@ -82,7 +82,7 @@ namespace TinyBirdNet {
 			s_recycleReader.Clear();
 			s_recycleReader.SetSource(recycleWriter);
 
-			TinyNetClient.instance.ReceiveMessageSinglePlayer(s_recycleReader, this);
+			TinyNetClient.instance.ReadMessageLocalConnection(s_recycleReader);
 		}
 	}
 
@@ -102,7 +102,7 @@ namespace TinyBirdNet {
 			s_recycleReader.Clear();
 			s_recycleReader.SetSource(data);
 
-			TinyNetServer.instance.ReceiveMessageSinglePlayer(s_recycleReader, this);
+			TinyNetServer.instance.ReadMessageLocalConnection(s_recycleReader);
 		}
 
 		/// <inheritdoc />
@@ -110,7 +110,7 @@ namespace TinyBirdNet {
 			s_recycleReader.Clear();
 			s_recycleReader.SetSource(dataWriter);
 
-			TinyNetServer.instance.ReceiveMessageSinglePlayer(s_recycleReader, this);
+			TinyNetServer.instance.ReadMessageLocalConnection(s_recycleReader);
 		}
 
 		/// <inheritdoc />
@@ -123,7 +123,7 @@ namespace TinyBirdNet {
 			s_recycleReader.Clear();
 			s_recycleReader.SetSource(recycleWriter);
 
-			TinyNetServer.instance.ReceiveMessageSinglePlayer(s_recycleReader, this);
+			TinyNetServer.instance.ReadMessageLocalConnection(s_recycleReader);
 		}
 	}
 }
