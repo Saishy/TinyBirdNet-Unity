@@ -50,9 +50,7 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public override void TinyNetUpdate() {
-			currentFixedFrame++;
-
-			if (currentFixedFrame % TinyNetGameManager.instance.NetworkEveryXFixedFrames != 0) {
+			if (CurrentGameTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames != 0) {
 				return;
 			}
 
@@ -69,7 +67,7 @@ namespace TinyBirdNet {
 		/// <returns></returns>
 		public virtual bool StartServer(int port, int maxNumberOfPlayers) {
 			if (_netManager != null) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("StartServer() called multiple times."); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("[" + TYPE + "] StartServer() called multiple times."); }
 				return false;
 			}
 
@@ -78,7 +76,7 @@ namespace TinyBirdNet {
 
 			ConfigureNetManager(true);
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[SERVER] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers); }
 
 			return true;
 		}
@@ -132,7 +130,7 @@ namespace TinyBirdNet {
 			view = go.GetComponent<TinyNetIdentity>();
 
 			if (view == null) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("UNET failure. GameObject doesn't have TinyNetIdentity."); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyBirdNet failure. GameObject doesn't have TinyNetIdentity."); }
 				return false;
 			}
 

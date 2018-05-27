@@ -68,7 +68,7 @@ namespace TinyBirdNet {
 		/// <value>
 		/// The connect identifier.
 		/// </value>
-		public long ConnectId {	get { return _peer.ConnectId; }
+		public virtual long ConnectId {	get { return _peer.ConnectId; }
 		}
 
 		/// <summary>
@@ -88,7 +88,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="data">The data.</param>
 		/// <param name="options">The options.</param>
-		public void Send(byte[] data, DeliveryMethod options) {
+		public virtual void Send(byte[] data, DeliveryMethod options) {
 			_peer.Send(data, options);
 		}
 
@@ -97,7 +97,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="dataWriter">The data writer.</param>
 		/// <param name="options">The options.</param>
-		public void Send(NetDataWriter dataWriter, DeliveryMethod options) {
+		public virtual void Send(NetDataWriter dataWriter, DeliveryMethod options) {
 			_peer.Send(dataWriter, options);
 		}
 
@@ -106,7 +106,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="msg">The message.</param>
 		/// <param name="options">The options.</param>
-		public void Send(ITinyNetMessage msg, DeliveryMethod options) {
+		public virtual void Send(ITinyNetMessage msg, DeliveryMethod options) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);

@@ -11,6 +11,7 @@ namespace TinyBirdNet {
 	[CustomEditor(typeof(TinyNetGameManager), true)]
 	public class TinyNetGameManagerEditor : Editor {
 
+		static GUIContent targetFPSButton = new GUIContent("Change Physics FPS to 60", "This will change your fixed timestep to 0.01666667. If you don't know what you are doing, click here!");
 		static GUIContent connectKeyLabel = new GUIContent("Connect Key:", "Insert here a unique key per version of your game, if the key mismatches the player will be denied connection.");
 		static GUIContent networkFramesLabel = new GUIContent("Update Network every X Fixed Frames", "This will change how often the server sends the current state of the game to clients.");
 		static GUIContent logFilterLabel = new GUIContent("LogFilter:", "Your console will only display logs of this level or higher.");
@@ -37,6 +38,10 @@ namespace TinyBirdNet {
 			serializedObject.Update();
 
 			TinyNetGameManager netGameManager = target as TinyNetGameManager;
+
+			if (GUILayout.Button(targetFPSButton)) {
+				ChangeGameTargetFPSTo60();
+			}
 
 			//EditorGUILayout.LabelField("Update Network every X Fixed Frames");
 			EditorGUILayout.LabelField(networkFramesLabel);
@@ -80,6 +85,12 @@ namespace TinyBirdNet {
 			}
 
 			return result.ToArray();
+		}
+
+		void ChangeGameTargetFPSTo60() {
+			Time.fixedDeltaTime = 0.01666667f;
+			Time.maximumDeltaTime = 0.01666667f * 5;
+			Time.maximumParticleDeltaTime = 0.01666667f * 2;
 		}
 	}
 }

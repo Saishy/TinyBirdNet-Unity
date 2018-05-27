@@ -91,25 +91,34 @@ namespace TinyBirdNet {
 		protected NetManager _netManager;
 
 		/// <summary>
-		/// The current fixed frame, used for calculation the network state update frequency.
+		/// Gets the current game tick from <see cref="TinyNetGameManager"/>.
 		/// </summary>
-		protected int currentFixedFrame = 0;
+		/// <value>
+		/// The current game tick.
+		/// </value>
+		protected int CurrentGameTick {
+			get {
+				return TinyNetGameManager.instance.CurrentGameTick;
+			}
+		}
 
 		/// <summary>
 		/// Returns true if socket is listening and update thread is running.
 		/// </summary>
-		public bool isRunning { get {
+		public virtual bool isRunning {
+			get {
 				if (_netManager == null) {
 					return false;
 				}
 
 				return _netManager.IsRunning;
-		} }
+			}
+		}
 
 		/// <summary>
 		/// Returns true if it's connected to at least one peer.
 		/// </summary>
-		public bool isConnected {
+		public virtual bool isConnected {
 			get {
 				if (_netManager == null) {
 					return false;
@@ -383,6 +392,19 @@ namespace TinyBirdNet {
 			}
 
 			return msgType;
+		}
+
+		public virtual void ReceiveMessageSinglePlayer(NetDataReader reader, TinyNetLocalConnection tinyConn) {
+			ushort msgType = reader.GetUShort();
+
+			if (_tinyMessageHandlers.Contains(msgType)) {
+				recycleMessageReader.msgType = msgType;
+				recycleMessageReader.reader = reader;
+				recycleMessageReader.tinyNetConn = tinyConn;
+				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
+
+				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
+			}
 		}
 
 		/// <summary>

@@ -33,7 +33,7 @@ namespace TinyBirdNet {
 		/// The network state update will happen every x fixed frames.
 		/// </summary>
 		[Range(1, 60)]
-		public int NetworkEveryXFixedFrames = 15;
+		public int NetworkEveryXFixedFrames = 1;
 
 		/// <summary>
 		/// Current scene name at runtime.
@@ -192,6 +192,20 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
+		/// The current game tick, used to calculate the network state, buffer and reconciliation.
+		/// </summary>
+		private int _currentFixedFrame = 0;
+
+		/// <summary>
+		/// The current game tick, used to calcuate the network state, buffer and reconciliation.
+		/// </summary>
+		public int CurrentGameTick {
+			get {
+				return _currentFixedFrame;
+			}
+		}
+
+		/// <summary>
 		/// Awake is run before Start and there is no guarantee anything else has been initialized. Called by UnityEngine.
 		/// </summary>
 		void Awake() {
@@ -263,6 +277,7 @@ namespace TinyBirdNet {
 				}
 
 				yield return new WaitForFixedUpdate();
+				_currentFixedFrame++;
 			}
 		}
 
@@ -479,6 +494,15 @@ namespace TinyBirdNet {
 			bNatPunchEnabled = bNewState;
 		}
 
+		public virtual void StartSinglePlayer() {
+			serverManager = new TinyNetServerSinglePlayer();
+			serverManager.StartServer(8130, maxNumberOfPlayers);
+
+			clientManager = new TinyNetClientSinglePlayer();
+			clientManager.StartClient();
+			clientManager.ClientConnectTo("localhost", 8130);
+		}
+
 		/// <summary>
 		/// Prepares this game to work as a server.
 		/// </summary>
@@ -544,12 +568,11 @@ namespace TinyBirdNet {
 			if (!s_LoadingSceneAsync.isDone)
 				return;
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("CheckForSceneLoad done"); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetGameManager::CheckForSceneLoad() done"); }
 
 			FinishLoadScene();
 			s_LoadingSceneAsync.allowSceneActivation = true;
 			s_LoadingSceneAsync = null;
-
 		}
 
 		/// <summary>
@@ -558,11 +581,11 @@ namespace TinyBirdNet {
 		/// <param name="newSceneName">The name of the scene to change to.</param>
 		public virtual void ServerChangeScene(string newSceneName) {
 			if (string.IsNullOrEmpty(newSceneName)) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("ServerChangeScene empty scene name"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetGameManager::ServerChangeScene() empty scene name"); }
 				return;
 			}
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ServerChangeScene " + newSceneName); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetGameManager::ServerChangeScene() " + newSceneName); }
 
 			serverManager.SetAllClientsNotReady();
 			networkSceneName = newSceneName;
@@ -581,11 +604,11 @@ namespace TinyBirdNet {
 		/// <param name="forceReload">if set to <c>true</c>, force reload.</param>
 		public virtual void ClientChangeScene(string newSceneName, bool forceReload) {
 			if (string.IsNullOrEmpty(newSceneName)) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("ClientChangeScene empty scene name"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetGameManager::ClientChangeScene() empty scene name"); }
 				return;
 			}
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("ClientChangeScene newSceneName:" + newSceneName + " networkSceneName:" + networkSceneName); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetGameManager::ClientChangeScene() newSceneName:" + newSceneName + " networkSceneName:" + networkSceneName); }
 
 
 			if (newSceneName == networkSceneName) {

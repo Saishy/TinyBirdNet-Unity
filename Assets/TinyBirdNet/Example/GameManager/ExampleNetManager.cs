@@ -26,6 +26,12 @@ class ExampleNetManager : TinyNetGameManager {
 		}
 	}
 
+	public override void StartSinglePlayer() {
+		base.StartSinglePlayer();
+
+		ServerChangeScene("MainScene");
+	}
+
 	public override void ClientConnectTo(string hostAddress, int hostPort) {
 		base.ClientConnectTo(hostAddress, hostPort);
 	}
