@@ -170,9 +170,9 @@ Camera:
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
-  m_AllowMSAA: 1
+  m_AllowMSAA: 0
   m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
+  m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
   m_StereoMirrorMode: 0
@@ -273,8 +273,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2009716083}
-        m_MethodName: PressedSinglePlayerButton
+      - m_Target: {fileID: 713988254}
+        m_MethodName: StartSinglePlayer
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -924,9 +924,3 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &2009716083 stripped
-MonoBehaviour:
-  m_PrefabParentObject: {fileID: 114313681827863850, guid: 1d906799e83dd65409f66be035a3c34d,
-    type: 2}
-  m_PrefabInternal: {fileID: 1754439811}
-  m_Script: {fileID: 11500000, guid: 7139de84aa4b0f6448277069ef4f0a70, type: 3}

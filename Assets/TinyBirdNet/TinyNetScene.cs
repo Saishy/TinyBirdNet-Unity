@@ -33,11 +33,6 @@ namespace TinyBirdNet {
 		protected static Dictionary<int, TinyNetIdentity> _localIdentityObjects = new Dictionary<int, TinyNetIdentity>();
 
 		/// <summary>
-		/// int is the NetworkID of the ITinyNetObject object.
-		/// </summary>
-		protected static Dictionary<int, ITinyNetObject> _localNetObjects = new Dictionary<int, ITinyNetObject>();
-
-		/// <summary>
 		/// If using this, always Reset before use!
 		/// </summary>
 		protected static NetDataWriter recycleWriter = new NetDataWriter();
@@ -265,20 +260,6 @@ namespace TinyBirdNet {
 			return null;
 		}
 
-		protected TinyNetLocalConnection GetTinyNetLocalConnection() {
-			TinyNetLocalConnection localConn = null;
-
-			for (int i = 0; i < tinyNetConns.Count; i++) {
-				localConn = tinyNetConns[i] as TinyNetLocalConnection;
-
-				if (localConn != null) {
-					break;
-				}
-			}
-
-			return localConn;
-		}
-
 		/// <summary>
 		/// Removes the connection.
 		/// </summary>
@@ -338,27 +319,11 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Adds the <see cref="ITinyNetObject"/> to list.
-		/// </summary>
-		/// <param name="netObj">The net object.</param>
-		public static void AddTinyNetObjectToList(ITinyNetObject netObj) {
-			_localNetObjects.Add(netObj.NetworkID, netObj);
-		}
-
-		/// <summary>
 		/// Removes the <see cref="TinyNetIdentity"/> from the list.
 		/// </summary>
 		/// <param name="netIdentity">The net identity.</param>
 		public static void RemoveTinyNetIdentityFromList(TinyNetIdentity netIdentity) {
 			_localIdentityObjects.Remove(netIdentity.NetworkID);
-		}
-
-		/// <summary>
-		/// Removes the <see cref="ITinyNetObject"/> from the list.
-		/// </summary>
-		/// <param name="netObj">The net object.</param>
-		public static void RemoveTinyNetObjectFromList(ITinyNetObject netObj) {
-			_localNetObjects.Remove(netObj.NetworkID);
 		}
 
 		/// <summary>
@@ -373,15 +338,15 @@ namespace TinyBirdNet {
 			return reference;
 		}
 
-		/// <summary>
-		/// Gets a <see cref="ITinyNetObject"/> by it's network identifier.
-		/// </summary>
-		/// <param name="nId">The NetworkID.</param>
+		/// <summary>Gets a <see cref="ITinyNetComponent"/> by it's network identifier.</summary>
+		/// <param name="networkId">The network identifier.</param>
+		/// <param name="localId">The local identifier on the TinyNetIdentity.</param>
 		/// <returns></returns>
-		public static ITinyNetObject GetTinyNetObjectByNetworkID(int nId) {
-			ITinyNetObject reference = null;
+		public static ITinyNetComponent GetTinyNetObjectByNetworkID(int networkId, int localId) {
+			ITinyNetComponent reference = null;
 			//return _localNetObjects.ContainsKey(nId) ? _localNetObjects[nId] : null;
-			_localNetObjects.TryGetValue(nId, out reference);
+			TinyNetIdentity tinyNetRef = GetTinyNetIdentityByNetworkID(networkId);
+			reference = tinyNetRef.GetComponentById(localId);
 			return reference;
 		}
 
@@ -400,27 +365,7 @@ namespace TinyBirdNet {
 				recycleMessageReader.msgType = msgType;
 				recycleMessageReader.reader = reader;
 				recycleMessageReader.tinyNetConn = GetTinyNetConnection(peer);
-				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
-
-				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
-			}
-
-			return msgType;
-		}
-
-		/// <summary>
-		/// Calls the message deletage.
-		/// </summary>
-		/// <param name="reader">The reader.</param>
-		/// <param name="tinyConn">The tiny connection.</param>
-		public virtual ushort ReadMessageLocalConnection(NetDataReader reader) {
-			ushort msgType = reader.GetUShort();
-
-			if (_tinyMessageHandlers.Contains(msgType)) {
-				recycleMessageReader.msgType = msgType;
-				recycleMessageReader.reader = reader;
-				recycleMessageReader.tinyNetConn = GetTinyNetLocalConnection();
-				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //@TODO: I currently don't know if it's possible to get from which channel a message came.
+				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //TODO: I currently don't know if it's possible to get from which channel a message came.
 
 				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
 			}
@@ -633,12 +578,13 @@ namespace TinyBirdNet {
 
 		/// <summary>
 		/// Called when an RPC message is received.
+		/// TODO FIX THIS!
 		/// </summary>
 		/// <param name="netMsg">The net message.</param>
 		protected virtual void OnRPCMessage(TinyNetMessageReader netMsg) {
-			netMsg.ReadMessage(s_TinyNetRPCMessage);
+			/*netMsg.ReadMessage(s_TinyNetRPCMessage);
 
-			ITinyNetObject iObj = GetTinyNetObjectByNetworkID(s_TinyNetRPCMessage.networkID);
+			ITinyNetComponent iObj = GetTinyNetObjectByNetworkID(s_TinyNetRPCMessage.networkID);
 
 			if (iObj == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetScene::OnRPCMessage No ITinyNetObject with the HNetworkID: " + s_TinyNetRPCMessage.networkID); }
@@ -646,7 +592,7 @@ namespace TinyBirdNet {
 			}
 
 			recycleMessageReader.reader.SetSource(s_TinyNetRPCMessage.parameters);
-			iObj.InvokeRPC(s_TinyNetRPCMessage.rpcMethodIndex, recycleMessageReader.reader);
+			iObj.InvokeRPC(s_TinyNetRPCMessage.rpcMethodIndex, recycleMessageReader.reader);*/
 		}
 
 		//============ Players Methods ======================//

@@ -54,7 +54,7 @@ namespace TinyBirdNet {
 				return;
 			}
 
-			foreach (var item in _localNetObjects) {
+			foreach (var item in _localIdentityObjects) {
 				item.Value.TinyNetUpdate();
 			}
 		}
@@ -210,7 +210,7 @@ namespace TinyBirdNet {
 
 			// Include state of TinyNetObjects.
 			recycleWriter.Reset();
-			netIdentity.SerializeAllTinyNetObjects(recycleWriter);
+			netIdentity.TinySerialize(recycleWriter, true);
 
 			if (recycleWriter.Length > 0) {
 				msg.initialState = recycleWriter.CopyData();
@@ -308,14 +308,15 @@ namespace TinyBirdNet {
 		/// <param name="stream">The stream.</param>
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		/// <param name="iObj">The object.</param>
-		public void SendRPCToClientOwner(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
-			var msg = new TinyNetRPCMessage();
+		public void SendRPCToClientOwner(NetDataWriter stream, int rpcMethodIndex, ITinyNetComponent iObj) {
+			//TODO FIX THIS
+			/*var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
 			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream.Data;
 			
-			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);*/
 		}
 
 		/// <summary>
@@ -324,14 +325,15 @@ namespace TinyBirdNet {
 		/// <param name="stream">The stream.</param>
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		/// <param name="iObj">The object.</param>
-		public void SendRPCToAllClients(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
-			var msg = new TinyNetRPCMessage();
+		public void SendRPCToAllClients(NetDataWriter stream, int rpcMethodIndex, ITinyNetComponent iObj) {
+			//TODO FIX THIS
+			/*var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
 			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream.Data;
 
-			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, DeliveryMethod.ReliableOrdered);
+			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, DeliveryMethod.ReliableOrdered);*/
 		}
 
 		//============ TinyNetMessages Networking ===========//
@@ -341,16 +343,16 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netBehaviour">The TinyNetBehaviour.</param>
 		/// <param name="sendOptions">The send options.</param>
-		public virtual void SendStateUpdateToAllObservers(TinyNetBehaviour netBehaviour, DeliveryMethod sendOptions) {
+		public virtual void SendStateUpdateToAllObservers(TinyNetIdentity netIdentity, DeliveryMethod sendOptions) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(TinyNetMsgType.StateUpdate);
-			recycleWriter.Put(netBehaviour.NetworkID);
+			recycleWriter.Put(netIdentity.NetworkID);
 
-			netBehaviour.TinySerialize(recycleWriter, false);
+			netIdentity.TinySerialize(recycleWriter, false);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
-				if (!tinyNetConns[i].IsObservingNetIdentity(netBehaviour.NetIdentity)) {
+				if (!tinyNetConns[i].IsObservingNetIdentity(netIdentity)) {
 					return;
 				}
 				tinyNetConns[i].Send(recycleWriter, sendOptions);

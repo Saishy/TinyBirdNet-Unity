@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using TinyBirdUtils;
 using LiteNetLib.Utils;
 using TinyBirdNet.Messaging;
@@ -12,7 +13,9 @@ namespace TinyBirdNet {
 
 	/// <summary>
 	/// Any <see cref="GameObject" /> that contains this component, can be spawned accross the network.
-	/// <para>This is basically a container for an "universal id" accross the network.</para>
+	/// <para> This is basically a container for an "universal id" accross the network. </para>
+	/// <para> In addition, TinyBirdNet handles it's spawning, serialization, RPC, and mostly anything you need to create
+	/// a new instance of it in a multiplayer game and have it automatically synced. </para>
 	/// </summary>
 	/// <seealso cref="UnityEngine.MonoBehaviour" />
 	/// <seealso cref="TinyBirdNet.ITinyNetInstanceID" />
@@ -34,7 +37,8 @@ namespace TinyBirdNet {
 		/// </summary>
 		[SerializeField] bool _serverOnly;
 		/// <summary>
-		/// If true, this object is owned by a client
+		/// If true, this object is owned by a client.
+		/// <para> This does not have any effect for TinyBirdNet, use it for your game. </para>
 		/// </summary>
 		[SerializeField] bool _localPlayerAuthority;
 		/// <summary>
@@ -47,9 +51,24 @@ namespace TinyBirdNet {
 		[SerializeField] int _sceneID;
 
 		/// <summary>
-		/// The list of <see cref="ITinyNetObject"/> components in this <see cref="GameObject"/>.
+		/// The list of <see cref="ITinyNetComponent"/> components in this <see cref="GameObject"/>.
 		/// </summary>
-		ITinyNetObject[] _tinyNetObjects;
+		ITinyNetComponent[] _tinyNetComponents;
+
+		public enum TinyNetComponentEvents {
+			OnNetworkCreate,
+			OnNetworkDestroy,
+			OnStartServer,
+			OnStartClient,
+			OnStartAuthority,
+			OnStopAuthority,
+			OnGiveAuthority,
+			OnRemoveAuthority,
+			OnGiveLocalVisibility,
+			OnRemoveLocalVisibility
+		}
+
+		Dictionary<TinyNetComponentEvents, LinkedList<System.Action>> _registeredEventHandlers;
 
 		//bool _bIsOwner;
 		/// <summary>
@@ -155,37 +174,104 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Caches the <see cref="ITinyNetObject"/>
+		/// Caches the <see cref="ITinyNetComponent"/>
 		/// </summary>
 		void CacheTinyNetObjects() {
-			if (_tinyNetObjects == null) {
-				_tinyNetObjects = GetComponentsInChildren<ITinyNetObject>(true);
+			if (_tinyNetComponents == null) {
+				_tinyNetComponents = GetComponentsInChildren<ITinyNetComponent>(true);
 			}
 		}
 
-		/// <summary>
-		/// Called on the server to serialize all <see cref="ITinyNetObject"/> attached to this prefab.
+		public ITinyNetComponent GetComponentById(int localId) {
+			if (localId < 0 || localId >= _tinyNetComponents.Length) {
+				return null;
+			}
+
+			return _tinyNetComponents[localId];
+		}
+
+		public void RegisterEventHandler(TinyNetComponentEvents eventType, System.Action handler) {
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(eventType, out handlers)) {
+				handlers = new LinkedList<System.Action>();
+				_registeredEventHandlers.Add(eventType, handlers);
+			}
+
+			LinkedListNode<System.Action> nodeToFind = handlers.Find(handler);
+			if (nodeToFind != null) {
+				handlers.AddLast(handler);
+			}
+		}
+
+		public void UnregisterEventHandler(TinyNetComponentEvents eventType, System.Action handler) {
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(eventType, out handlers)) {
+				return;
+			}
+
+			LinkedListNode<System.Action> nodeToFind = handlers.Find(handler);
+			if (nodeToFind != null) {
+				handlers.Remove(nodeToFind);
+			}
+		}
+
+		/*/// <summary>
+		/// Called on the server to serialize all <see cref="ITinyNetComponent"/> attached to this prefab.
 		/// </summary>
 		/// <param name="writer"></param>
 		public void SerializeAllTinyNetObjects(NetDataWriter writer) {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				ITinyNetObject obj = _tinyNetObjects[i];
-				obj.TinySerialize(writer, true);
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+				_tinyNetComponents[i].TinySerialize(writer, true);
 			}
 		}
 
 		/// <summary>
-		/// Deserializes all <see cref="ITinyNetObject"/> data.
+		/// Deserializes all <see cref="ITinyNetComponent"/> data.
 		/// </summary>
 		/// <param name="reader">The reader.</param>
 		/// <param name="bInitialState">if set to <c>true</c> [b initial state].</param>
 		public void DeserializeAllTinyNetObjects(NetDataReader reader, bool bInitialState) {
-			if (bInitialState && _tinyNetObjects == null) {
+			if (bInitialState && _tinyNetComponents == null) {
 				CacheTinyNetObjects();
 			}
 
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].TinyDeserialize(reader, bInitialState);
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+				_tinyNetComponents[i].TinyDeserialize(reader, bInitialState);
+			}
+		}*/
+
+		/// <summary>
+		/// Called on the server to serialize all <see cref="ITinyNetComponent"/> attached to this prefab.
+		/// </summary>
+		/// <param name="writer"></param>
+		public void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+
+				if (!firstStateUpdate) {
+					if (_tinyNetComponents[i].IsDirty) {
+						//writer.Put((byte)i);
+					} else {
+						//continue;
+					}
+				}
+
+				_tinyNetComponents[i].TinySerialize(writer, firstStateUpdate);
+			}
+		}
+
+		/// <summary>
+		/// Deserializes all <see cref="ITinyNetComponent"/> data.
+		/// </summary>
+		/// <param name="reader">The reader.</param>
+		/// <param name="bInitialState">if set to <c>true</c> [b initial state].</param>
+		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
+			if (firstStateUpdate && _tinyNetComponents == null) {
+				CacheTinyNetObjects();
+			}
+
+			//TODO Create dirty flag and only deserialize the necessary components, then fix the TinySerialize too!
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+				_tinyNetComponents[i].TinyDeserialize(reader, firstStateUpdate);
 			}
 		}
 
@@ -278,30 +364,52 @@ namespace TinyBirdNet {
 			_ConnectionToOwnerClient = conn;
 		}
 
+		public void TinyNetUpdate() {
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+				_tinyNetComponents[i].TinyNetUpdate();
+			}
+		}
 
 		/// <summary>
 		/// Called when this object is created.
+		/// <para> Always called, regardless of being a client or server. Called before variables are synced. (Order: 0) </para>
 		/// </summary>
 		public virtual void OnNetworkCreate() {
 			CacheTinyNetObjects();
 
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnNetworkCreate();
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnNetworkCreate, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
 			}
 		}
 
 		/// <summary>
-		/// Called when destroyed by the network.
+		/// Called when the object receives an order to be destroyed from the network,
+		/// in a listen server the object could just be unspawned without being actually destroyed.
 		/// </summary>
 		public virtual void OnNetworkDestroy() {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnNetworkDestroy, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
+			}
+
+			/*for (int i = 0; i < _tinyNetObjects.Length; i++) {
 				TinyNetScene.RemoveTinyNetObjectFromList(_tinyNetObjects[i]);
 				_tinyNetObjects[i].OnNetworkDestroy();
-			}
+			}*/
 		}
 
 		/// <summary>
 		/// Called when an object is spawned on the server.
+		/// <para> Called on the server when Spawn is called for this object. (Order: 1) </para>
 		/// </summary>
 		/// <param name="allowNonZeroNetId">If the object already have a NetworkId, it was probably recycled.</param>
 		public void OnStartServer(bool allowNonZeroNetId) {
@@ -317,8 +425,9 @@ namespace TinyBirdNet {
 			if (NetworkID == 0) {
 				NetworkID = TinyNetGameManager.instance.NextNetworkID;
 
-				for (int i = 0; i < _tinyNetObjects.Length; i++) {
-					_tinyNetObjects[i].ReceiveNetworkID(TinyNetGameManager.instance.NextNetworkID);
+				// If anything goes wrong, blame this person: https://forum.unity.com/threads/getcomponentsinchildren.4582/#post-33983
+				for (int i = 0; i < _tinyNetComponents.Length; i++) {
+					_tinyNetComponents[i].ReceiveNetworkID(i);
 				}
 			} else {
 				if (allowNonZeroNetId) {
@@ -329,9 +438,15 @@ namespace TinyBirdNet {
 				}
 			}
 
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				TinyNetScene.AddTinyNetObjectToList(_tinyNetObjects[i]);
-				_tinyNetObjects[i].OnStartServer();
+			{ // Calling OnStartServer on those who registered
+				LinkedList<System.Action> handlers;
+				if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnStartServer, out handlers)) {
+					return;
+				}
+
+				for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+					currentNode.Value();
+				}
 			}
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartServer " + gameObject + " netId:" + NetworkID); }
@@ -343,6 +458,7 @@ namespace TinyBirdNet {
 
 		/// <summary>
 		/// Called when an object is spawned on the client.
+		/// <para> Called on the client when the object is spawned. Called after variables are synced. (Order: 2) </para>
 		/// </summary>
 		public void OnStartClient() {
 			if (bStartClientTwiceTest) {
@@ -351,68 +467,106 @@ namespace TinyBirdNet {
 				bStartClientTwiceTest = true;
 			}
 
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				if (!isServer) {
-					TinyNetScene.AddTinyNetObjectToList(_tinyNetObjects[i]);
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+				_tinyNetComponents[i].ReceiveNetworkID(i);
+			}
+
+			{ // Calling OnStartClient on those who registered
+				LinkedList<System.Action> handlers;
+				if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnStartClient, out handlers)) {
+					return;
 				}
-				_tinyNetObjects[i].OnStartClient();
+
+				for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+					currentNode.Value();
+				}
 			}
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartClient " + gameObject + " netId:" + NetworkID + " localPlayerAuthority: " + _localPlayerAuthority); }
 		}
 
 		/// <summary>
-		/// Called when [start local player].
-		/// </summary>
-		public virtual void OnStartLocalPlayer() {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnStartLocalPlayer();
-			}
-		}
-
-		/// <summary>
-		/// Called when [start authority].
+		/// Called on Server or Client when receiving Authority
 		/// </summary>
 		public virtual void OnStartAuthority() {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnStartAuthority();
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnStartAuthority, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
 			}
 		}
 
 		/// <summary>
-		/// Called when [stop authority].
+		/// Called on Server or Client when lost Authorithy.
 		/// </summary>
 		public virtual void OnStopAuthority() {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnStopAuthority();
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnStopAuthority, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
 			}
 		}
 
 		/// <summary>
-		/// Called when [give authority].
+		/// Called on Server when giving Authority to a client.
 		/// </summary>
 		public virtual void OnGiveAuthority() {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnGiveAuthority();
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnGiveAuthority, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
 			}
 		}
 
 		/// <summary>
-		/// Called when [remove authority].
+		/// Called on Server when removin Authority from a client.
 		/// </summary>
 		public virtual void OnRemoveAuthority() {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnRemoveAuthority();
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnRemoveAuthority, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
 			}
 		}
 
 		/// <summary>
-		/// Called when [set local visibility].
+		/// This is only called on a listen server, for spawn and hide messages. Objects being destroyed will trigger OnNetworkDestroy as normal.
 		/// </summary>
-		/// <param name="vis">if set to <c>true</c> [vis].</param>
-		public virtual void OnSetLocalVisibility(bool vis) {
-			for (int i = 0; i < _tinyNetObjects.Length; i++) {
-				_tinyNetObjects[i].OnSetLocalVisibility(vis);
+		public virtual void OnGiveLocalVisibility() {
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnGiveLocalVisibility, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
+			}
+		}
+
+
+		/// <summary>
+		/// This is only called on a listen server, for spawn and hide messages. Objects being destroyed will trigger OnNetworkDestroy as normal.
+		/// </summary>
+		public virtual void OnRemoveLocalVisibility() {
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnRemoveLocalVisibility, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
 			}
 		}
 
@@ -435,7 +589,6 @@ namespace TinyBirdNet {
 
 		/// <summary>
 		/// [Server only] Removes the client authority.
-		/// <para>Not implemmented yet.</para>
 		/// </summary>
 		/// <param name="conn">The connection.</param>
 		/// <returns></returns>

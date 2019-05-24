@@ -9,7 +9,7 @@ namespace TinyBirdNet {
 	public interface ITinyNetInstanceID {
 
 		/// <summary>
-		/// The ID of an instance in the network, given by the server on spawn.
+		/// The ID of an instance in the network.
 		/// </summary>
 		int NetworkID { get; }
 

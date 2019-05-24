@@ -494,15 +494,6 @@ namespace TinyBirdNet {
 			bNatPunchEnabled = bNewState;
 		}
 
-		public virtual void StartSinglePlayer() {
-			serverManager = new TinyNetServerSinglePlayer();
-			serverManager.StartServer(8130, maxNumberOfPlayers);
-
-			clientManager = new TinyNetClientSinglePlayer();
-			clientManager.StartClient();
-			clientManager.ClientConnectTo("localhost", 8130);
-		}
-
 		/// <summary>
 		/// Prepares this game to work as a server.
 		/// </summary>

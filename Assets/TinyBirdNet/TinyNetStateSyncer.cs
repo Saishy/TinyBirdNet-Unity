@@ -101,17 +101,20 @@ namespace TinyBirdNet {
 			rpcMethodInfo = rpcMethods[type][rpcMethodIndex];
 		}
 
-		public static void UpdateDirtyFlagOf(TinyNetBehaviour instance, BitArray bitArray) {
+		public static bool UpdateDirtyFlagOf(TinyNetBehaviour instance, BitArray bitArray) {
 			Type type = instance.GetType();
+			bool localReturn = false;
 
 			for (int i = 0; i < syncVarProps[type].Count; i++) {
 				if (instance.CheckIfPropertyUpdated(syncVarProps[type][i].Name, syncVarProps[type][i].PropertyType)) {
 					bitArray[i] = true;
-					instance.bIsDirty = true;
+					localReturn = true;
 				} else {
 					bitArray[i] = false;
 				}
 			}
+
+			return localReturn;
 		}
 
 		public static int DirtyFlagToInt(BitArray bitArray) {

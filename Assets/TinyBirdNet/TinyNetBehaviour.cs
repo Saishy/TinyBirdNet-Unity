@@ -9,15 +9,13 @@ using UnityEngine;
 namespace TinyBirdNet {
 
 	/// <summary>
-	/// A TinyNetBehaviour is a MonoBehaviour who implements the interface ITinyNetObject.
-	/// <para>In addition, TinyBirdNet handles it's spawning, serialization, RPC, and mostly anything you need to create
-	/// a new instance of it in a multiplayer game and have it automatically synced.</para>
+	/// A TinyNetBehaviour is a MonoBehaviour who implements the interface ITinyNetComponent and comes with a bunch of useful stuff.
 	/// </summary>
 	/// <seealso cref="UnityEngine.MonoBehaviour" />
-	/// <seealso cref="TinyBirdNet.ITinyNetObject" />
+	/// <seealso cref="TinyBirdNet.ITinyNetComponent" />
 	/// <seealso cref="TinyBirdNet.ITinyNetInstanceID" />
 	[RequireComponent(typeof(TinyNetIdentity))]
-	public class TinyNetBehaviour : MonoBehaviour, ITinyNetObject {
+	public class TinyNetBehaviour : MonoBehaviour, ITinyNetComponent {
 
 		/// <summary>
 		/// A static NetDataWriter that can be used to convert most Objects to bytes.
@@ -47,15 +45,13 @@ namespace TinyBirdNet {
 		private string[] propertiesName;
 		private Type[] propertiesTypes;
 
-		// Used for comparisson.
-		private bool _bIsDirty = false;
 		/// <summary>
 		/// Gets or sets a value indicating whether this instance is dirty.
 		/// </summary>
 		/// <value>
 		///   <c>true</c> if instance is dirty; otherwise, <c>false</c>.
 		/// </value>
-		public bool bIsDirty { get { return _bIsDirty; } set { _bIsDirty = value; } }
+		public bool IsDirty { get; protected set; }
 
 		/// <summary>
 		/// The dirty flag is a BitArray of size 32 that represents if a TinyNetSyncVar is dirty.
@@ -74,11 +70,22 @@ namespace TinyBirdNet {
 		/// </summary>
 		protected float _lastSendTime;
 
-		/// <inheritdoc />
+		/// <summary>
+		/// Gets a value indicating whether this instance is server.
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is server; otherwise, <c>false</c>.
+		/// </value>
 		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
-		/// <inheritdoc />
+		/// <summary>
+		/// Gets a value indicating whether this instance is client.
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is client; otherwise, <c>false</c>.
+		/// </value>
 		public bool isClient { get { return TinyNetGameManager.instance.isClient; } }
-		/// <inheritdoc />
+		
+
 		public bool hasAuthority { get { return NetIdentity.hasAuthority; } }
 
 		/// <summary>
@@ -142,7 +149,7 @@ namespace TinyBirdNet {
 			_dirtyFlag[index] = bValue;
 
 			if (bValue) {
-				_bIsDirty = true;
+				IsDirty = true;
 			}
 		}
 
@@ -150,7 +157,7 @@ namespace TinyBirdNet {
 		/// Updates the dirty flag.
 		/// </summary>
 		private void UpdateDirtyFlag() {
-			TinyNetStateSyncer.UpdateDirtyFlagOf(this, _dirtyFlag);
+			IsDirty = TinyNetStateSyncer.UpdateDirtyFlagOf(this, _dirtyFlag);
 
 			_lastSendTime = Time.time;
 		}
@@ -192,39 +199,6 @@ namespace TinyBirdNet {
 			}
 		}
 
-		/*public TinyNetPropertyAccessor<T> GetAccessor<T>(string propName) {
-			TinyNetPropertyAccessor<T> tinyAccessor = null;
-			Type type = typeof(T);
-
-			if (type == typeof(byte)) {
-				tinyAccessor = (dynamic)byteAccessor[propName];
-			} else if (type == typeof(sbyte)) {
-				tinyAccessor = (dynamic)sbyteAccessor[propName];
-			} else if (type == typeof(short)) {
-				tinyAccessor = (dynamic)shortAccessor[propName];
-			} else if (type == typeof(ushort)) {
-				tinyAccessor = (dynamic)ushortAccessor[propName];
-			} else if (type == typeof(int)) {
-				tinyAccessor = (dynamic)intAccessor[propName];
-			} else if (type == typeof(uint)) {
-				tinyAccessor = (dynamic)uintAccessor[propName];
-			} else if (type == typeof(long)) {
-				tinyAccessor = (dynamic)longAccessor[propName];
-			} else if (type == typeof(ulong)) {
-				tinyAccessor = (dynamic)ulongAccessor[propName];
-			} else if (type == typeof(float)) {
-				tinyAccessor = (dynamic)floatAccessor[propName];
-			} else if (type == typeof(double)) {
-				tinyAccessor = (dynamic)doubleAccessor[propName];
-			} else if (type == typeof(bool)) {
-				tinyAccessor = (dynamic)boolAccessor[propName];
-			} else if (type == typeof(string)) {
-				tinyAccessor = (dynamic)stringAccessor[propName];
-			}
-
-			return tinyAccessor;
-		}*/
-
 		/// <summary>
 		/// Checks if a TinyNetSyncVar property updated.
 		/// </summary>
@@ -261,7 +235,11 @@ namespace TinyBirdNet {
 			return false;
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// Serializates the data.
+		/// </summary>
+		/// <param name="writer">The writer.</param>
+		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
 		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
 			if (firstStateUpdate) {
 				writer.Put(NetworkID);
@@ -307,6 +285,8 @@ namespace TinyBirdNet {
 					writer.Put(stringAccessor[propertiesName[i]].Get(this));
 				}
 			}
+
+			IsDirty = false;
 		}
 
 		/// <inheritdoc />
@@ -359,7 +339,11 @@ namespace TinyBirdNet {
 			}
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// Sends the RPC.
+		/// </summary>
+		/// <param name="stream">The stream.</param>
+		/// <param name="rpcName">Name of the RPC.</param>
 		public virtual void SendRPC(NetDataWriter stream, string rpcName) {
 			RPCMethodInfo rpcMethodInfo = null;
 			int rpcMethodIndex = TinyNetStateSyncer.GetRPCMethodInfoFromType(GetType(), rpcName, ref rpcMethodInfo);
@@ -405,7 +389,12 @@ namespace TinyBirdNet {
 			}
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// Invokes the RPC.
+		/// </summary>
+		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
+		/// <param name="reader">The reader.</param>
+		/// <returns></returns>
 		public virtual bool InvokeRPC(int rpcMethodIndex, NetDataReader reader) {
 			if (rpcHandlers[rpcMethodIndex] == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::InvokeRPC netId:" + NetworkID + " RPCDelegate is not registered."); }
@@ -417,31 +406,22 @@ namespace TinyBirdNet {
 			return true;
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// Called on Server after all FixedUpdates and physics but before any Update.
+		/// <para>It is used to check if it is time to send the current state to clients.</para>
+		/// </summary>>
 		public void TinyNetUpdate() {
-			//if (IsTimeToUpdate()) {
 			UpdateDirtyFlag();
 
-			if (_bIsDirty) {
+			// TODO FIX THIS
+			/*if (IsDirty) {
 				TinyNetServer.instance.SendStateUpdateToAllObservers(this, GetNetworkChannel());
 
-				_bIsDirty = false;
-			}
-				
-			//}
+				IsDirty = false;
+			}*/
 		}
 
-		/*public bool IsTimeToUpdate() {
-			if (_bIsDirty && Time.time - _lastSendTime > GetNetworkSendInterval()) {
-				UpdateDirtyFlag();
-				return true;
-			}
-
-			return false;
-		}*/
-
 		/// <summary>
-		/// <inheritdoc />
 		/// Remember that this is called first and before variables are synced.
 		/// </summary>
 		public virtual void OnNetworkCreate() {
@@ -465,9 +445,6 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public virtual void OnStartClient() {
-		}
-
-		public virtual void OnStartLocalPlayer() {
 		}
 
 		/// <inheritdoc />
@@ -494,7 +471,6 @@ namespace TinyBirdNet {
 		public virtual LiteNetLib.DeliveryMethod GetNetworkChannel() {
 			return LiteNetLib.DeliveryMethod.ReliableOrdered;
 		}
-
 
 		/// <summary>
 		/// Not implemented yet.

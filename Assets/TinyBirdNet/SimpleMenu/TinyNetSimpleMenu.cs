@@ -11,10 +11,6 @@ namespace TinyBirdNet {
 		public InputField portToConnectField;
 		public InputField hostPortField;
 
-		public void PressedSinglePlayerButton() {
-			TinyNetGameManager.instance.StartSinglePlayer();
-		}
-
 		public void PressedConnectButton() {
 			TinyNetGameManager.instance.StartClient();
 

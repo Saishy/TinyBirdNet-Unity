@@ -182,15 +182,16 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="stream">The stream.</param>
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
-		/// <param name="iObj">The <see cref="ITinyNetObject"/> instance.</param>
-		public void SendRPCToServer(NetDataWriter stream, int rpcMethodIndex, ITinyNetObject iObj) {
-			var msg = new TinyNetRPCMessage();
+		/// <param name="iObj">The <see cref="ITinyNetComponent"/> instance.</param>
+		public void SendRPCToServer(NetDataWriter stream, int rpcMethodIndex, ITinyNetComponent iObj) {
+			//TODO FIX THIS
+			/*var msg = new TinyNetRPCMessage();
 
 			msg.networkID = iObj.NetworkID;
 			msg.rpcMethodIndex = rpcMethodIndex;
 			msg.parameters = stream.Data;
 
-			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);*/
 		}
 
 		//============ TinyNetMessages Handlers =============//
@@ -225,7 +226,7 @@ namespace TinyBirdNet {
 
 			TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(s_TinyNetObjectHideMessage.networkID);
 			if (localObject != null) {
-				localObject.OnSetLocalVisibility(false);
+				localObject.OnRemoveLocalVisibility();
 			}
 		}
 
@@ -239,7 +240,7 @@ namespace TinyBirdNet {
 			TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(s_TinyNetObjectSpawnMessage.networkID);
 			if (localObject != null) {
 				localObject.OnStartClient();
-				localObject.OnSetLocalVisibility(true);
+				localObject.OnGiveLocalVisibility();
 			} else {
 				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnLocalClientObjectSpawn called but object has never been spawned to client netId:" + s_TinyNetObjectSpawnMessage.networkID); }
 			}
@@ -254,7 +255,7 @@ namespace TinyBirdNet {
 
 			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectSpawnSceneMessage.networkID];
 			if (localObject != null) {
-				localObject.OnSetLocalVisibility(true);
+				localObject.OnGiveLocalVisibility();
 			}
 		}
 
@@ -308,6 +309,7 @@ namespace TinyBirdNet {
 
 			GameObject prefab;
 			SpawnDelegate handler;
+			//TODO fix this too
 			if (prefab = TinyNetGameManager.instance.GetPrefabFromAssetId(s_TinyNetObjectSpawnMessage.assetIndex)) {
 				var obj = (GameObject)Object.Instantiate(prefab, s_TinyNetObjectSpawnMessage.position, Quaternion.identity);
 
@@ -411,7 +413,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// By default it will deserialize the <see cref="TinyNetSyncVar"/> properties.
+		/// Calls TinySerialize in all Components that are dirty.
 		/// </summary>
 		/// <param name="netMsg">A wrapper for a <see cref="TinyNetObjectStateUpdate"/> message.</param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
@@ -419,7 +421,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnUpdateVarsMessage " + networkID + " channel:" + netMsg.channelId); }
 
-			ITinyNetObject localObject = _localNetObjects[networkID];
+			TinyNetIdentity localObject = _localIdentityObjects[networkID];
 			if (localObject != null) {
 				localObject.TinyDeserialize(netMsg.reader, false);
 			} else {
@@ -448,9 +450,10 @@ namespace TinyBirdNet {
 
 			if (initialState != null && initialState.Length > 0) {
 				var initialStateReader = new NetDataReader(initialState);
-				tinyNetId.DeserializeAllTinyNetObjects(initialStateReader, true);
+				tinyNetId.TinyDeserialize(initialStateReader, true);
 			}
 
+			// If this is null them this object already existed (was in the scene), just apply the update to existing object
 			if (newGameObject == null) {
 				return;
 			}
