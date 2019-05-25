@@ -459,7 +459,7 @@ namespace TinyBirdNet {
 			}
 
 			newGameObject.SetActive(true);
-			tinyNetId.ReceiveNetworkID(networkID);
+			tinyNetId.ReceiveNetworkID(new TinyNetworkID(networkID));
 			AddTinyNetIdentityToList(tinyNetId);
 
 			// If the object was spawned as part of the initial replication (s_TineNetObjectSpawnFinishedMessage.state == 0) it will have it's OnStartClient called by OnObjectSpawnFinished.

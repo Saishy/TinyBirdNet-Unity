@@ -169,9 +169,9 @@ namespace TinyBirdNet {
 		/// <value>
 		/// The next network identifier.
 		/// </value>
-		public int NextNetworkID {
+		public TinyNetworkID NextNetworkID {
 			get {
-				return ++_nextNetworkID;
+				return new TinyNetworkID(++_nextNetworkID);
 			}
 		}
 

@@ -53,7 +53,7 @@ namespace TinyBirdNet {
 
 					for (int i = 0; i < props.Length; i++) {
 						if (TinyNetSyncVar.allowedTypes.Contains(props[i].PropertyType)) {
-							if (TinyNetLogLevel.logDev) { TinyLogger.Log(props[i].Name); }
+							if (TinyNetLogLevel.logDev) { TinyLogger.Log("logDev: [TinyNetSyncVar] " + props[i].Name); }
 
 							//MethodInfo getMethod = props[i].GetGetMethod(true);
 							//MethodInfo setMethod = props[i].GetSetMethod(true);
@@ -93,7 +93,7 @@ namespace TinyBirdNet {
 					}
 
 					if (bValid) {
-						if (TinyNetLogLevel.logDev) { TinyLogger.Log(methods[i].Name); }
+						if (TinyNetLogLevel.logDev) { TinyLogger.Log("logDev: [TinyNetRPC] " + methods[i].Name); }
 
 						TinyNetStateSyncer.AddRPCMethodNameToType(methods[i].Name, rpcAttribute.Targets, rpcAttribute.Callers, type);
 					}

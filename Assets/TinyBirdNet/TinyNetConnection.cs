@@ -134,7 +134,7 @@ namespace TinyBirdNet {
 		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object to spawn.</param>
 		public void ShowObjectToConnection(TinyNetIdentity tni) {
 			if (_observingNetObjects.Contains(tni)) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("ShowObjectToConnection() called but object with networkdID: " + tni.NetworkID + " is already shown"); }
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("ShowObjectToConnection() called but object with networkdID: " + tni.TinyInstanceID + " is already shown"); }
 				return;
 			}
 
@@ -150,7 +150,7 @@ namespace TinyBirdNet {
 		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object to hide.</param>
 		public void HideObjectToConnection(TinyNetIdentity tni, bool isDestroyed) {
 			if (!_observingNetObjects.Contains(tni)) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.NetworkID + " is not shown"); }
+				if (TinyNetLogLevel.logDev) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.TinyInstanceID + " is not shown"); }
 				return;
 			}
 
@@ -171,7 +171,7 @@ namespace TinyBirdNet {
 				_ownedObjectsId = new HashSet<int>();
 			}
 
-			_ownedObjectsId.Add(obj.NetworkID);
+			_ownedObjectsId.Add(obj.TinyInstanceID.NetworkID);
 		}
 
 		/// <summary>
@@ -183,7 +183,7 @@ namespace TinyBirdNet {
 				return;
 			}
 
-			_ownedObjectsId.Remove(obj.NetworkID);
+			_ownedObjectsId.Remove(obj.TinyInstanceID.NetworkID);
 		}
 
 		//============ Player Controllers ===================//

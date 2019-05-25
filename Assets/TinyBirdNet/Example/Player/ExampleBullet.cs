@@ -33,7 +33,7 @@ public class ExampleBullet : TinyNetBehaviour {
 		ExamplePawn pawn = other.gameObject.GetComponent<ExamplePawn>();
 
 		if (other.CompareTag("Player")) {
-			if (pawn.NetIdentity.NetworkID == ownerNetworkId) {
+			if (pawn.NetIdentity.TinyInstanceID.NetworkID == ownerNetworkId) {
 				return;
 			}
 

@@ -315,7 +315,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netIdentity">The net identity.</param>
 		public static void AddTinyNetIdentityToList(TinyNetIdentity netIdentity) {
-			_localIdentityObjects.Add(netIdentity.NetworkID, netIdentity);
+			_localIdentityObjects.Add(netIdentity.TinyInstanceID.NetworkID, netIdentity);
 		}
 
 		/// <summary>
@@ -323,7 +323,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netIdentity">The net identity.</param>
 		public static void RemoveTinyNetIdentityFromList(TinyNetIdentity netIdentity) {
-			_localIdentityObjects.Remove(netIdentity.NetworkID);
+			_localIdentityObjects.Remove(netIdentity.TinyInstanceID.NetworkID);
 		}
 
 		/// <summary>

@@ -25,7 +25,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// The ID of an instance in the network, given by the server on spawn.
 		/// </summary>
-		public int NetworkID { get; protected set; }
+		public TinyNetworkID TinyInstanceID { get; protected set; }
 
 		private Dictionary<string, TinyNetPropertyAccessor<byte>> byteAccessor = new Dictionary<string, TinyNetPropertyAccessor<byte>>();
 		private Dictionary<string, TinyNetPropertyAccessor<sbyte>> sbyteAccessor = new Dictionary<string, TinyNetPropertyAccessor<sbyte>>();
@@ -118,8 +118,8 @@ namespace TinyBirdNet {
 		/// Receives the network identifier.
 		/// </summary>
 		/// <param name="newID">The new identifier.</param>
-		public void ReceiveNetworkID(int newID) {
-			NetworkID = newID;
+		public void ReceiveNetworkID(TinyNetworkID newID) {
+			TinyInstanceID = newID;
 		}
 
 		/// <summary>
@@ -241,9 +241,9 @@ namespace TinyBirdNet {
 		/// <param name="writer">The writer.</param>
 		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
 		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
-			if (firstStateUpdate) {
+			/*if (firstStateUpdate) {
 				writer.Put(NetworkID);
-			}
+			}*/
 
 			if (!firstStateUpdate) {
 				writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
@@ -291,9 +291,9 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
-			if (firstStateUpdate) {
+			/*if (firstStateUpdate) {
 				NetworkID = reader.GetInt();
-			}
+			}*/
 
 			if (!firstStateUpdate) {
 				int dFlag = reader.GetInt();
@@ -397,7 +397,7 @@ namespace TinyBirdNet {
 		/// <returns></returns>
 		public virtual bool InvokeRPC(int rpcMethodIndex, NetDataReader reader) {
 			if (rpcHandlers[rpcMethodIndex] == null) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::InvokeRPC netId:" + NetworkID + " RPCDelegate is not registered."); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::InvokeRPC netId:" + TinyInstanceID + " RPCDelegate is not registered."); }
 				return false;
 			}
 
@@ -407,8 +407,8 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called on Server after all FixedUpdates and physics but before any Update.
-		/// <para>It is used to check if it is time to send the current state to clients.</para>
+		/// [Server Only] Called after all FixedUpdates and physics but before any Update.
+		/// <para> It is used to check if it is time to send the current state to clients. </para>
 		/// </summary>>
 		public void TinyNetUpdate() {
 			UpdateDirtyFlag();

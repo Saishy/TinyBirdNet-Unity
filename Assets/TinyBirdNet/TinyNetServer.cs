@@ -180,7 +180,7 @@ namespace TinyBirdNet {
 
 			AddTinyNetIdentityToList(objTinyNetIdentity);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objTinyNetIdentity.NetworkID + " asset GUID " + objTinyNetIdentity.assetGUID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objTinyNetIdentity.TinyInstanceID + " asset GUID " + objTinyNetIdentity.assetGUID); }
 
 			//objTinyNetIdentity.RebuildObservers(true);
 			//SendSpawnMessage(objTinyNetIdentity, null);
@@ -204,7 +204,7 @@ namespace TinyBirdNet {
 			}
 
 			TinyNetObjectSpawnMessage msg = new TinyNetObjectSpawnMessage();
-			msg.networkID = netIdentity.NetworkID;
+			msg.networkID = netIdentity.TinyInstanceID.NetworkID;
 			msg.assetIndex = TinyNetGameManager.instance.GetAssetIdFromAssetGUID(netIdentity.assetGUID);
 			msg.position = netIdentity.transform.position;
 
@@ -271,18 +271,18 @@ namespace TinyBirdNet {
 		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object.</param>
 		/// <param name="destroyServerObject">if set to <c>true</c> destroy the object on server too.</param>
 		public void DestroyObject(TinyNetIdentity tni, bool destroyServerObject) {
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("DestroyObject instance:" + tni.NetworkID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("DestroyObject instance:" + tni.TinyInstanceID); }
 
-			if (_localIdentityObjects.ContainsKey(tni.NetworkID)) {
-				_localIdentityObjects.Remove(tni.NetworkID);
+			if (_localIdentityObjects.ContainsKey(tni.TinyInstanceID.NetworkID)) {
+				_localIdentityObjects.Remove(tni.TinyInstanceID.NetworkID);
 			}
 
-			if (tni.connectionToOwnerClient != null) {
-				tni.connectionToOwnerClient.RemoveOwnedObject(tni);
+			if (tni.ConnectionToOwnerClient != null) {
+				tni.ConnectionToOwnerClient.RemoveOwnedObject(tni);
 			}
 
 			TinyNetObjectDestroyMessage msg = new TinyNetObjectDestroyMessage();
-			msg.networkID = tni.NetworkID;
+			msg.networkID = tni.TinyInstanceID.NetworkID;
 			SendMessageByChannelToAllObserversOf(tni, msg, DeliveryMethod.ReliableOrdered);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
@@ -299,7 +299,7 @@ namespace TinyBirdNet {
 				Object.Destroy(tni.gameObject);
 			}
 
-			tni.ReceiveNetworkID(0);
+			tni.ReceiveNetworkID(new TinyNetworkID(0, 0));
 		}
 
 		/// <summary>
@@ -338,6 +338,7 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Networking ===========//
 
+		// TODO: Actually send state update to all observers (is not called anywhere)
 		/// <summary>
 		/// Sends the state update to all observers of an object.
 		/// </summary>
@@ -347,7 +348,7 @@ namespace TinyBirdNet {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(TinyNetMsgType.StateUpdate);
-			recycleWriter.Put(netIdentity.NetworkID);
+			recycleWriter.Put(netIdentity.TinyInstanceID);
 
 			netIdentity.TinySerialize(recycleWriter, false);
 
@@ -447,7 +448,7 @@ namespace TinyBirdNet {
 					continue;
 				}
 
-				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Sending spawn message for current server objects name='" + tinyNetId.gameObject.name + "' netId=" + tinyNetId.NetworkID); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Sending spawn message for current server objects name='" + tinyNetId.gameObject.name + "' netId=" + tinyNetId.TinyInstanceID); }
 
 				conn.ShowObjectToConnection(tinyNetId);
 			}
@@ -506,7 +507,7 @@ namespace TinyBirdNet {
 		/// <param name="conn">The connection.</param>
 		public void HideForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
 			TinyNetObjectHideMessage msg = new TinyNetObjectHideMessage();
-			msg.networkID = tinyNetId.NetworkID;
+			msg.networkID = tinyNetId.TinyInstanceID.NetworkID;
 
 			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 		}

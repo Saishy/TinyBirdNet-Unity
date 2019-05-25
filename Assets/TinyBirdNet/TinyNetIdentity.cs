@@ -30,7 +30,7 @@ namespace TinyBirdNet {
 		protected bool bStartClientTwiceTest = false;
 
 		/// <inheritdoc />
-		public int NetworkID { get; protected set; }
+		public TinyNetworkID TinyInstanceID { get; protected set; }
 
 		/// <summary>
 		/// If true, this object will not be spawned on clients.
@@ -81,9 +81,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// [Server only] Shortcut, prevents you to have to loop through all connections and objects to find owner.
 		/// </summary>
-		TinyNetConnection _ConnectionToOwnerClient;
-		///<summary>Not implemented yet</summary>
-		short _ownerPlayerId = -1;
+		protected TinyNetConnection _connectionToOwnerClient;
 
 		/// <inheritdoc />
 		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
@@ -114,7 +112,7 @@ namespace TinyBirdNet {
 		/// <value>
 		/// The connection to owner client.
 		/// </value>
-		public TinyNetConnection connectionToOwnerClient { get { return _ConnectionToOwnerClient; } }
+		public TinyNetConnection ConnectionToOwnerClient { get { return _connectionToOwnerClient; } }
 
 		/// <summary>
 		/// Gets the object scene identifier.
@@ -143,8 +141,8 @@ namespace TinyBirdNet {
 		}
 
 		/// <inheritdoc />
-		public void ReceiveNetworkID(int newID) {
-			NetworkID = newID;
+		public void ReceiveNetworkID(TinyNetworkID newID) {
+			TinyInstanceID = newID;
 		}
 
 		/// <summary>
@@ -266,6 +264,7 @@ namespace TinyBirdNet {
 		/// <param name="bInitialState">if set to <c>true</c> [b initial state].</param>
 		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
 			if (firstStateUpdate && _tinyNetComponents == null) {
+				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("TinyNetIdentity::TinyDeserialize called with firstStateUpdate true, but _tinyNetComponents is null."); }
 				CacheTinyNetObjects();
 			}
 
@@ -354,16 +353,9 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Used by the server to have a shortcut in the case a client owns this object.
-		/// <para>Not implemmented yet.</para>
-		/// </summary>
-		/// <param name="conn">The connection that owns this object.</param>
-		/// <param name="newPlayerControllerId">The player controller identifier that owns this object.</param>
-		public void SetConnectionToClient(TinyNetConnection conn, short newPlayerControllerId) {
-			_ownerPlayerId = newPlayerControllerId;
-			_ConnectionToOwnerClient = conn;
-		}
-
+		/// [Server Only] Called after all FixedUpdates and physics but before any Update.
+		/// <para> It is used to check if it is time to send the current state to clients. </para>
+		/// </summary>>
 		public void TinyNetUpdate() {
 			for (int i = 0; i < _tinyNetComponents.Length; i++) {
 				_tinyNetComponents[i].TinyNetUpdate();
@@ -422,18 +414,18 @@ namespace TinyBirdNet {
 			}
 
 			// If the instance/net ID is invalid here then this is an object instantiated from a prefab and the server should assign a valid ID
-			if (NetworkID == 0) {
-				NetworkID = TinyNetGameManager.instance.NextNetworkID;
+			if (TinyInstanceID.IsNotInitialized()) {
+				TinyInstanceID = TinyNetGameManager.instance.NextNetworkID;
 
 				// If anything goes wrong, blame this person: https://forum.unity.com/threads/getcomponentsinchildren.4582/#post-33983
 				for (int i = 0; i < _tinyNetComponents.Length; i++) {
-					_tinyNetComponents[i].ReceiveNetworkID(i);
+					_tinyNetComponents[i].ReceiveNetworkID(new TinyNetworkID(TinyInstanceID.NetworkID, (byte)(i+1)));
 				}
 			} else {
 				if (allowNonZeroNetId) {
 					//allowed
 				} else {
-					if (TinyNetLogLevel.logError) { TinyLogger.LogError("Object has non-zero netId " + NetworkID + " for " + gameObject); }
+					if (TinyNetLogLevel.logError) { TinyLogger.LogError("Object has non-zero netId " + TinyInstanceID + " for " + gameObject); }
 					return;
 				}
 			}
@@ -449,7 +441,7 @@ namespace TinyBirdNet {
 				}
 			}
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartServer " + gameObject + " netId:" + NetworkID); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartServer " + gameObject + " netId:" + TinyInstanceID); }
 
 			if (_hasAuthority) {
 				OnStartAuthority();
@@ -462,13 +454,9 @@ namespace TinyBirdNet {
 		/// </summary>
 		public void OnStartClient() {
 			if (bStartClientTwiceTest) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("OnStartClient CALLED TWICE FOR: " + gameObject + " netId:" + NetworkID + " localPlayerAuthority: " + _localPlayerAuthority); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("OnStartClient CALLED TWICE FOR: " + gameObject + " netId:" + TinyInstanceID + " localPlayerAuthority: " + _localPlayerAuthority); }
 			} else {
 				bStartClientTwiceTest = true;
-			}
-
-			for (int i = 0; i < _tinyNetComponents.Length; i++) {
-				_tinyNetComponents[i].ReceiveNetworkID(i);
 			}
 
 			{ // Calling OnStartClient on those who registered
@@ -482,7 +470,7 @@ namespace TinyBirdNet {
 				}
 			}
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartClient " + gameObject + " netId:" + NetworkID + " localPlayerAuthority: " + _localPlayerAuthority); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartClient " + gameObject + " netId:" + TinyInstanceID + " localPlayerAuthority: " + _localPlayerAuthority); }
 		}
 
 		/// <summary>
@@ -598,18 +586,18 @@ namespace TinyBirdNet {
 				return false;
 			}
 
-			if (_ConnectionToOwnerClient == null) {
+			if (_connectionToOwnerClient == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemoveClientAuthority for " + gameObject + " has no clientAuthority owner."); }
 				return false;
 			}
 
-			if (_ConnectionToOwnerClient != conn) {
+			if (_connectionToOwnerClient != conn) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemoveClientAuthority for " + gameObject + " has different owner."); }
 				return false;
 			}
 
-			_ConnectionToOwnerClient.RemoveOwnedObject(this);
-			_ConnectionToOwnerClient = null;
+			_connectionToOwnerClient.RemoveOwnedObject(this);
+			_connectionToOwnerClient = null;
 
 			// server now has authority (this is only called on server)
 			ForceAuthority(true);
@@ -618,7 +606,7 @@ namespace TinyBirdNet {
 
 			// send msg to that client
 			var msg = new TinyNetClientAuthorityMessage();
-			msg.networkID = NetworkID;
+			msg.networkID = TinyInstanceID.NetworkID;
 			msg.authority = false;
 			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.DeliveryMethod.ReliableOrdered, conn);
 
@@ -644,7 +632,7 @@ namespace TinyBirdNet {
 				return false;
 			}
 
-			if (_ConnectionToOwnerClient != null && conn != _ConnectionToOwnerClient) {
+			if (_connectionToOwnerClient != null && conn != _connectionToOwnerClient) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("AssignClientAuthority for " + gameObject + " already has an owner. Use RemoveClientAuthority() first."); }
 				return false;
 			}
@@ -654,8 +642,8 @@ namespace TinyBirdNet {
 				return false;
 			}
 
-			_ConnectionToOwnerClient = conn;
-			_ConnectionToOwnerClient.AddOwnedObject(this);
+			_connectionToOwnerClient = conn;
+			_connectionToOwnerClient.AddOwnedObject(this);
 
 			// server no longer has authority (this is called on server). Note that local client could re-acquire authority below
 			ForceAuthority(false);
@@ -664,7 +652,7 @@ namespace TinyBirdNet {
 
 			// send msg to that client
 			var msg = new TinyNetClientAuthorityMessage();
-			msg.networkID = NetworkID;
+			msg.networkID = TinyInstanceID.NetworkID;
 			msg.authority = true;
 			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.DeliveryMethod.ReliableOrdered, conn);
 

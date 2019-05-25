@@ -79,7 +79,7 @@ public class ExamplePawn : TinyNetBehaviour {
 	public override void OnGiveAuthority() {
 		base.OnGiveAuthority();
 
-		controller = NetIdentity.connectionToOwnerClient.GetPlayerController<ExamplePlayerController>(ownerPlayerControllerId);
+		controller = NetIdentity.ConnectionToOwnerClient.GetPlayerController<ExamplePlayerController>(ownerPlayerControllerId);
 		controller.GetPawn(this);
 	}
 
@@ -202,7 +202,7 @@ public class ExamplePawn : TinyNetBehaviour {
 		}
 
 		ExampleBullet bullet = Instantiate(bulletPrefab, bulletSpawnPosition.position, transform.rotation).GetComponent<ExampleBullet>();
-		bullet.ownerNetworkId = NetIdentity.NetworkID;
+		bullet.ownerNetworkId = NetIdentity.TinyInstanceID.NetworkID;
 		bullet.direction = dir;
 		switch (dir) {
 			case 1:
