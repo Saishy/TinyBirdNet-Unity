@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using TinyBirdNet.Utils;
 using TinyBirdUtils;
 using UnityEngine;
 
@@ -246,7 +247,7 @@ namespace TinyBirdNet {
 			}*/
 
 			if (!firstStateUpdate) {
-				writer.Put(TinyNetStateSyncer.DirtyFlagToInt(_dirtyFlag));
+				writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
 			}
 
 			Type type;
@@ -285,8 +286,6 @@ namespace TinyBirdNet {
 					writer.Put(stringAccessor[propertiesName[i]].Get(this));
 				}
 			}
-
-			IsDirty = false;
 		}
 
 		/// <inheritdoc />
@@ -296,9 +295,9 @@ namespace TinyBirdNet {
 			}*/
 
 			if (!firstStateUpdate) {
-				int dFlag = reader.GetInt();
+				uint dFlag = reader.GetUInt();
 
-				TinyNetStateSyncer.IntToDirtyFlag(dFlag, _dirtyFlag);
+				TinyBitArrayUtil.U64ToBitArray(dFlag, _dirtyFlag);
 			}
 
 			Type type;

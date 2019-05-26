@@ -339,6 +339,8 @@ namespace TinyBirdNet {
 		//============ TinyNetMessages Networking ===========//
 
 		// TODO: Actually send state update to all observers (is not called anywhere)
+		// Also put all state updates together?
+		// And the frame!
 		/// <summary>
 		/// Sends the state update to all observers of an object.
 		/// </summary>

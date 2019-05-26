@@ -197,7 +197,7 @@ namespace TinyBirdNet {
 		private int _currentFixedFrame = 0;
 
 		/// <summary>
-		/// The current game tick, used to calcuate the network state, buffer and reconciliation.
+		/// The current game tick, used to calculate the network state, buffer and reconciliation.
 		/// </summary>
 		public int CurrentGameTick {
 			get {
@@ -265,7 +265,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// A coroutine used to call a network update after every physics update call from UnityEngine.
+		/// A coroutine used to call a network update after every physics update from a fixed step from UnityEngine.
 		/// </summary>
 		IEnumerator TinyNetUpdate() {
 			while (true) {
