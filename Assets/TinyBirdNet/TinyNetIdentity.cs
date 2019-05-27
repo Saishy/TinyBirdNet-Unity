@@ -82,13 +82,8 @@ namespace TinyBirdNet {
 
 		Dictionary<TinyNetComponentEvents, LinkedList<System.Action>> _registeredEventHandlers;
 
-		//bool _bIsOwner;
-		/// <summary>
-		/// If this instance has authorithy
-		/// </summary>
-		bool _hasAuthority;
-
-		//Saishy: Is it possible for a client to be the owner but not have authority? What would that imply?
+		protected static NetDataReader _recycleReader = new NetDataReader();
+		protected static NetDataWriter _recycleWriter = new NetDataWriter();
 
 		/// <summary>
 		/// [Server only] Shortcut, prevents you to have to loop through all connections and objects to find owner.
@@ -114,7 +109,7 @@ namespace TinyBirdNet {
 		/// <value>
 		///   <c>true</c> if this instance has authority; otherwise, <c>false</c>.
 		/// </value>
-		public bool hasAuthority { get { return _hasAuthority; } }
+		public bool HasAuthority { get; private set; }
 		//public bool hasOwnership { get { return _bIsOwner;  } }
 
 		//public short playerControllerId { get { return _ownerPlayerId; } }
@@ -170,11 +165,11 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="authority">if set to <c>true</c> it will have authority.</param>
 		public void ForceAuthority(bool authority) {
-			if (_hasAuthority == authority) {
+			if (HasAuthority == authority) {
 				return;
 			}
 
-			_hasAuthority = authority;
+			HasAuthority = authority;
 
 			if (authority) {
 				OnStartAuthority();
@@ -315,7 +310,13 @@ namespace TinyBirdNet {
 
 			for (int i = 0; i < _tinyNetComponents.Length; i++) {
 				if (_dirtyFlag[i] == true) {
-					_tinyNetComponents[i].TinySerialize(writer, firstStateUpdate);
+					// We are getting the length of how much this obj wrote.
+					_recycleWriter.Reset();
+
+					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
+					// TODO: Compact this
+					writer.Put(_recycleWriter.Length);
+					writer.Put(_recycleWriter.Data);
 				}
 			}
 		}
@@ -358,7 +359,13 @@ namespace TinyBirdNet {
 
 				for (int i = 0; i < _tinyNetComponents.Length; i++) {
 					if (_dirtyFlag[i] == true) {
-						_tinyNetComponents[i].TinyDeserialize(reader, firstStateUpdate);
+						_recycleReader.Clear();
+						int rSize = reader.GetInt();
+						_recycleReader.SetSource(reader.Data, reader.Position, rSize);
+
+						_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
+						// We jump the reader position to the amount of data we read.
+						reader.SetSource(reader.Data, reader.Position + rSize);
 					}
 				}
 			}
@@ -487,10 +494,10 @@ namespace TinyBirdNet {
 		public void OnStartServer(bool allowNonZeroNetId) {
 			if (_localPlayerAuthority) {
 				// local player on server has NO authority
-				_hasAuthority = false;
+				HasAuthority = false;
 			} else {
 				// enemy on server has authority
-				_hasAuthority = true;
+				HasAuthority = true;
 			}
 
 			// If the instance/net ID is invalid here then this is an object instantiated from a prefab and the server should assign a valid ID
@@ -523,7 +530,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartServer " + gameObject + " netId:" + TinyInstanceID); }
 
-			if (_hasAuthority) {
+			if (HasAuthority) {
 				OnStartAuthority();
 			}
 		}

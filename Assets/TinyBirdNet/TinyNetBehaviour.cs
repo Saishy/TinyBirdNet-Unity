@@ -87,7 +87,7 @@ namespace TinyBirdNet {
 		public bool isClient { get { return TinyNetGameManager.instance.isClient; } }
 		
 
-		public bool hasAuthority { get { return NetIdentity.hasAuthority; } }
+		public bool hasAuthority { get { return NetIdentity.HasAuthority; } }
 
 		/// <summary>
 		/// The net identity in this GameObject.
@@ -359,7 +359,7 @@ namespace TinyBirdNet {
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		public virtual void SendRPC(NetDataWriter stream, RPCTarget target, RPCCallers caller, int rpcMethodIndex) {
 			if (target == RPCTarget.ClientOwner) {
-				if (!isServer || _netIdentity.hasAuthority) {
+				if (!isServer || _netIdentity.HasAuthority) {
 					//We are not the server or we are the owner, so we can't or have no need to replicate
 					return;
 				}

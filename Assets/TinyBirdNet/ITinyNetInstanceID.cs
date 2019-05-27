@@ -3,16 +3,38 @@ using System.Collections;
 
 namespace TinyBirdNet {
 
-	public struct TinyNetworkID {
+	public class TinyNetworkID {
+
+		protected int _networkID = -1;
+
 		/// <summary>
 		/// The network identifier of the TinyNetIdentity
 		/// </summary>
-		public int NetworkID;
+		public int NetworkID {
+			get {
+				return _networkID;
+			}
+
+			protected set {
+				_networkID = value;
+			}
+		}
+		
+		protected byte _componentID;
+
 		/// <summary>
 		/// The component identifier.
 		/// <para>0 = TinyNetIdentity, 1 for the first component, 2 second and so on.</para>
 		/// </summary>
-		public byte ComponentID;
+		public byte ComponentID {
+			get {
+				return _componentID;
+			}
+
+			set {
+				_componentID = value;
+			}
+		}
 
 		public TinyNetworkID(int networkID, byte componentID) {
 			NetworkID = networkID;
@@ -25,7 +47,7 @@ namespace TinyBirdNet {
 		}
 
 		public bool IsNotInitialized() {
-			return NetworkID == 0;
+			return NetworkID == -1;
 		}
 
 		public override string ToString() {

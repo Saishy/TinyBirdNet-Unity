@@ -299,7 +299,7 @@ namespace TinyBirdNet {
 				Object.Destroy(tni.gameObject);
 			}
 
-			tni.ReceiveNetworkID(new TinyNetworkID(0, 0));
+			tni.ReceiveNetworkID(new TinyNetworkID(-1));
 		}
 
 		/// <summary>

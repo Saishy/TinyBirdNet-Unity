@@ -472,7 +472,7 @@ namespace TinyBirdNet {
 		/// Prepares to spawn scene objects.
 		/// </summary>
 		void PrepareToSpawnSceneObjects() {
-			//NOTE: what is there are already objects in this dict?! should we merge with them?
+			//NOTE: what if is there are already objects in this dict?! should we merge with them?
 			_sceneIdentityObjectsToSpawn = new Dictionary<int, TinyNetIdentity>();
 
 			foreach (TinyNetIdentity tinyNetId in Resources.FindObjectsOfTypeAll<TinyNetIdentity>()) {

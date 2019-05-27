@@ -117,7 +117,7 @@ public class ExampleBullet : TinyNetBehaviour {
 				break;
 		}
 
-		if (TinyNetScene.GetTinyNetIdentityByNetworkID(ownerNetworkId).hasAuthority) {
+		if (TinyNetScene.GetTinyNetIdentityByNetworkID(ownerNetworkId).HasAuthority) {
 			cMeshRender.material = friendlyMat;
 		}
 	}

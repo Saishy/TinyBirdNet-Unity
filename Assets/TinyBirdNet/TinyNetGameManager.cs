@@ -171,7 +171,7 @@ namespace TinyBirdNet {
 		/// </value>
 		public TinyNetworkID NextNetworkID {
 			get {
-				return new TinyNetworkID(++_nextNetworkID);
+				return new TinyNetworkID(_nextNetworkID++);
 			}
 		}
 
