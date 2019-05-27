@@ -80,7 +80,7 @@ namespace TinyBirdNet {
 			OnRemoveLocalVisibility
 		}
 
-		Dictionary<TinyNetComponentEvents, LinkedList<System.Action>> _registeredEventHandlers;
+		Dictionary<TinyNetComponentEvents, LinkedList<System.Action>> _registeredEventHandlers = new Dictionary<TinyNetComponentEvents, LinkedList<System.Action>>();
 
 		protected static NetDataReader _recycleReader = new NetDataReader();
 		protected static NetDataWriter _recycleWriter = new NetDataWriter();
@@ -227,7 +227,7 @@ namespace TinyBirdNet {
 			}
 		}*/
 
-		public ITinyNetComponent GetComponentById(int localId) {
+		public ITinyNetComponent GetComponentById(byte localId) {
 			if (localId < 0 || localId >= _tinyNetComponents.Length) {
 				return null;
 			}

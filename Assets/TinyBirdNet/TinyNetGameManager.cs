@@ -324,6 +324,9 @@ namespace TinyBirdNet {
 		/// <param name="assetId">The asset identifier.</param>
 		/// <returns></returns>
 		public GameObject GetPrefabFromAssetId(int assetId) {
+			if (registeredPrefabs.Count <= assetId || assetId < 0) {
+				return null;
+			}
 			return registeredPrefabs[assetId];
 		}
 

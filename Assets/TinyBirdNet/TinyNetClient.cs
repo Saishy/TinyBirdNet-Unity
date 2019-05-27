@@ -301,16 +301,19 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("Client spawn handler instantiating [networkID:" + s_TinyNetObjectSpawnMessage.networkID + " asset ID:" + s_TinyNetObjectSpawnMessage.assetIndex + " pos:" + s_TinyNetObjectSpawnMessage.position + "]"); }
 
 			TinyNetIdentity localTinyNetIdentity = GetTinyNetIdentityByNetworkID(s_TinyNetObjectSpawnMessage.networkID);
+			// Check if this object was already registered in the scene:
 			if (localTinyNetIdentity != null) {
-				// this object already exists (was in the scene), just apply the update to existing object
+				// this object already exists (was in the scene), just apply the update to existing object.
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, null);
 				return;
 			}
 
 			GameObject prefab;
 			SpawnDelegate handler;
-			//TODO fix this too
-			if (prefab = TinyNetGameManager.instance.GetPrefabFromAssetId(s_TinyNetObjectSpawnMessage.assetIndex)) {
+
+			prefab = TinyNetGameManager.instance.GetPrefabFromAssetId(s_TinyNetObjectSpawnMessage.assetIndex);
+			// Check if the prefab is registered in the list of spawnable prefabs.
+			if (prefab != null) {
 				var obj = (GameObject)Object.Instantiate(prefab, s_TinyNetObjectSpawnMessage.position, Quaternion.identity);
 
 				localTinyNetIdentity = obj.GetComponent<TinyNetIdentity>();
@@ -321,8 +324,8 @@ namespace TinyBirdNet {
 				}
 
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, obj);
+			// If not, check if the prefab have a spawn handler registered.
 			} else if (TinyNetGameManager.instance.GetSpawnHandler(s_TinyNetObjectSpawnMessage.assetIndex, out handler)) {
-				// lookup registered factory for type:
 				GameObject obj = handler(s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.assetIndex);
 				if (obj == null) {
 					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Client spawn handler for " + s_TinyNetObjectSpawnMessage.assetIndex + " returned null"); }
@@ -337,6 +340,7 @@ namespace TinyBirdNet {
 
 				localTinyNetIdentity.SetDynamicAssetGUID(TinyNetGameManager.instance.GetAssetGUIDFromAssetId(s_TinyNetObjectSpawnMessage.assetIndex));
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, obj);
+			// If also not, we literally cannot spawn this object and you should feel bad.
 			} else {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("Failed to spawn server object, assetId=" + s_TinyNetObjectSpawnMessage.assetIndex + " networkID=" + s_TinyNetObjectSpawnMessage.networkID); }
 			}
@@ -453,7 +457,7 @@ namespace TinyBirdNet {
 				tinyNetId.TinyDeserialize(initialStateReader, true);
 			}
 
-			// If this is null them this object already existed (was in the scene), just apply the update to existing object
+			// If this is null then this object already existed (already have a networkID and was registered in TinyNetScene), just apply the update to existing object
 			if (newGameObject == null) {
 				return;
 			}

@@ -351,7 +351,9 @@ namespace TinyBirdNet {
 		/// <returns></returns>
 		public static TinyNetIdentity GetTinyNetIdentityByNetworkID(int nId) {
 			TinyNetIdentity reference = null;
-			_localIdentityObjects.TryGetValue(nId, out reference);
+			if (nId >= 0) {
+				_localIdentityObjects.TryGetValue(nId, out reference);
+			}
 			//return _localIdentityObjects.ContainsKey(nId) ? _localIdentityObjects[nId] : null;
 			return reference;
 		}
@@ -360,11 +362,13 @@ namespace TinyBirdNet {
 		/// <param name="networkId">The network identifier.</param>
 		/// <param name="localId">The local identifier on the TinyNetIdentity.</param>
 		/// <returns></returns>
-		public static ITinyNetComponent GetTinyNetObjectByNetworkID(int networkId, int localId) {
+		public static ITinyNetComponent GetTinyNetComponentByNetworkID(int networkId, byte localId) {
 			ITinyNetComponent reference = null;
 			//return _localNetObjects.ContainsKey(nId) ? _localNetObjects[nId] : null;
-			TinyNetIdentity tinyNetRef = GetTinyNetIdentityByNetworkID(networkId);
-			reference = tinyNetRef.GetComponentById(localId);
+			if (networkId >= 0) {
+				TinyNetIdentity tinyNetRef = GetTinyNetIdentityByNetworkID(networkId);
+				reference = tinyNetRef.GetComponentById(localId);
+			}
 			return reference;
 		}
 
