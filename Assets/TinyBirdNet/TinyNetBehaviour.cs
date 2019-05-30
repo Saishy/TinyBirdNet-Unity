@@ -123,6 +123,10 @@ namespace TinyBirdNet {
 			TinyInstanceID = newID;
 		}
 
+		protected virtual void Awake() {
+			NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnNetworkCreate, OnNetworkCreate);
+		}
+
 		/// <summary>
 		/// Registers the RPC delegate.
 		/// </summary>

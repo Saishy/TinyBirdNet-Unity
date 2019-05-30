@@ -504,8 +504,8 @@ namespace TinyBirdNet {
 		/// Called when an object is spawned on the server.
 		/// <para> Called on the server when Spawn is called for this object. (Order: 1) </para>
 		/// </summary>
-		/// <param name="allowNonZeroNetId">If the object already have a NetworkId, it was probably recycled.</param>
-		public void OnStartServer(bool allowNonZeroNetId) {
+		/// <param name="allowAlreadySetId">If the object already have a NetworkId, it was probably recycled.</param>
+		public void OnStartServer(bool allowAlreadySetId) {
 			if (_localPlayerAuthority) {
 				// local player on server has NO authority
 				HasAuthority = false;
@@ -515,13 +515,13 @@ namespace TinyBirdNet {
 			}
 
 			// If the instance/net ID is invalid here then this is an object instantiated from a prefab and the server should assign a valid ID
-			if (TinyInstanceID.IsNotInitialized()) {
+			if (TinyInstanceID == null) {
 				TinyInstanceID = TinyNetGameManager.instance.NextNetworkID;
 			} else {
-				if (allowNonZeroNetId) {
+				if (allowAlreadySetId) {
 					//allowed
 				} else {
-					if (TinyNetLogLevel.logError) { TinyLogger.LogError("Object has non-zero netId " + TinyInstanceID + " for " + gameObject); }
+					if (TinyNetLogLevel.logError) { TinyLogger.LogError("Object has already set netId " + TinyInstanceID + " for " + gameObject); }
 					return;
 				}
 			}

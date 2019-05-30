@@ -44,10 +44,19 @@ public class ExamplePawn : TinyNetBehaviour {
 
 	protected Transform cameraTransform;
 
-	private void Awake() {
+	protected override void Awake() {
 		rbody = GetComponent<Rigidbody>();
 
 		movespeedPow = movementSpeed * movementSpeed;
+
+		base.Awake();
+
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnNetworkCreate, OnNetworkCreate);
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartServer, OnStartServer);
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartAuthority, OnStartAuthority);
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnGiveAuthority, OnGiveAuthority);
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartClient, OnStartClient);
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnNetworkDestroy, OnNetworkDestroy);
 	}
 
 	private void Start() {
