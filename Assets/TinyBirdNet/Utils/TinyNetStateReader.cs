@@ -9,5 +9,9 @@ namespace TinyBirdNet.Utils {
 		public int FrameTick {
 			get; protected set;
 		}
+
+		public void SetFrameTick(int nFrame) {
+			FrameTick = nFrame;
+		}
 	}
 }

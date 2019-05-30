@@ -346,6 +346,7 @@ namespace TinyBirdNet {
 					int rSize = reader.GetInt();
 					_recycleReader.SetSource(reader.Data, reader.Position, rSize);
 
+					_recycleReader.SetFrameTick(reader.FrameTick);
 					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
 					// We jump the reader position to the amount of data we read.
 					reader.SetSource(reader.Data, reader.Position + rSize);
@@ -375,6 +376,7 @@ namespace TinyBirdNet {
 						int rSize = reader.GetInt();
 						_recycleReader.SetSource(reader.Data, reader.Position, rSize);
 
+						_recycleReader.SetFrameTick(reader.FrameTick);
 						_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
 						// We jump the reader position to the amount of data we read.
 						reader.SetSource(reader.Data, reader.Position + rSize);

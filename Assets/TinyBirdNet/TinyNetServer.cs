@@ -187,15 +187,10 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objTinyNetIdentity.TinyInstanceID + " asset GUID " + objTinyNetIdentity.assetGUID); }
 
-			//objTinyNetIdentity.RebuildObservers(true);
-			//SendSpawnMessage(objTinyNetIdentity, null);
 			// Using ShowObjectToConnection prevents the server from sending spawn messages of objects that are already spawned.
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				tinyNetConns[i].ShowObjectToConnection(objTinyNetIdentity);
 			}
-			/*foreach (TinyNetConnection conn in tinyNetConns) {
-				conn.ShowObjectToConnection(objTinyNetIdentity);
-			}*/
 		}
 
 		/// <summary>
@@ -212,6 +207,7 @@ namespace TinyBirdNet {
 			msg.networkID = netIdentity.TinyInstanceID.NetworkID;
 			msg.assetIndex = TinyNetGameManager.instance.GetAssetIdFromAssetGUID(netIdentity.assetGUID);
 			msg.position = netIdentity.transform.position;
+			msg.frameTick = CurrentGameTick;
 
 			// Include state of TinyNetObjects.
 			s_recycleWriter.Reset();

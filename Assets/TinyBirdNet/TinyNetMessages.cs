@@ -510,6 +510,7 @@ namespace TinyBirdNet.Messaging {
 		public int networkID;
 		public int assetIndex;
 		public Vector3 position;
+		public int frameTick;
 		public byte[] initialState;
 
 		public ushort msgType { get { return TinyNetMsgType.ObjectSpawnMessage; } }
@@ -616,6 +617,7 @@ namespace TinyBirdNet.Messaging {
 		public int networkID;
 		public int sceneId;
 		public Vector3 position;
+		public int frameTick;
 		public byte[] initialState;
 
 		public ushort msgType { get { return TinyNetMsgType.ObjectSpawnScene; } }
