@@ -82,7 +82,7 @@ namespace TinyBirdNet {
 
 		Dictionary<TinyNetComponentEvents, LinkedList<System.Action>> _registeredEventHandlers = new Dictionary<TinyNetComponentEvents, LinkedList<System.Action>>();
 
-		protected static NetDataReader _recycleReader = new NetDataReader();
+		protected static TinyNetStateReader _recycleReader = new TinyNetStateReader();
 		protected static NetDataWriter _recycleWriter = new NetDataWriter();
 
 		/// <summary>
@@ -284,7 +284,13 @@ namespace TinyBirdNet {
 		public void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
 			if (firstStateUpdate) {
 				for (int i = 0; i < _tinyNetComponents.Length; i++) {
-					_tinyNetComponents[i].TinySerialize(writer, firstStateUpdate);
+					// We are getting the length of how much this obj wrote.
+					_recycleWriter.Reset();
+
+					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
+					// TODO: Compact this
+					writer.Put(_recycleWriter.Length);
+					writer.Put(_recycleWriter.Data);
 				}
 
 				return;
@@ -326,7 +332,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="reader">The reader.</param>
 		/// <param name="bInitialState">if set to <c>true</c> [b initial state].</param>
-		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
+		public virtual void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate) {
 			if (firstStateUpdate && _tinyNetComponents == null) {
 				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("TinyNetIdentity::TinyDeserialize called with firstStateUpdate true, but _tinyNetComponents is null."); }
 				CacheTinyNetObjects();
@@ -336,7 +342,13 @@ namespace TinyBirdNet {
 				for (int i = 0; i < _tinyNetComponents.Length; i++) {
 					_tinyNetComponents[i].ReceiveNetworkID(new TinyNetworkID(TinyInstanceID.NetworkID, (byte)(i + 1)));
 
-					_tinyNetComponents[i].TinyDeserialize(reader, firstStateUpdate);
+					_recycleReader.Clear();
+					int rSize = reader.GetInt();
+					_recycleReader.SetSource(reader.Data, reader.Position, rSize);
+
+					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
+					// We jump the reader position to the amount of data we read.
+					reader.SetSource(reader.Data, reader.Position + rSize);
 				}
 			} else {
 				switch (_dirtyFlag.Length) {

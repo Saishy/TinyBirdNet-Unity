@@ -49,6 +49,12 @@ namespace TinyBirdNet {
 		///<summary>A hash containing the NetworkIDs of objects owned by this connection.</summary>
 		protected HashSet<int> _ownedObjectsId;
 
+		public HashSet<TinyNetIdentity> ObservingNetObjects {
+			get {
+				return _observingNetObjects;
+			}
+		}
+
 		/// <summary>
 		/// If this instance is ready
 		/// </summary>

@@ -35,7 +35,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// If using this, always Reset before use!
 		/// </summary>
-		protected static NetDataWriter recycleWriter = new NetDataWriter();
+		protected static NetDataWriter s_recycleWriter = new NetDataWriter();
 
 		/// <summary>
 		/// A message reader used to prevent garbage collection.
@@ -401,12 +401,12 @@ namespace TinyBirdNet {
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
 		public virtual void SendMessageByChannelToHost(ITinyNetMessage msg, DeliveryMethod sendOptions) {
-			recycleWriter.Reset();
+			s_recycleWriter.Reset();
 
-			recycleWriter.Put(msg.msgType);
-			msg.Serialize(recycleWriter);
+			s_recycleWriter.Put(msg.msgType);
+			msg.Serialize(s_recycleWriter);
 
-			connToHost.Send(recycleWriter, sendOptions);
+			connToHost.Send(s_recycleWriter, sendOptions);
 		}
 
 		/// <summary>
@@ -416,12 +416,12 @@ namespace TinyBirdNet {
 		/// <param name="sendOptions">The send options.</param>
 		/// <param name="tinyNetConn">The connection.</param>
 		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, DeliveryMethod sendOptions, TinyNetConnection tinyNetConn) {
-			recycleWriter.Reset();
+			s_recycleWriter.Reset();
 
-			recycleWriter.Put(msg.msgType);
-			msg.Serialize(recycleWriter);
+			s_recycleWriter.Put(msg.msgType);
+			msg.Serialize(s_recycleWriter);
 
-			tinyNetConn.Send(recycleWriter, sendOptions);
+			tinyNetConn.Send(s_recycleWriter, sendOptions);
 		}
 
 		/// <summary>
@@ -430,13 +430,13 @@ namespace TinyBirdNet {
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
 		public virtual void SendMessageByChannelToAllConnections(ITinyNetMessage msg, DeliveryMethod sendOptions) {
-			recycleWriter.Reset();
+			s_recycleWriter.Reset();
 
-			recycleWriter.Put(msg.msgType);
-			msg.Serialize(recycleWriter);
+			s_recycleWriter.Put(msg.msgType);
+			msg.Serialize(s_recycleWriter);
 			
 			for (int i = 0; i < tinyNetConns.Count; i++) {
-				tinyNetConns[i].Send(recycleWriter, sendOptions);
+				tinyNetConns[i].Send(s_recycleWriter, sendOptions);
 			}
 		}
 
@@ -446,16 +446,16 @@ namespace TinyBirdNet {
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
 		public virtual void SendMessageByChannelToAllReadyConnections(ITinyNetMessage msg, DeliveryMethod sendOptions) {
-			recycleWriter.Reset();
+			s_recycleWriter.Reset();
 
-			recycleWriter.Put(msg.msgType);
-			msg.Serialize(recycleWriter);
+			s_recycleWriter.Put(msg.msgType);
+			msg.Serialize(s_recycleWriter);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				if (!tinyNetConns[i].isReady) {
 					return;
 				}
-				tinyNetConns[i].Send(recycleWriter, sendOptions);
+				tinyNetConns[i].Send(s_recycleWriter, sendOptions);
 			}
 		}
 
@@ -466,16 +466,16 @@ namespace TinyBirdNet {
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
 		public virtual void SendMessageByChannelToAllObserversOf(TinyNetIdentity tni, ITinyNetMessage msg, DeliveryMethod sendOptions) {
-			recycleWriter.Reset();
+			s_recycleWriter.Reset();
 
-			recycleWriter.Put(msg.msgType);
-			msg.Serialize(recycleWriter);
+			s_recycleWriter.Put(msg.msgType);
+			msg.Serialize(s_recycleWriter);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				if (!tinyNetConns[i].IsObservingNetIdentity(tni)) {
 					return;
 				}
-				tinyNetConns[i].Send(recycleWriter, sendOptions);
+				tinyNetConns[i].Send(s_recycleWriter, sendOptions);
 			}
 		}
 
@@ -540,7 +540,8 @@ namespace TinyBirdNet {
 		/// <param name="reader">DataReader containing all received data</param>
 		/// <param name="deliveryMethod">Type of received packet</param>
 		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod) {
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer)) + " from: " + peer.EndPoint + " method: " + deliveryMethod.ToString()); }
+			string msgType = TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer));
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + msgType + " from: " + peer.EndPoint + " method: " + deliveryMethod.ToString()); }
 		}
 
 		/// <summary>

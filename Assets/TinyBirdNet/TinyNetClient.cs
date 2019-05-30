@@ -5,6 +5,7 @@ using LiteNetLib.Utils;
 using TinyBirdUtils;
 using TinyBirdNet.Messaging;
 using System.Collections.Generic;
+using TinyBirdNet.Utils;
 
 namespace TinyBirdNet {
 
@@ -21,6 +22,11 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public override string TYPE { get { return "CLIENT"; } }
+
+		/// <summary>
+		/// A reader to be used when reading state updates.
+		/// </summary>
+		protected static TinyNetStateReader _stateUpdateReader = new TinyNetStateReader();
 
 		/// <summary>
 		/// The client ready event.
@@ -127,11 +133,11 @@ namespace TinyBirdNet {
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Attempt to connect at adress: " + hostAddress + ":" + hostPort); }
 
-			recycleWriter.Reset();
-			recycleWriter.Put(TinyNetGameManager.instance.multiplayerConnectKey);
-			recycleWriter.Put(TinyNetGameManager.ApplicationGUIDString);
+			s_recycleWriter.Reset();
+			s_recycleWriter.Put(TinyNetGameManager.instance.multiplayerConnectKey);
+			s_recycleWriter.Put(TinyNetGameManager.ApplicationGUIDString);
 
-			_netManager.Connect(hostAddress, hostPort, recycleWriter);
+			_netManager.Connect(hostAddress, hostPort, s_recycleWriter);
 		}
 
 		/// <summary>
@@ -421,15 +427,26 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netMsg">A wrapper for a <see cref="TinyNetObjectStateUpdate"/> message.</param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
-			int networkID = netMsg.reader.GetInt();
+			int frameTick = netMsg.reader.GetInt();
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnUpdateVarsMessage " + networkID + " channel:" + netMsg.channelId); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + frameTick + " channel:" + netMsg.channelId); }
 
-			TinyNetIdentity localObject = _localIdentityObjects[networkID];
-			if (localObject != null) {
-				localObject.TinyDeserialize(netMsg.reader, false);
-			} else {
-				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Did not find target for sync message for " + networkID); }
+			while (netMsg.reader.AvailableBytes > 0) {
+				int networkID = netMsg.reader.GetInt();
+
+				_stateUpdateReader.Clear();
+				int rSize = netMsg.reader.GetInt();
+				_stateUpdateReader.SetSource(netMsg.reader.Data, netMsg.reader.Position, rSize);	
+
+				TinyNetIdentity localObject = _localIdentityObjects[networkID];
+				if (localObject != null) {
+					localObject.TinyDeserialize(_stateUpdateReader, false);
+				} else {
+					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Did not find target for sync message for " + networkID); }
+				}
+
+				// We jump the reader position to the amount of data we read.
+				netMsg.reader.SetSource(netMsg.reader.Data, netMsg.reader.Position + rSize);
 			}
 		}
 

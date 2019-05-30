@@ -24,6 +24,11 @@ namespace TinyBirdNet {
 		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
 
 		/// <summary>
+		/// A writer to be used when writing state updates.
+		/// </summary> 
+		protected NetDataWriter _serializeWriter = new NetDataWriter();
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="TinyNetServer"/> class.
 		/// </summary>
 		public TinyNetServer() : base() {
@@ -209,11 +214,11 @@ namespace TinyBirdNet {
 			msg.position = netIdentity.transform.position;
 
 			// Include state of TinyNetObjects.
-			recycleWriter.Reset();
-			netIdentity.TinySerialize(recycleWriter, true);
+			s_recycleWriter.Reset();
+			netIdentity.TinySerialize(s_recycleWriter, true);
 
-			if (recycleWriter.Length > 0) {
-				msg.initialState = recycleWriter.CopyData();
+			if (s_recycleWriter.Length > 0) {
+				msg.initialState = s_recycleWriter.CopyData();
 			}
 
 			if (targetConn != null) {
@@ -338,27 +343,28 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Networking ===========//
 
-		// TODO: Actually send state update to all observers (is not called anywhere)
-		// Also put all state updates together?
-		// And the frame!
+		// TODO: Sepparates objects into desired send type
 		/// <summary>
-		/// Sends the state update to all observers of an object.
+		/// Sends the state updates for all observing objects of each connection.
 		/// </summary>
-		/// <param name="netBehaviour">The TinyNetBehaviour.</param>
-		/// <param name="sendOptions">The send options.</param>
-		public virtual void SendStateUpdateToAllObservers(TinyNetIdentity netIdentity, DeliveryMethod sendOptions) {
-			recycleWriter.Reset();
+		public virtual void SendStateUpdatesToAll() {
+			s_recycleWriter.Reset();
 
-			recycleWriter.Put(TinyNetMsgType.StateUpdate);
-			recycleWriter.Put(netIdentity.TinyInstanceID);
-
-			netIdentity.TinySerialize(recycleWriter, false);
+			s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
+			s_recycleWriter.Put(CurrentGameTick);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
-				if (!tinyNetConns[i].IsObservingNetIdentity(netIdentity)) {
-					return;
+				foreach (TinyNetIdentity tNetId in tinyNetConns[i].ObservingNetObjects) {
+					s_recycleWriter.Put(tNetId.TinyInstanceID.NetworkID);
+
+					_serializeWriter.Reset();
+					tNetId.TinySerialize(_serializeWriter, false);
+
+					s_recycleWriter.Put(_serializeWriter.Length);
+					s_recycleWriter.Put(_serializeWriter.Data);
 				}
-				tinyNetConns[i].Send(recycleWriter, sendOptions);
+
+				tinyNetConns[i].Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
 			}
 		}
 

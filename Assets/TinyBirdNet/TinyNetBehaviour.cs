@@ -289,7 +289,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <inheritdoc />
-		public virtual void TinyDeserialize(NetDataReader reader, bool firstStateUpdate) {
+		public virtual void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate) {
 			/*if (firstStateUpdate) {
 				NetworkID = reader.GetInt();
 			}*/

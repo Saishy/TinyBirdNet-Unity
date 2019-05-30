@@ -1,4 +1,5 @@
 ﻿using LiteNetLib.Utils;
+using TinyBirdNet.Utils;
 
 namespace TinyBirdNet {
 
@@ -28,7 +29,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="reader">The reader.</param>
 		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
-		void TinyDeserialize(NetDataReader reader, bool firstStateUpdate);
+		void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate);
 
 		/// <summary>
 		/// Called on Server after all FixedUpdates and physics but before any Update.
