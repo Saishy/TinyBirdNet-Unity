@@ -57,14 +57,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// The dirty flag is a BitArray of size 32 that represents if a TinyNetSyncVar is dirty.
 		/// </summary>
-		private BitArray _dirtyFlag = new BitArray(32);
-		/// <summary>
-		/// Gets the dirty flag.
-		/// </summary>
-		/// <value>
-		/// The dirty flag.
-		/// </value>
-		public BitArray DirtyFlag { get { return _dirtyFlag; } private set { _dirtyFlag = value; } }
+		private BitArray _dirtyFlag;
 
 		/// <summary>
 		/// [Server Only] The last Time.time registered at an UpdateDirtyFlag call.
@@ -127,23 +120,24 @@ namespace TinyBirdNet {
 			NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnNetworkCreate, OnNetworkCreate);
 		}
 
-		/// <summary>
-		/// Registers the RPC delegate.
-		/// </summary>
-		/// <param name="rpcDel">The RPC delegate.</param>
-		/// <param name="methodName">Name of the method.</param>
-		protected void RegisterRPCDelegate(RPCDelegate rpcDel, string methodName) {
-			if (rpcHandlers == null) {
-				rpcHandlers = new RPCDelegate[TinyNetStateSyncer.GetNumberOfRPCMethods(GetType())];
+		protected virtual void CreateDirtyFlag() {
+			int numberOfSyncVars = TinyNetStateSyncer.GetNumberOfSyncedProperties(GetType());
+
+			if (numberOfSyncVars == 0) {
+				_dirtyFlag = null;
+			} else if (numberOfSyncVars <= 8) {
+				_dirtyFlag = new BitArray(8);
+			} else if (numberOfSyncVars <= 16) {
+				_dirtyFlag = new BitArray(16);
+			} else if (numberOfSyncVars <= 32) {
+				_dirtyFlag = new BitArray(32);
+			} else if (numberOfSyncVars <= 64) {
+				_dirtyFlag = new BitArray(64);
+			} else {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::OnNetworkCreate amount of TinyNetSyncVar is bigger than 64."); }
+				return;
 			}
-
-			int index = TinyNetStateSyncer.GetRPCMethodIndexFromType(GetType(), methodName);
-			rpcHandlers[index] = new RPCDelegate(rpcDel);
 		}
-
-		/*protected void CreateDirtyFlag() {
-			_dirtyFlag = new BitArray(TinyNetStateSyncer.GetNumberOfSyncedProperties(GetType()));
-		}*/
 
 		/// <summary>
 		/// Sets the bit value on the dirty flag at the given index.
@@ -246,12 +240,25 @@ namespace TinyBirdNet {
 		/// <param name="writer">The writer.</param>
 		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
 		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
-			/*if (firstStateUpdate) {
-				writer.Put(NetworkID);
-			}*/
-
 			if (!firstStateUpdate) {
-				writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+				//writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+				switch (_dirtyFlag.Length) {
+					case 0:
+						// Do nothing!
+						break;
+					case 8:
+						writer.Put((byte)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+						break;
+					case 16:
+						writer.Put((ushort)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+						break;
+					case 32:
+						writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+						break;
+					case 64:
+						writer.Put((ulong)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+						break;
+				}
 			}
 
 			Type type;
@@ -294,14 +301,25 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public virtual void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate) {
-			/*if (firstStateUpdate) {
-				NetworkID = reader.GetInt();
-			}*/
-
 			if (!firstStateUpdate) {
-				uint dFlag = reader.GetUInt();
-
-				TinyBitArrayUtil.U64ToBitArray(dFlag, _dirtyFlag);
+				//uint dFlag = reader.GetUInt();
+				//TinyBitArrayUtil.U64ToBitArray(dFlag, _dirtyFlag);
+				switch (_dirtyFlag.Length) {
+					case 0:
+						break;
+					case 8:
+						TinyBitArrayUtil.U64ToBitArray(reader.GetByte(), _dirtyFlag);
+						break;
+					case 16:
+						TinyBitArrayUtil.U64ToBitArray(reader.GetUShort(), _dirtyFlag);
+						break;
+					case 32:
+						TinyBitArrayUtil.U64ToBitArray(reader.GetUInt(), _dirtyFlag);
+						break;
+					case 64:
+						TinyBitArrayUtil.U64ToBitArray(reader.GetULong(), _dirtyFlag);
+						break;
+				}
 			}
 
 			Type type;
@@ -340,6 +358,20 @@ namespace TinyBirdNet {
 					stringAccessor[propertiesName[i]].Set(this, reader.GetString());
 				}
 			}
+		}
+
+		/// <summary>
+		/// Registers the RPC delegate.
+		/// </summary>
+		/// <param name="rpcDel">The RPC delegate.</param>
+		/// <param name="methodName">Name of the method.</param>
+		protected void RegisterRPCDelegate(RPCDelegate rpcDel, string methodName) {
+			if (rpcHandlers == null) {
+				rpcHandlers = new RPCDelegate[TinyNetStateSyncer.GetNumberOfRPCMethods(GetType())];
+			}
+
+			int index = TinyNetStateSyncer.GetRPCMethodIndexFromType(GetType(), methodName);
+			rpcHandlers[index] = new RPCDelegate(rpcDel);
 		}
 
 		/// <summary>
@@ -398,7 +430,7 @@ namespace TinyBirdNet {
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		/// <param name="reader">The reader.</param>
 		/// <returns></returns>
-		public virtual bool InvokeRPC(int rpcMethodIndex, NetDataReader reader) {
+		public virtual bool InvokeRPC(int rpcMethodIndex, TinyNetStateReader reader) {
 			if (rpcHandlers[rpcMethodIndex] == null) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetBehaviour::InvokeRPC netId:" + TinyInstanceID + " RPCDelegate is not registered."); }
 				return false;
@@ -413,15 +445,8 @@ namespace TinyBirdNet {
 		/// [Server Only] Called after all FixedUpdates and physics but before any Update.
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
 		/// </summary>>
-		public void TinyNetUpdate() {
+		public virtual void TinyNetUpdate() {
 			UpdateDirtyFlag();
-
-			// TODO FIX THIS
-			/*if (IsDirty) {
-				TinyNetServer.instance.SendStateUpdateToAllObservers(this, GetNetworkChannel());
-
-				IsDirty = false;
-			}*/
 		}
 
 		/// <summary>
@@ -432,6 +457,8 @@ namespace TinyBirdNet {
 			TinyNetStateSyncer.OutPropertyTypesFromType(GetType(), out propertiesTypes);
 
 			CreateAccessors();
+
+			CreateDirtyFlag();
 
 			if (isServer) {
 				UpdateDirtyFlag();

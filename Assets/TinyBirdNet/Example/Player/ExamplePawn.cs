@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TinyBirdNet;
+using TinyBirdNet.Utils;
 using UnityEngine;
 
 public class ExamplePawn : TinyNetBehaviour {
@@ -48,8 +49,6 @@ public class ExamplePawn : TinyNetBehaviour {
 		rbody = GetComponent<Rigidbody>();
 
 		movespeedPow = movementSpeed * movementSpeed;
-
-		base.Awake();
 
 		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnNetworkCreate, OnNetworkCreate);
 		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartServer, OnStartServer);
@@ -234,7 +233,7 @@ public class ExamplePawn : TinyNetBehaviour {
 		TinyNetServer.instance.SpawnObject(bullet.gameObject);
 	}
 
-	void ServerShootReceive(NetDataReader reader) {
+	void ServerShootReceive(TinyNetStateReader reader) {
 		ServerShoot(reader.GetFloat(), reader.GetFloat(), reader.GetByte());
 	}
 

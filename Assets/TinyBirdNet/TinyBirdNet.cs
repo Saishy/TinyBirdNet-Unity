@@ -1,5 +1,6 @@
 ﻿using LiteNetLib.Utils;
 using System;
+using TinyBirdNet.Utils;
 using UnityEngine;
 
 namespace TinyBirdNet {
@@ -21,7 +22,7 @@ namespace TinyBirdNet {
 	/// Handles RPC calls
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	public delegate void RPCDelegate(NetDataReader reader);
+	public delegate void RPCDelegate(TinyNetStateReader reader);
 
 	/// <summary>
 	/// A data storage class for RPC methods information.

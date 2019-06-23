@@ -20,7 +20,9 @@ public class ExampleBullet : TinyNetBehaviour {
 	[TinyNetSyncVar]
 	public byte direction { get; set; }
 
-	private void Awake() {
+	protected override void Awake() {
+		base.Awake();
+
 		cMeshRender = GetComponent<MeshRenderer>();
 		rbody = GetComponent<Rigidbody>();
 	}

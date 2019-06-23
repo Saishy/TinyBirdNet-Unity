@@ -83,7 +83,9 @@ namespace TinyBirdNet {
 				}
 			}
 
-			return -1;
+			throw new Exception("GetRPCMethodIndexFromType called but " + type + " does not contain a method called " + rpcName);
+
+			//return -1;
 		}
 
 		public static int GetRPCMethodInfoFromType(Type type, string rpcName, ref RPCMethodInfo rpcMethodInfo) {
