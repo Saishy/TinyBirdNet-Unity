@@ -105,6 +105,11 @@ namespace TinyBirdNet {
 			RegisterHandler(TinyNetMsgType.Scene, OnClientChangeSceneMessage);
 		}
 
+		/// <inheritdoc />
+		public override void TinyNetUpdate() {
+			
+		}
+
 		/// <summary>
 		/// Starts the client.
 		/// </summary>
@@ -190,14 +195,16 @@ namespace TinyBirdNet {
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		/// <param name="iObj">The <see cref="ITinyNetComponent"/> instance.</param>
 		public void SendRPCToServer(NetDataWriter stream, int rpcMethodIndex, ITinyNetComponent iObj) {
-			//TODO FIX THIS
-			/*var msg = new TinyNetRPCMessage();
+			//TODO: Pack rpc messages
+			var msg = new TinyNetRPCMessage();
 
-			msg.networkID = iObj.NetworkID;
+			msg.networkID = iObj.TinyInstanceID.NetworkID;
+			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
+			msg.frameTick = CurrentGameTick;
 			msg.parameters = stream.Data;
 
-			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);*/
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);
 		}
 
 		//============ TinyNetMessages Handlers =============//
@@ -276,6 +283,7 @@ namespace TinyBirdNet {
 
 			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectDestroyMessage.networkID];
 			if (localObject != null) {
+				RemoveTinyNetIdentityFromList(localObject);
 				localObject.OnNetworkDestroy();
 
 				if (!TinyNetGameManager.instance.InvokeUnSpawnHandler(localObject.assetGUID, localObject.gameObject)) {
@@ -423,9 +431,9 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Calls TinySerialize in all Components that are dirty.
+		/// Calls TinyDeserialize in all Components that we received updates for.
 		/// </summary>
-		/// <param name="netMsg">A wrapper for a <see cref="TinyNetObjectStateUpdate"/> message.</param>
+		/// <param name="netMsg">A wrapper for a <see cref="TinyNetMsgType.StateUpdate"/> message.</param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
 			int frameTick = netMsg.reader.GetInt();
 

@@ -6,12 +6,9 @@ using UnityEngine;
 
 namespace TinyBirdNet {
 
-	// This class represents the player entity in a network game, there can be multiple players per client.
-	// when there are multiple people playing on one machine.
-	// The server has one TinyNetConnection per peer.
 	/// <summary>
-	/// This class represents the player entity in a network game, there can be multiple players per client,
-	/// when there are multiple people playing on one machine.
+	/// This class represents the player entity in a network game, there can be multiple players per client.
+	/// When there are multiple people playing on one machine.
 	/// <para>The server has one <see cref="TinyNetConnection"/> per <see cref="LiteNetLib.NetPeer"/>.</para>
 	/// </summary>
 	public class TinyNetPlayerController {
@@ -69,6 +66,13 @@ namespace TinyBirdNet {
 		public TinyNetPlayerController(short playerControllerId, TinyNetConnection nConn) : this() {
 			this.playerControllerId = playerControllerId;
 			this.conn = nConn;
+		}
+
+		/// <summary>
+		/// This is called every frame, like an Unity Update call.
+		/// </summary>
+		public virtual void Update() {
+
 		}
 
 		/// <summary>

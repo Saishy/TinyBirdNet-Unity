@@ -665,7 +665,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// [Client only] Handles the client authority.
 		/// </summary>
-		/// <param name="authority">if set to <c>true</c> [authority].</param>
+		/// <param name="authority">if set to <c>rue</c> [authority].</param>
 		internal void HandleClientAuthority(bool authority) {
 			if (!_localPlayerAuthority) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("HandleClientAuthority " + gameObject + " does not have localPlayerAuthority"); }
@@ -680,7 +680,7 @@ namespace TinyBirdNet {
 		/// [Server only] Removes the client authority.
 		/// </summary>
 		/// <param name="conn">The connection.</param>
-		/// <returns></returns>
+		/// <returns><c>false</c> on error, true otherwise.</returns>
 		public bool RemoveClientAuthority(TinyNetConnection conn) {
 			if (!isServer) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemoveClientAuthority can only be called on the server for spawned objects."); }
@@ -722,7 +722,7 @@ namespace TinyBirdNet {
 		/// [Server only] Assigns the client authority.
 		/// </summary>
 		/// <param name="conn">The connection.</param>
-		/// <returns></returns>
+		/// <returns><c>false</c> on error, true otherwise.</returns>
 		public bool AssignClientAuthority(TinyNetConnection conn) {
 			if (!isServer) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("AssignClientAuthority can only be call on the server for spawned objects."); }

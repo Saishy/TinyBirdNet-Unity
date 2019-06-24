@@ -195,6 +195,16 @@ namespace TinyBirdNet {
 		//============ Player Controllers ===================//
 
 		/// <summary>
+		/// Calls Update on all controllers.
+		/// <para>This is called every frame, like an Unity Update call.</para>
+		/// </summary>
+		public void CallUpdateOnControllers() {
+			for (int i = 0; i < _playerControllers.Count; i++) {
+				_playerControllers[i].Update();
+			}
+		}
+
+		/// <summary>
 		/// Adds a <see cref="TinyNetPlayerController"/> to the list of player controllers of this connection.
 		/// </summary>
 		/// <typeparam name="T">A type derived from <see cref="TinyNetPlayerController"/>.</typeparam>

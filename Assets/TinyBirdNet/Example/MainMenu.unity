@@ -520,14 +520,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6dbe83d791db234d8c50fdc1e46609e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  multiplayerConnectKey: TinyBirdNet TPS Example 1.1.3
+  multiplayerConnectKey: TinyBirdNet TPS Example 2.0.0.a1
   NetworkEveryXFixedFrames: 1
   registeredPrefabs:
   - {fileID: 1003412172681446, guid: 2988858db036b6a42a8832c52ac6e5a6, type: 2}
   - {fileID: 1057121294660296, guid: 3d4ccdbf287c1dc4e910d17a2f69307f, type: 2}
   prefabsGUID: []
   currentLogFilter: 0
-  maxNumberOfPlayers: 4
+  maxNumberOfPlayers: 16
 --- !u!1 &1148536498
 GameObject:
   m_ObjectHideFlags: 0

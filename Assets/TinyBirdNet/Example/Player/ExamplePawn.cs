@@ -119,7 +119,11 @@ public class ExamplePawn : TinyNetBehaviour {
 			FaceDir(netDir);
 
 			transform.position = result;
-		} else {
+		}
+	}
+
+	private void Update() {
+		if (hasAuthority) {
 			cameraTransform.position = new Vector3(transform.position.x, 10.0f, transform.position.z - 6f);
 		}
 	}

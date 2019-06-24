@@ -55,13 +55,11 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public override void TinyNetUpdate() {
-			if (CurrentGameTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames != 0) {
-				return;
-			}
-
 			foreach (var item in _localIdentityObjects) {
 				item.Value.TinyNetUpdate();
 			}
+
+			SendStateUpdatesToAll();
 		}
 
 		/// <summary>
@@ -237,7 +235,9 @@ namespace TinyBirdNet {
 			}
 
 			TinyNetIdentity objTinyNetIdentity;
-			if (!GetTinyNetIdentity(obj, out objTinyNetIdentity)) return;
+			if (!GetTinyNetIdentity(obj, out objTinyNetIdentity)) {
+				return;
+			}
 
 			UnSpawnObject(objTinyNetIdentity);
 		}
@@ -261,7 +261,9 @@ namespace TinyBirdNet {
 			}
 
 			TinyNetIdentity objTinyNetIdentity;
-			if (!GetTinyNetIdentity(obj, out objTinyNetIdentity)) return;
+			if (!GetTinyNetIdentity(obj, out objTinyNetIdentity)) {
+				return;
+			}
 
 			DestroyObject(objTinyNetIdentity, true);
 		}
@@ -274,9 +276,10 @@ namespace TinyBirdNet {
 		public void DestroyObject(TinyNetIdentity tni, bool destroyServerObject) {
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("DestroyObject instance:" + tni.TinyInstanceID); }
 
-			if (_localIdentityObjects.ContainsKey(tni.TinyInstanceID.NetworkID)) {
+			/*if (_localIdentityObjects.ContainsKey(tni.TinyInstanceID.NetworkID)) {
 				_localIdentityObjects.Remove(tni.TinyInstanceID.NetworkID);
-			}
+			}*/
+			RemoveTinyNetIdentityFromList(tni);
 
 			if (tni.ConnectionToOwnerClient != null) {
 				tni.ConnectionToOwnerClient.RemoveOwnedObject(tni);
@@ -294,9 +297,9 @@ namespace TinyBirdNet {
 				tni.OnNetworkDestroy();
 			}*/
 
+			tni.OnNetworkDestroy();
 			// when unspawning, dont destroy the server's object
 			if (destroyServerObject) {
-				tni.OnNetworkDestroy();
 				Object.Destroy(tni.gameObject);
 			}
 
@@ -310,14 +313,18 @@ namespace TinyBirdNet {
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		/// <param name="iObj">The object.</param>
 		public void SendRPCToClientOwner(NetDataWriter stream, int rpcMethodIndex, ITinyNetComponent iObj) {
-			//TODO FIX THIS
-			/*var msg = new TinyNetRPCMessage();
+			//TODO: Pack rpc messages
+			var msg = new TinyNetRPCMessage();
 
-			msg.networkID = iObj.NetworkID;
+			msg.networkID = iObj.TinyInstanceID.NetworkID;
+			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
+			msg.frameTick = CurrentGameTick;
 			msg.parameters = stream.Data;
-			
-			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, iObj.NetIdentity.connectionToOwnerClient);*/
+
+			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(iObj.TinyInstanceID.NetworkID);
+
+			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, tni.ConnectionToOwnerClient);
 		}
 
 		/// <summary>
@@ -327,14 +334,18 @@ namespace TinyBirdNet {
 		/// <param name="rpcMethodIndex">Index of the RPC method.</param>
 		/// <param name="iObj">The object.</param>
 		public void SendRPCToAllClients(NetDataWriter stream, int rpcMethodIndex, ITinyNetComponent iObj) {
-			//TODO FIX THIS
-			/*var msg = new TinyNetRPCMessage();
+			//TODO: Pack rpc messages
+			var msg = new TinyNetRPCMessage();
 
-			msg.networkID = iObj.NetworkID;
+			msg.networkID = iObj.TinyInstanceID.NetworkID;
+			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
+			msg.frameTick = CurrentGameTick;
 			msg.parameters = stream.Data;
 
-			SendMessageByChannelToAllObserversOf(iObj.NetIdentity, msg, DeliveryMethod.ReliableOrdered);*/
+			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(iObj.TinyInstanceID.NetworkID);
+
+			SendMessageByChannelToAllObserversOf(tni, msg, DeliveryMethod.ReliableOrdered);
 		}
 
 		//============ TinyNetMessages Networking ===========//

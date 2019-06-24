@@ -536,7 +536,9 @@ namespace TinyBirdNet.Messaging {
 
 	public class TinyNetRPCMessage : ITinyNetMessage {
 		public int networkID;
+		public byte componentID;
 		public int rpcMethodIndex;
+		public int frameTick;
 		public byte[] parameters;
 
 		public ushort msgType { get { return TinyNetMsgType.Rpc; } }

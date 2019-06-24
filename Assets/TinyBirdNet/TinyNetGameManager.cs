@@ -137,14 +137,14 @@ namespace TinyBirdNet {
 		protected TinyNetClient clientManager;
 
 		/// <summary>
-		/// Gets a value indicating whether this instance is server.
+		/// Gets a value indicating whether this instance is a server.
 		/// </summary>
 		/// <value>
 		///   <c>true</c> if this instance is server; otherwise, <c>false</c>.
 		/// </value>
 		public bool isServer { get { return serverManager != null && serverManager.isRunning; } }
 		/// <summary>
-		/// Gets a value indicating whether this instance is client.
+		/// Gets a value indicating whether this instance is a client.
 		/// </summary>
 		/// <value>
 		///   <c>true</c> if this instance is client; otherwise, <c>false</c>.
@@ -152,12 +152,27 @@ namespace TinyBirdNet {
 		public bool isClient { get { return clientManager != null && clientManager.isRunning; } }
 		/// <summary>
 		/// Gets a value indicating whether this instance is a listen server.
+		/// <para>A listen server is a server that is also a client.</para>
 		/// </summary>
 		/// <value>
 		///   <c>true</c> if this instance is a listen server; otherwise, <c>false</c>.
 		/// </value>
 		public bool isListenServer { get { return isServer && isClient; } }
-		//public bool isStandalone { get; protected set; }
+		/// <summary>
+		/// Gets a value indicating whether this instance is only a client, and not a listen server.
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is only a client; otherwise, <c>false</c>.
+		/// </value>
+		public bool isClientOnly { get { return isClient && !isServer; } }
+		/// <summary>
+		/// Gets a value indicating whether this instance is a dedicated server.
+		/// <para>A dedicated server is a server that is not a client.</para>
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is only a client; otherwise, <c>false</c>.
+		/// </value>
+		public bool isDedicatedServer { get { return isServer && !isClient; } }
 
 		/// <summary>
 		/// The next network identifier
@@ -194,6 +209,8 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// The current game tick, used to calculate the network state, buffer and reconciliation.
 		/// </summary>
+		private int _currentNetworkTick = 0;
+
 		private int _currentFixedFrame = 0;
 
 		/// <summary>
@@ -201,7 +218,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		public int CurrentGameTick {
 			get {
-				return _currentFixedFrame;
+				return _currentNetworkTick;
 			}
 		}
 
@@ -253,6 +270,13 @@ namespace TinyBirdNet {
 				clientManager.InternalUpdate();
 			}
 
+			// Calls the Update method on all TinyNetPlayerControllers.
+			if (serverManager != null) {
+				serverManager.CallUpdateOnControllers();
+			} else if (clientManager != null) {
+				clientManager.CallUpdateOnControllers();
+			}
+
 			CheckForSceneLoad();
 
 			UpdateVirtual();
@@ -265,19 +289,25 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// A coroutine used to call a network update after every physics update from a fixed step from UnityEngine.
+		/// This is called every physics update, but after every FixedUpdate() has been called.
 		/// </summary>
 		IEnumerator TinyNetUpdate() {
 			while (true) {
-				if (serverManager != null) {
-					serverManager.TinyNetUpdate();
-				}
-				if (clientManager != null) {
-					clientManager.TinyNetUpdate();
+				if (_currentFixedFrame % NetworkEveryXFixedFrames == 0) {
+					if (serverManager != null) {
+						serverManager.TinyNetUpdate();
+					}
+					if (clientManager != null) {
+						clientManager.TinyNetUpdate();
+					}
 				}
 
 				yield return new WaitForFixedUpdate();
+
 				_currentFixedFrame++;
+				if (_currentFixedFrame % NetworkEveryXFixedFrames == 0) {
+					_currentNetworkTick++;
+				}
 			}
 		}
 

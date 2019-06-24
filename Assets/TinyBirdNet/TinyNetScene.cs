@@ -181,9 +181,15 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Run every frame, called from <see cref="TinyNetGameManager"/>.
+		/// Called every network frame tick, called from <see cref="TinyNetGameManager"/>.
 		/// </summary>
 		public virtual void TinyNetUpdate() {
+		}
+
+		public virtual void CallUpdateOnControllers() {
+			for (int i = 0; i < tinyNetConns.Count; i++) {
+				tinyNetConns[i].CallUpdateOnControllers();
+			}
 		}
 
 		/// <summary>
@@ -340,8 +346,8 @@ namespace TinyBirdNet {
 		/// Removes the <see cref="TinyNetIdentity"/> from the list.
 		/// </summary>
 		/// <param name="netIdentity">The net identity.</param>
-		public static void RemoveTinyNetIdentityFromList(TinyNetIdentity netIdentity) {
-			_localIdentityObjects.Remove(netIdentity.TinyInstanceID.NetworkID);
+		public static bool RemoveTinyNetIdentityFromList(TinyNetIdentity netIdentity) {
+			return _localIdentityObjects.Remove(netIdentity.TinyInstanceID.NetworkID);
 		}
 
 		/// <summary>

@@ -7,14 +7,8 @@ using LiteNetLib.Utils;
 
 public class ExamplePlayerController : TinyNetPlayerController {
 
-	//<summary>Will send the input buffer every X fixed frames</summary>*/
-	//public int inputBufferSize = 5;
-
-	//protected List<ExampleInputMessage> inputBuffer;
 	protected ExampleInputMessage inputMessageReader = new ExampleInputMessage();
 	protected ExampleInputMessage inputMessageBuffer = new ExampleInputMessage();
-
-	protected Coroutine fixedUpdateCoroutine;
 
 	protected ExamplePawn pawn;
 
@@ -27,12 +21,6 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	protected bool bAskedForPawn = false;
 
 	public ExamplePlayerController() : base() {
-		/*inputBuffer = new List<ExampleInputMessage>(inputBufferSize);
-		inputMessages = new ExampleInputMessage[inputBufferSize];
-
-		for (int i = 0; i < inputMessages.Length; i++) {
-			inputMessages[i] = new ExampleInputMessage();
-		}*/
 	}
 
 	public ExamplePlayerController(short playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
@@ -42,8 +30,6 @@ public class ExamplePlayerController : TinyNetPlayerController {
 				return;
 			}
 		}
-
-		fixedUpdateCoroutine = TinyNetGameManager.instance.StartCoroutine(FixedUpdateLoop());
 
 		inputMessageBuffer.playerControllerId = playerControllerId;
 	}
@@ -73,27 +59,23 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		return 0;
 	}
 
-	IEnumerator FixedUpdateLoop() {
-		while (true) {
-			Vector2 axis = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
+	public override void Update() {
+		Vector2 axis = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
 
-			byte nDir = MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
+		byte nDir = MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
 
-			if (Input.GetButton("Fire1")) {
-				Shoot();
+		if (Input.GetButton("Fire1")) {
+			Shoot();
+		}
+
+		if (pawn != null) {
+			inputMessageBuffer.xPos = pawn.transform.position.x;
+			inputMessageBuffer.zPos = pawn.transform.position.z;
+			inputMessageBuffer.dir = nDir;
+
+			if (!TinyNetGameManager.instance.isServer) {
+				conn.Send(inputMessageBuffer, LiteNetLib.DeliveryMethod.Sequenced);
 			}
-
-			if (pawn != null) {
-				inputMessageBuffer.xPos = pawn.transform.position.x;
-				inputMessageBuffer.zPos = pawn.transform.position.z;
-				inputMessageBuffer.dir = nDir;
-
-				if (!TinyNetGameManager.instance.isServer) {
-					conn.Send(inputMessageBuffer, LiteNetLib.DeliveryMethod.Sequenced);
-				}
-			}
-
-			yield return new WaitForFixedUpdate();
 		}
 	}
 
