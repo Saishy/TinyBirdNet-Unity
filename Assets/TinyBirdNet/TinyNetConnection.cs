@@ -29,6 +29,8 @@ namespace TinyBirdNet {
 		/// </value>
 		public NetPeer netPeer { get { return _peer; } }
 
+		public readonly string ApplicationGUIDString;
+
 		/// <summary>
 		/// A list of <see cref="TinyNetPlayerController"/> of this connection.
 		/// </summary>
@@ -66,6 +68,10 @@ namespace TinyBirdNet {
 		/// <param name="newPeer">The <see cref="NetPeer"/>.</param>
 		public TinyNetConnection(NetPeer newPeer) {
 			_peer = newPeer;
+
+			if (_peer.Tag != null) {
+				ApplicationGUIDString = (string)_peer.Tag;
+			}
 		}
 
 		/// <summary>

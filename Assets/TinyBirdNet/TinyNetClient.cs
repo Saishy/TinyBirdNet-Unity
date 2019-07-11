@@ -161,6 +161,8 @@ namespace TinyBirdNet {
 				tinyConn = new TinyNetConnection(peer);
 			}*/
 
+			peer.Tag = tinyConn;
+
 			tinyNetConns.Add(tinyConn);
 
 			//First connection is to host:
@@ -477,6 +479,10 @@ namespace TinyBirdNet {
 			tinyNetId.transform.position = position;
 
 			tinyNetId.OnNetworkCreate();
+
+			if (newGameObject != null) {
+				tinyNetId.ReceiveNetworkID(new TinyNetworkID(networkID));
+			}
 
 			if (initialState != null && initialState.Length > 0) {
 				_stateUpdateReader.Clear();

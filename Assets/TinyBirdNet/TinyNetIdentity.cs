@@ -351,8 +351,11 @@ namespace TinyBirdNet {
 					// We jump the reader position to the amount of data we read.
 					reader.SetSource(reader.Data, reader.Position + rSize);
 				}
-			} else {
-				switch (_dirtyFlag.Length) {
+
+				return;
+			}
+
+			switch (_dirtyFlag.Length) {
 					case 1:
 						_dirtyFlag[0] = true;
 						break;
@@ -370,17 +373,16 @@ namespace TinyBirdNet {
 						break;
 				}
 
-				for (int i = 0; i < _tinyNetComponents.Length; i++) {
-					if (_dirtyFlag[i] == true) {
-						_recycleReader.Clear();
-						int rSize = reader.GetInt();
-						_recycleReader.SetSource(reader.Data, reader.Position, rSize);
+			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+				if (_dirtyFlag[i] == true) {
+					_recycleReader.Clear();
+					int rSize = reader.GetInt();
+					_recycleReader.SetSource(reader.Data, reader.Position, rSize);
 
-						_recycleReader.SetFrameTick(reader.FrameTick);
-						_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
-						// We jump the reader position to the amount of data we read.
-						reader.SetSource(reader.Data, reader.Position + rSize);
-					}
+					_recycleReader.SetFrameTick(reader.FrameTick);
+					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
+					// We jump the reader position to the amount of data we read.
+					reader.SetSource(reader.Data, reader.Position + rSize);
 				}
 			}
 		}

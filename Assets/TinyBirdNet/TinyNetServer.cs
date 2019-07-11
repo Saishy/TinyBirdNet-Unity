@@ -96,6 +96,8 @@ namespace TinyBirdNet {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetServer::CreateTinyNetConnection created new TinyNetConnection."); }
 			}
 
+			peer.Tag = tinyConn;
+
 			tinyNetConns.Add(tinyConn);
 
 			return tinyConn;
@@ -355,13 +357,25 @@ namespace TinyBirdNet {
 		/// Sends the state updates for all observing objects of each connection.
 		/// </summary>
 		public virtual void SendStateUpdatesToAll() {
-			s_recycleWriter.Reset();
-
-			s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
-			s_recycleWriter.Put(CurrentGameTick);
-
 			for (int i = 0; i < tinyNetConns.Count; i++) {
+				if (tinyNetConns[i].ObservingNetObjects.Count == 0) {
+					continue;
+				}
+
+				s_recycleWriter.Reset();
+
+				s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
+				s_recycleWriter.Put(CurrentGameTick);
+
+				int objectsCount = 0;
+
 				foreach (TinyNetIdentity tNetId in tinyNetConns[i].ObservingNetObjects) {
+					if (!tNetId.IsDirty) {
+						continue;
+					}
+
+					objectsCount++;
+
 					s_recycleWriter.Put(tNetId.TinyInstanceID.NetworkID);
 
 					_serializeWriter.Reset();
@@ -371,7 +385,9 @@ namespace TinyBirdNet {
 					s_recycleWriter.Put(_serializeWriter.Data);
 				}
 
-				tinyNetConns[i].Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
+				if (objectsCount > 0) {
+					tinyNetConns[i].Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
+				}
 			}
 		}
 

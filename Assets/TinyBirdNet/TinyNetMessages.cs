@@ -519,6 +519,7 @@ namespace TinyBirdNet.Messaging {
 			networkID = reader.GetInt();
 			assetIndex = reader.GetInt();
 			position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
+			frameTick = reader.GetInt();
 			initialState = reader.GetRemainingBytes();
 		}
 
@@ -528,6 +529,7 @@ namespace TinyBirdNet.Messaging {
 			writer.Put(position.x);
 			writer.Put(position.y);
 			writer.Put(position.z);
+			writer.Put(frameTick);
 			if (initialState != null) {
 				writer.Put(initialState);
 			}
@@ -546,12 +548,14 @@ namespace TinyBirdNet.Messaging {
 		public void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
 			rpcMethodIndex = reader.GetInt();
+			frameTick = reader.GetInt();
 			parameters = reader.GetRemainingBytes();
 		}
 
 		public void Serialize(NetDataWriter writer) {
 			writer.Put(networkID);
 			writer.Put(rpcMethodIndex);
+			writer.Put(frameTick);
 			if (parameters != null) {
 				writer.Put(parameters);
 			}
@@ -628,6 +632,7 @@ namespace TinyBirdNet.Messaging {
 			networkID = reader.GetInt();
 			sceneId = reader.GetInt();
 			position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
+			frameTick = reader.GetInt();
 			initialState = reader.GetRemainingBytes();
 		}
 
@@ -637,6 +642,7 @@ namespace TinyBirdNet.Messaging {
 			writer.Put(position.x);
 			writer.Put(position.y);
 			writer.Put(position.z);
+			writer.Put(frameTick);
 			if (initialState != null) {
 				writer.Put(initialState);
 			}

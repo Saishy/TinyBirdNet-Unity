@@ -32,8 +32,8 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// The network state update will happen every x fixed frames.
 		/// </summary>
-		[Range(1, 60)]
-		public int NetworkEveryXFixedFrames = 1;
+		[Range(1, 120)]
+		public int NetworkEveryXFixedFrames = 2;
 
 		/// <summary>
 		/// Current scene name at runtime.
@@ -211,8 +211,6 @@ namespace TinyBirdNet {
 		/// </summary>
 		private int _currentNetworkTick = 0;
 
-		private int _currentFixedFrame = 0;
-
 		/// <summary>
 		/// The current game tick, used to calculate the network state, buffer and reconciliation.
 		/// </summary>
@@ -293,7 +291,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		IEnumerator TinyNetUpdate() {
 			while (true) {
-				if (_currentFixedFrame % NetworkEveryXFixedFrames == 0) {
+				if (_currentNetworkTick % NetworkEveryXFixedFrames == 0) {
 					if (serverManager != null) {
 						serverManager.TinyNetUpdate();
 					}
@@ -304,10 +302,7 @@ namespace TinyBirdNet {
 
 				yield return new WaitForFixedUpdate();
 
-				_currentFixedFrame++;
-				if (_currentFixedFrame % NetworkEveryXFixedFrames == 0) {
-					_currentNetworkTick++;
-				}
+				_currentNetworkTick++;
 			}
 		}
 

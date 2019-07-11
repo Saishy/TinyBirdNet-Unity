@@ -249,10 +249,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="peer">The peer.</param>
 		/// <returns></returns>
-		protected virtual TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
-			//No default implemention
-			return null;
-		}
+		protected abstract TinyNetConnection CreateTinyNetConnection(NetPeer peer);
 
 		/// <summary>
 		/// Returns the <see cref="TinyNetConnection"/> with the given connection identifier.
