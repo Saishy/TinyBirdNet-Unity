@@ -383,14 +383,14 @@ namespace TinyBirdNet {
 		/// <param name="reader">The reader.</param>
 		/// <param name="peer">The peer.</param>
 		/// <returns></returns>
-		ushort ReadMessageAndCallDelegate(NetDataReader reader, NetPeer peer) {
+		ushort ReadMessageAndCallDelegate(NetDataReader reader, NetPeer peer, DeliveryMethod deliveryMethod) {
 			ushort msgType = reader.GetUShort();
 
 			if (_tinyMessageHandlers.Contains(msgType)) {
 				recycleMessageReader.msgType = msgType;
 				recycleMessageReader.reader = reader;
 				recycleMessageReader.tinyNetConn = GetTinyNetConnection(peer);
-				recycleMessageReader.channelId = DeliveryMethod.ReliableOrdered; //TODO: I currently don't know if it's possible to get from which channel a message came.
+				recycleMessageReader.channelId = deliveryMethod;
 
 				_tinyMessageHandlers.GetHandler(msgType)(recycleMessageReader);
 			}
@@ -543,8 +543,8 @@ namespace TinyBirdNet {
 		/// <param name="reader">DataReader containing all received data</param>
 		/// <param name="deliveryMethod">Type of received packet</param>
 		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod) {
-			string msgType = TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer));
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + msgType + " from: " + peer.EndPoint + " method: " + deliveryMethod.ToString()); }
+			string msgType = TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer, deliveryMethod));
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + msgType + " from: " + peer.EndPoint + " channel: " + deliveryMethod.ToString()); }
 		}
 
 		/// <summary>

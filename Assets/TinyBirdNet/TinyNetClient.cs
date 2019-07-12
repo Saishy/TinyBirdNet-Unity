@@ -439,7 +439,7 @@ namespace TinyBirdNet {
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
 			int frameTick = netMsg.reader.GetInt();
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + frameTick + " channel:" + netMsg.channelId); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + frameTick + " channel: " + netMsg.channelId); }
 
 			while (netMsg.reader.AvailableBytes > 0) {
 				int networkID = netMsg.reader.GetInt();
