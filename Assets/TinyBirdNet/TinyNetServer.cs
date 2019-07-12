@@ -357,7 +357,10 @@ namespace TinyBirdNet {
 		/// Sends the state updates for all observing objects of each connection.
 		/// </summary>
 		public virtual void SendStateUpdatesToAll() {
+			int objectsCount = 0;
+
 			for (int i = 0; i < tinyNetConns.Count; i++) {
+
 				if (tinyNetConns[i].ObservingNetObjects.Count == 0) {
 					continue;
 				}
@@ -367,7 +370,7 @@ namespace TinyBirdNet {
 				s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
 				s_recycleWriter.Put(CurrentGameTick);
 
-				int objectsCount = 0;
+				objectsCount = 0;
 
 				foreach (TinyNetIdentity tNetId in tinyNetConns[i].ObservingNetObjects) {
 					if (!tNetId.IsDirty) {
@@ -382,7 +385,7 @@ namespace TinyBirdNet {
 					tNetId.TinySerialize(_serializeWriter, false);
 
 					s_recycleWriter.Put(_serializeWriter.Length);
-					s_recycleWriter.Put(_serializeWriter.Data);
+					s_recycleWriter.Put(_serializeWriter.Data, 0, _serializeWriter.Length);
 				}
 
 				if (objectsCount > 0) {

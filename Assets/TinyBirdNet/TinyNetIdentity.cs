@@ -290,7 +290,7 @@ namespace TinyBirdNet {
 					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
 					// TODO: Compact this
 					writer.Put(_recycleWriter.Length);
-					writer.Put(_recycleWriter.Data);
+					writer.Put(_recycleWriter.Data, 0, _recycleWriter.Length);
 				}
 
 				return;
@@ -322,7 +322,7 @@ namespace TinyBirdNet {
 					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
 					// TODO: Compact this
 					writer.Put(_recycleWriter.Length);
-					writer.Put(_recycleWriter.Data);
+					writer.Put(_recycleWriter.Data, 0, _recycleWriter.Length);
 				}
 			}
 		}
@@ -356,22 +356,22 @@ namespace TinyBirdNet {
 			}
 
 			switch (_dirtyFlag.Length) {
-					case 1:
-						_dirtyFlag[0] = true;
-						break;
-					case 8:
-						TinyBitArrayUtil.U64ToBitArray(reader.GetByte(), _dirtyFlag);
-						break;
-					case 16:
-						TinyBitArrayUtil.U64ToBitArray(reader.GetUShort(), _dirtyFlag);
-						break;
-					case 32:
-						TinyBitArrayUtil.U64ToBitArray(reader.GetUInt(), _dirtyFlag);
-						break;
-					case 64:
-						TinyBitArrayUtil.U64ToBitArray(reader.GetULong(), _dirtyFlag);
-						break;
-				}
+				case 1:
+					_dirtyFlag[0] = true;
+					break;
+				case 8:
+					TinyBitArrayUtil.U64ToBitArray(reader.GetByte(), _dirtyFlag);
+					break;
+				case 16:
+					TinyBitArrayUtil.U64ToBitArray(reader.GetUShort(), _dirtyFlag);
+					break;
+				case 32:
+					TinyBitArrayUtil.U64ToBitArray(reader.GetUInt(), _dirtyFlag);
+					break;
+				case 64:
+					TinyBitArrayUtil.U64ToBitArray(reader.GetULong(), _dirtyFlag);
+					break;
+			}
 
 			for (int i = 0; i < _tinyNetComponents.Length; i++) {
 				if (_dirtyFlag[i] == true) {
