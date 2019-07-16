@@ -4,8 +4,18 @@ using UnityEngine;
 using TinyBirdNet;
 using TinyBirdNet.Messaging;
 using LiteNetLib.Utils;
+using System;
 
 public class ExamplePlayerController : TinyNetPlayerController {
+
+	[Flags]
+	public enum MovementKeys : byte {
+		Left = 1 << 1,
+		Right = 1 << 2,
+		Up = 1 << 3,
+		Down = 1 << 4,
+		Fire = 1 << 5
+	}
 
 	protected ExampleInputMessage inputMessageReader = new ExampleInputMessage();
 	protected ExampleInputMessage inputMessageBuffer = new ExampleInputMessage();
@@ -24,7 +34,6 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	}
 
 	public ExamplePlayerController(short playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
-		//Hacky way, but I want a coroutine...
 		if (TinyNetGameManager.instance.isListenServer) {
 			if (!(nConn is TinyNetLocalConnectionToClient)) {
 				return;
@@ -41,74 +50,90 @@ public class ExamplePlayerController : TinyNetPlayerController {
 		}
 	}*/
 
-	public static byte VectorToDirection(Vector2 axis) {
-		int type = ((Mathf.RoundToInt(Mathf.Atan2(axis.y, axis.x) / (2f * Mathf.PI / 4f))) + 4) % 4;
-
-		//0 = right, 3 = down
-		switch (type) {
-			case 0:
-				return 2;
-			case 1:
-				return 1;
-			case 2:
-				return 4;
-			case 3:
-				return 3;
-		}
-
-		return 0;
-	}
-
 	public override void Update() {
+		if (!TinyNetGameManager.instance.isClient) {
+			return;
+		}
 		Vector2 axis = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
 
-		byte nDir = MoveToDir(axis == Vector2.zero ? (byte)0 : VectorToDirection(axis));
-
+		bool bFire = false;
 		if (Input.GetButton("Fire1")) {
-			Shoot();
+			bFire = true;
 		}
 
-		if (pawn != null) {
-			inputMessageBuffer.xPos = pawn.transform.position.x;
-			inputMessageBuffer.zPos = pawn.transform.position.z;
-			inputMessageBuffer.dir = nDir;
-
-			if (!TinyNetGameManager.instance.isServer) {
-				conn.Send(inputMessageBuffer, LiteNetLib.DeliveryMethod.Sequenced);
-			}
+		if (!IsServerVersion()) {
+			InsertInput(axis, bFire);
 		}
+
+		inputMessageBuffer.keys = 0;
+
+		inputMessageBuffer.serverTick = TinyNetGameManager.instance.GetFrameTick();
+
+		if (bFire) {
+			inputMessageBuffer.keys |= MovementKeys.Fire;
+		}
+		if (axis.x > 0.5f) {
+			inputMessageBuffer.keys |= MovementKeys.Right;
+		}
+		if (axis.x < -0.5f) {
+			inputMessageBuffer.keys |= MovementKeys.Left;
+		}
+		if (axis.y > 0.5f) {
+			inputMessageBuffer.keys |= MovementKeys.Up;
+		}
+		if (axis.y < -0.5f) {
+			inputMessageBuffer.keys |= MovementKeys.Down;
+		}
+
+		TinyNetClient.instance.connToHost.Send(inputMessageBuffer, LiteNetLib.DeliveryMethod.Sequenced);
 	}
 
 	public override void GetInputMessage(TinyNetMessageReader netMsg) {
-		TinyBirdUtils.TinyLogger.Log("ExamplePlayerController::GetInputMessage called");
+		//if (TinyNetLogLevel.logDev) { TinyBirdUtils.TinyLogger.Log("ExamplePlayerController::GetInputMessage called"); }
 
 		netMsg.ReadMessage(inputMessageReader);
 
-		if (pawn != null) {
-			pawn.ServerSyncPosFromOwner(inputMessageReader.xPos, inputMessageReader.zPos, inputMessageReader.dir);
+		Vector2 axis = new Vector2();
+
+		if ((inputMessageReader.keys & MovementKeys.Up) != 0) {
+			axis.y = 1f;
+		}
+		if ((inputMessageReader.keys & MovementKeys.Down) != 0) {
+			axis.y = -1f;
+		}
+
+		if ((inputMessageReader.keys & MovementKeys.Left) != 0) {
+			axis.x = -1f;
+		}
+		if ((inputMessageReader.keys & MovementKeys.Right) != 0) {
+			axis.x = 1f;
+		}
+
+		bool bFire = (inputMessageReader.keys & MovementKeys.Fire) != 0;
+		InsertInput(axis, bFire);
+
+		if (bFire && pawn == null) {
+			AskForPawn();
+		}
+
+		/*if (pawn != null) {
+
+			//pawn.ServerSyncPosFromOwner(inputMessageReader.xPos, inputMessageReader.zPos, inputMessageReader.dir);
 			return;
-		}
+		}*/
 
-		TinyBirdUtils.TinyLogger.Log("ExamplePlayerController::GetInputMessage no pawn?");
+		//if (TinyNetLogLevel.logDev) { TinyBirdUtils.TinyLogger.Log("ExamplePlayerController::GetInputMessage no pawn?"); }
 	}
 
-	protected byte MoveToDir(byte direction) {
+	protected void InsertInput(Vector2 axis, bool bFire) {
 		if (pawn != null) {
-			pawn.MoveToDir(direction);
+			pawn.GetMovementInput(axis, bFire);
 		}
-
-		return direction;
 	}
 
-	protected void Shoot() {
-		if (pawn != null) {
-			pawn.Shoot();
-		} else if (!bAskedForPawn && timeForSpawn <= Time.time) {
-			TinyNetShortMessage spawnPawnMsg = new TinyNetShortMessage();
-			spawnPawnMsg.msgType = TinyNetMsgType.SpawnPlayer;
-			spawnPawnMsg.value = playerControllerId;
-
-			TinyNetClient.instance.SendMessageByChannelToHost(spawnPawnMsg, LiteNetLib.DeliveryMethod.ReliableOrdered);
+	protected void AskForPawn() {
+		if (!bAskedForPawn && timeForSpawn <= Time.time) {
+			((ExampleNetManager)TinyNetGameManager.instance).PawnRequest(this);
 
 			bAskedForPawn = true;
 		}
@@ -127,23 +152,23 @@ public class ExamplePlayerController : TinyNetPlayerController {
 }
 
 public class ExampleInputMessage : TinyNetInputMessage {
-	public float xPos;
-	public float zPos;
-	public byte dir;
+	public ushort id;
+	public ExamplePlayerController.MovementKeys keys;
+	public ushort serverTick;
 
 	public override void Deserialize(NetDataReader reader) {
 		base.Deserialize(reader);
 
-		xPos = reader.GetFloat();
-		zPos = reader.GetFloat();
-		dir = reader.GetByte();
+		id = reader.GetUShort();
+		keys = (ExamplePlayerController.MovementKeys)reader.GetByte();
+		serverTick = reader.GetUShort();
 	}
 
 	public override void Serialize(NetDataWriter writer) {
 		base.Serialize(writer);
 
-		writer.Put(xPos);
-		writer.Put(zPos);
-		writer.Put(dir);
+		writer.Put(id);
+		writer.Put((byte)keys);
+		writer.Put(serverTick);
 	}
 }

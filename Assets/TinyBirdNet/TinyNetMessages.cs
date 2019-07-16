@@ -197,12 +197,12 @@ namespace TinyBirdNet.Messaging {
 
 		static internal string[] msgLabels =
 		{
-			"none",
+			"none", // 0
 			"ObjectDestroy",
 			"Rpc",
 			"ObjectSpawnMessage",
 			"Owner",
-			"SpawnPlayer",
+			"SpawnPlayer", // 5
 			"Input",
 			"SyncEvent",
 			"StateUpdate",
@@ -510,7 +510,7 @@ namespace TinyBirdNet.Messaging {
 		public int networkID;
 		public int assetIndex;
 		public Vector3 position;
-		public int frameTick;
+		public ushort frameTick;
 		public byte[] initialState;
 
 		public ushort msgType { get { return TinyNetMsgType.ObjectSpawnMessage; } }
@@ -519,7 +519,7 @@ namespace TinyBirdNet.Messaging {
 			networkID = reader.GetInt();
 			assetIndex = reader.GetInt();
 			position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
-			frameTick = reader.GetInt();
+			frameTick = reader.GetUShort();
 			initialState = reader.GetRemainingBytes();
 		}
 
@@ -540,7 +540,7 @@ namespace TinyBirdNet.Messaging {
 		public int networkID;
 		public byte componentID;
 		public int rpcMethodIndex;
-		public int frameTick;
+		public ushort frameTick;
 		public byte[] parameters;
 
 		public ushort msgType { get { return TinyNetMsgType.Rpc; } }
@@ -548,7 +548,7 @@ namespace TinyBirdNet.Messaging {
 		public void Deserialize(NetDataReader reader) {
 			networkID = reader.GetInt();
 			rpcMethodIndex = reader.GetInt();
-			frameTick = reader.GetInt();
+			frameTick = reader.GetUShort();
 			parameters = reader.GetRemainingBytes();
 		}
 
@@ -623,7 +623,7 @@ namespace TinyBirdNet.Messaging {
 		public int networkID;
 		public int sceneId;
 		public Vector3 position;
-		public int frameTick;
+		public ushort frameTick;
 		public byte[] initialState;
 
 		public ushort msgType { get { return TinyNetMsgType.ObjectSpawnScene; } }
@@ -632,7 +632,7 @@ namespace TinyBirdNet.Messaging {
 			networkID = reader.GetInt();
 			sceneId = reader.GetInt();
 			position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
-			frameTick = reader.GetInt();
+			frameTick = reader.GetUShort();
 			initialState = reader.GetRemainingBytes();
 		}
 

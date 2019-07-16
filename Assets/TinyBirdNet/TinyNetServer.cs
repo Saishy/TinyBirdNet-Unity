@@ -28,6 +28,10 @@ namespace TinyBirdNet {
 		/// </summary> 
 		protected NetDataWriter _serializeWriter = new NetDataWriter();
 
+		public ushort ServerTick {
+			get; protected set;
+		}
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TinyNetServer"/> class.
 		/// </summary>
@@ -59,7 +63,11 @@ namespace TinyBirdNet {
 				item.Value.TinyNetUpdate();
 			}
 
-			SendStateUpdatesToAll();
+			ServerTick = (ushort)((ServerTick + 1) % TinyNetGameManager.instance.MaxGameSequence);
+
+			if (ServerTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames == 0) {
+				SendStateUpdatesToAll();
+			}
 		}
 
 		/// <summary>
@@ -207,7 +215,7 @@ namespace TinyBirdNet {
 			msg.networkID = netIdentity.TinyInstanceID.NetworkID;
 			msg.assetIndex = TinyNetGameManager.instance.GetAssetIdFromAssetGUID(netIdentity.assetGUID);
 			msg.position = netIdentity.transform.position;
-			msg.frameTick = CurrentGameTick;
+			msg.frameTick = ServerTick;
 
 			// Include state of TinyNetObjects.
 			s_recycleWriter.Reset();
@@ -321,7 +329,7 @@ namespace TinyBirdNet {
 			msg.networkID = iObj.TinyInstanceID.NetworkID;
 			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.frameTick = CurrentGameTick;
+			msg.frameTick = ServerTick;
 			msg.parameters = stream.Data;
 
 			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(iObj.TinyInstanceID.NetworkID);
@@ -342,7 +350,7 @@ namespace TinyBirdNet {
 			msg.networkID = iObj.TinyInstanceID.NetworkID;
 			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.frameTick = CurrentGameTick;
+			msg.frameTick = ServerTick;
 			msg.parameters = stream.Data;
 
 			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(iObj.TinyInstanceID.NetworkID);
@@ -368,7 +376,7 @@ namespace TinyBirdNet {
 				s_recycleWriter.Reset();
 
 				s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
-				s_recycleWriter.Put(CurrentGameTick);
+				s_recycleWriter.Put(ServerTick);
 
 				objectsCount = 0;
 
@@ -388,9 +396,7 @@ namespace TinyBirdNet {
 					s_recycleWriter.Put(_serializeWriter.Data, 0, _serializeWriter.Length);
 				}
 
-				if (objectsCount > 0) {
-					tinyNetConns[i].Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
-				}
+				tinyNetConns[i].Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
 			}
 		}
 

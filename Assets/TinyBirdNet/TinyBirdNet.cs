@@ -4,6 +4,7 @@ using TinyBirdNet.Utils;
 using UnityEngine;
 
 namespace TinyBirdNet {
+
 	/// <summary>
 	/// Handles requests to spawn objects on the client
 	/// </summary>

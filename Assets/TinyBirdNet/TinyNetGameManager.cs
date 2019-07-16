@@ -16,6 +16,9 @@ namespace TinyBirdNet {
 	/// <seealso cref="UnityEngine.MonoBehaviour" />
 	public class TinyNetGameManager : MonoBehaviour {
 
+		// Different protocols can't connect to each other
+		public const int PROTOCOL_VERSION = 1;
+
 		/// <summary>
 		/// The singleton instance.
 		/// </summary>
@@ -34,6 +37,21 @@ namespace TinyBirdNet {
 		/// </summary>
 		[Range(1, 120)]
 		public int NetworkEveryXFixedFrames = 2;
+
+		public virtual int MaxGameSequence {
+			get {
+				return 512;
+			}
+		}
+
+		public int HalfMaxGameSequence {
+			get {
+				if (MaxGameSequence % 2 != 0) {
+					throw new Exception("TinyNetGameManager::MaxGameSequence is not an even number.");
+				}
+				return MaxGameSequence / 2;
+			}
+		}
 
 		/// <summary>
 		/// Current scene name at runtime.
@@ -207,20 +225,6 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// The current game tick, used to calculate the network state, buffer and reconciliation.
-		/// </summary>
-		private int _currentNetworkTick = 0;
-
-		/// <summary>
-		/// The current game tick, used to calculate the network state, buffer and reconciliation.
-		/// </summary>
-		public int CurrentGameTick {
-			get {
-				return _currentNetworkTick;
-			}
-		}
-
-		/// <summary>
 		/// Awake is run before Start and there is no guarantee anything else has been initialized. Called by UnityEngine.
 		/// </summary>
 		void Awake() {
@@ -291,18 +295,14 @@ namespace TinyBirdNet {
 		/// </summary>
 		IEnumerator TinyNetUpdate() {
 			while (true) {
-				if (_currentNetworkTick % NetworkEveryXFixedFrames == 0) {
-					if (serverManager != null) {
-						serverManager.TinyNetUpdate();
-					}
-					if (clientManager != null) {
-						clientManager.TinyNetUpdate();
-					}
+				if (serverManager != null) {
+					serverManager.TinyNetUpdate();
+				}
+				if (clientManager != null) {
+					clientManager.TinyNetUpdate();
 				}
 
 				yield return new WaitForFixedUpdate();
-
-				_currentNetworkTick++;
 			}
 		}
 
@@ -311,6 +311,32 @@ namespace TinyBirdNet {
 		/// </summary>
 		void OnDestroy() {
 			ClearNetManager();
+		}
+
+		/// <summary>
+		/// Returns the diff in frames between tick a and b.
+		/// </summary>
+		/// <returns>Returns how far between two ticks are, positive means tick A is ahead of B, negative otherwise, zero is the same tick.</returns>
+		public int SeqDiff(int a, int b) {
+			return Diff(a, b, HalfMaxGameSequence);
+		}
+
+		public int Diff(int a, int b, int halfMax) {
+			return (a - b + halfMax * 3) % (halfMax * 2) - halfMax;
+		}
+
+		/// <summary>
+		/// Gets the frame tick, if this is a server it will return the ServerTick, on a client it will return the LastServerTick.
+		/// </summary>
+		/// <returns></returns>
+		public ushort GetFrameTick() {
+			if (serverManager != null) {
+				return serverManager.ServerTick;
+			} else if (clientManager != null) {
+				return clientManager.LastServerTick;
+			}
+
+			return 0;
 		}
 
 		//============ Assets Methods =======================//
@@ -559,6 +585,10 @@ namespace TinyBirdNet {
 		/// <param name="hostPort">An int representing the port to use for the connection.</param>
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
 			clientManager.ClientConnectTo(hostAddress, hostPort);
+		}
+
+		public bool CheckConnectionKey(string key) {
+			return key == (PROTOCOL_VERSION + multiplayerConnectKey);
 		}
 
 		//============ Server Methods =======================//

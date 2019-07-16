@@ -37,7 +37,6 @@ class ExampleNetManager : TinyNetGameManager {
 	public override void RegisterMessageHandlersServer() {
 		base.RegisterMessageHandlersServer();
 
-		serverManager.RegisterHandlerSafe(TinyNetMsgType.SpawnPlayer, OnPawnRequestMessage);
 		serverManager.RegisterHandlerSafe(TinyNetMsgType.Highest + 1, OnPlayerNameReceive);
 	}
 
@@ -51,14 +50,12 @@ class ExampleNetManager : TinyNetGameManager {
 		TinyNetClient.instance.connToHost.Send(stringMsg, LiteNetLib.DeliveryMethod.ReliableOrdered);
 	}
 
-	protected void OnPawnRequestMessage(TinyNetMessageReader netMsg) {
-		netMsg.ReadMessage(shortMessage);
-
+	public void PawnRequest(ExamplePlayerController controller) {
 		ExamplePawn newPawn = Instantiate(GameManager.instance.pawnPrefab, SpawnPointManager.GetSpawnPoint(), Quaternion.identity);
-		newPawn.ownerPlayerControllerId = shortMessage.value;
-		newPawn.PlayerName = ((ExamplePlayerController)netMsg.tinyNetConn.GetFirstPlayerController()).userName;
+		newPawn.ownerPlayerControllerId = controller.playerControllerId;
+		newPawn.PlayerName = (controller).userName;
 
-		serverManager.SpawnWithClientAuthority(newPawn.gameObject, netMsg.tinyNetConn);
+		serverManager.SpawnWithClientAuthority(newPawn.gameObject, controller.Conn);
 	}
 
 	protected void OnPlayerNameReceive(TinyNetMessageReader netMsg) {

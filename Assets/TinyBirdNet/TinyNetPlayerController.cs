@@ -69,6 +69,24 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
+		/// Returns true if this is the Controller at the server scene.
+		/// </summary>
+		/// <returns>
+		///   <c>true</c> if is the Controller at the server scene; otherwise, <c>false</c>.
+		/// </returns>
+		public bool IsServerVersion() {
+			if (TinyNetGameManager.instance.isListenServer) {
+				if (conn is TinyNetLocalConnectionToClient) {
+					return true;
+				}
+
+				return false;
+			} else {
+				return TinyNetGameManager.instance.isServer;
+			}
+		}
+
+		/// <summary>
 		/// This is called every frame, like an Unity Update call.
 		/// </summary>
 		public virtual void Update() {

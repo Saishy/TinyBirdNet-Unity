@@ -261,18 +261,22 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// [Server Only] Called after all FixedUpdates and physics but before any Update.
+		/// Called every physics frame after all FixedUpdates.
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
 		/// </summary>>
 		public void TinyNetUpdate() {
-			IsDirty = false;
+			if (isServer) {
+				IsDirty = false;
+			}
 
 			for (int i = 0; i < _tinyNetComponents.Length; i++) {
 				_tinyNetComponents[i].TinyNetUpdate();
 
-				_dirtyFlag[i] = _tinyNetComponents[i].IsDirty;
-				if (_dirtyFlag[i] == true) {
-					IsDirty = true;
+				if (isServer) {
+					_dirtyFlag[i] = _tinyNetComponents[i].IsDirty;
+					if (_dirtyFlag[i] == true) {
+						IsDirty = true;
+					}
 				}
 			}
 		}

@@ -86,28 +86,6 @@ namespace TinyBirdNet {
 		protected NetManager _netManager;
 
 		/// <summary>
-		/// Gets the current game tick from <see cref="TinyNetGameManager"/>, plus our GameTickOffset.
-		/// </summary>
-		/// <value>
-		/// The current game tick.
-		/// </value>
-		public int CurrentGameTick {
-			get {
-				return TinyNetGameManager.instance.CurrentGameTick + GameTickOffset;
-			}
-		}
-
-		/// <summary>
-		/// This is the amount of frames offset from the current one this scene is based on.
-		/// </summary>
-		/// <value>
-		/// The game offset tick for this scene.
-		/// </value>
-		public int GameTickOffset {
-			get; protected set;
-		}
-
-		/// <summary>
 		/// Returns true if socket is listening and update thread is running.
 		/// </summary>
 		public virtual bool isRunning {
@@ -181,7 +159,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called every network frame tick, called from <see cref="TinyNetGameManager"/>.
+		/// Called from <see cref="TinyNetGameManager"/> every physics update, after all FixedUpdate have been called.
 		/// </summary>
 		public virtual void TinyNetUpdate() {
 		}
@@ -234,14 +212,6 @@ namespace TinyBirdNet {
 			if (_netManager != null) {
 				_netManager.PingInterval = newPingInterval;
 			}
-		}
-
-		/// <summary>
-		/// Sets the game tick offset.
-		/// </summary>
-		/// <param name="newAmount">The new amount.</param>
-		public virtual void SetGameTickOffset(int newAmount) {
-			GameTickOffset = newAmount;
 		}
 
 		/// <summary>
@@ -493,7 +463,7 @@ namespace TinyBirdNet {
 
 			string key = dataReader.GetString();
 
-			if (key != TinyNetGameManager.instance.multiplayerConnectKey) {
+			if (!TinyNetGameManager.instance.CheckConnectionKey(key)) {
 				request.Reject();
 			}
 

@@ -33,6 +33,10 @@ namespace TinyBirdNet {
 		/// </summary>
 		public static System.Action OnClientReadyEvent;
 
+		public ushort LastServerTick {
+			get; protected set;
+		}
+
 		//static TinyNetObjectStateUpdate recycleStateUpdateMessage = new TinyNetObjectStateUpdate();
 
 		/// <summary>
@@ -107,7 +111,13 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public override void TinyNetUpdate() {
-			
+			if (TinyNetGameManager.instance.isServer) {
+				return;
+			}
+
+			foreach (var item in _localIdentityObjects) {
+				item.Value.TinyNetUpdate();
+			}
 		}
 
 		/// <summary>
@@ -139,7 +149,7 @@ namespace TinyBirdNet {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Attempt to connect at adress: " + hostAddress + ":" + hostPort); }
 
 			s_recycleWriter.Reset();
-			s_recycleWriter.Put(TinyNetGameManager.instance.multiplayerConnectKey);
+			s_recycleWriter.Put(TinyNetGameManager.PROTOCOL_VERSION + TinyNetGameManager.instance.multiplayerConnectKey);
 			s_recycleWriter.Put(TinyNetGameManager.ApplicationGUIDString);
 
 			_netManager.Connect(hostAddress, hostPort, s_recycleWriter);
@@ -203,7 +213,7 @@ namespace TinyBirdNet {
 			msg.networkID = iObj.TinyInstanceID.NetworkID;
 			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.frameTick = CurrentGameTick;
+			msg.frameTick = LastServerTick;
 			msg.parameters = stream.Data;
 
 			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, connToHost);
@@ -437,9 +447,9 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netMsg">A wrapper for a <see cref="TinyNetMsgType.StateUpdate"/> message.</param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
-			int frameTick = netMsg.reader.GetInt();
+			LastServerTick = netMsg.reader.GetUShort();
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + frameTick + " channel: " + netMsg.channelId); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + LastServerTick + " channel: " + netMsg.channelId); }
 
 			while (netMsg.reader.AvailableBytes > 0) {
 				int networkID = netMsg.reader.GetInt();
@@ -447,7 +457,7 @@ namespace TinyBirdNet {
 				_stateUpdateReader.Clear();
 				int rSize = netMsg.reader.GetInt();
 				_stateUpdateReader.SetSource(netMsg.reader.Data, netMsg.reader.Position, rSize);
-				_stateUpdateReader.SetFrameTick(frameTick);
+				_stateUpdateReader.SetFrameTick(LastServerTick);
 
 				TinyNetIdentity localObject = _localIdentityObjects[networkID];
 				if (localObject != null) {
@@ -471,7 +481,7 @@ namespace TinyBirdNet {
 		/// <param name="initialState">The initial state.</param>
 		/// <param name="networkID">The network identifier.</param>
 		/// <param name="newGameObject">The new <see cref="GameObject"/>.</param>
-		void ApplyInitialState(TinyNetIdentity tinyNetId, Vector3 position, byte[] initialState, int networkID, GameObject newGameObject, int frameTick) {
+		void ApplyInitialState(TinyNetIdentity tinyNetId, Vector3 position, byte[] initialState, int networkID, GameObject newGameObject, ushort frameTick) {
 			if (!tinyNetId.gameObject.activeSelf) {
 				tinyNetId.gameObject.SetActive(true);
 			}

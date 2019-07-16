@@ -521,7 +521,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   multiplayerConnectKey: TinyBirdNet TPS Example 2.0.0.a1
-  NetworkEveryXFixedFrames: 1
+  NetworkEveryXFixedFrames: 2
   registeredPrefabs:
   - {fileID: 1003412172681446, guid: 2988858db036b6a42a8832c52ac6e5a6, type: 2}
   - {fileID: 1057121294660296, guid: 3d4ccdbf287c1dc4e910d17a2f69307f, type: 2}

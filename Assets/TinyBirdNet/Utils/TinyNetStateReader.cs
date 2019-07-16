@@ -6,11 +6,11 @@ namespace TinyBirdNet.Utils {
 
 	public class TinyNetStateReader : NetDataReader {
 
-		public int FrameTick {
+		public ushort FrameTick {
 			get; protected set;
 		}
 
-		public void SetFrameTick(int nFrame) {
+		public void SetFrameTick(ushort nFrame) {
 			FrameTick = nFrame;
 		}
 	}

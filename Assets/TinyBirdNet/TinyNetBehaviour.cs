@@ -442,11 +442,13 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// [Server Only] Called after all FixedUpdates and physics but before any Update.
+		/// Called every physics frame after all FixedUpdates.
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
 		/// </summary>>
 		public virtual void TinyNetUpdate() {
-			UpdateDirtyFlag();
+			if (isServer) {
+				UpdateDirtyFlag();
+			}
 		}
 
 		/// <summary>
