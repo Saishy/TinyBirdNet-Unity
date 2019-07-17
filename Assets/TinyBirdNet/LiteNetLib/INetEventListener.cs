@@ -1,5 +1,5 @@
-using System;
-using LiteNetLib.Utils;
+using System.Net;
+using System.Net.Sockets;
 
 namespace LiteNetLib
 {
@@ -18,19 +18,13 @@ namespace LiteNetLib
     /// </summary>
     public enum DisconnectReason
     {
-        SocketReceiveError,
         ConnectionFailed,
         Timeout,
-        SocketSendError,
+        HostUnreachable,
         RemoteConnectionClose,
-        DisconnectPeerCalled
-    }
-
-    public enum ConnectionRequestResult
-    {
-        None,
-        Accept,
-        Reject
+        DisconnectPeerCalled,
+        ConnectionRejected,
+        InvalidProtocol
     }
 
     /// <summary>
@@ -46,82 +40,12 @@ namespace LiteNetLib
         /// <summary>
         /// Error code (if reason is SocketSendError or SocketReceiveError)
         /// </summary>
-        public int SocketErrorCode;
+        public SocketError SocketErrorCode;
 
         /// <summary>
         /// Additional data that can be accessed (only if reason is RemoteConnectionClose)
         /// </summary>
-        public NetDataReader AdditionalData;
-    }
-
-    public class ConnectionRequest
-    {
-        private readonly Func<ConnectionRequest, NetPeer> _onUserAction;
-        private bool _used;
-
-        public readonly long ConnectionId;
-        public readonly NetEndPoint RemoteEndPoint;
-        public readonly NetDataReader Data;
-        public ConnectionRequestResult Result { get; private set; }
-
-        internal ConnectionRequest(
-            long connectionId, 
-            NetEndPoint remoteEndPoint, 
-            NetDataReader netDataReader,
-            Func<ConnectionRequest, NetPeer> onUserAction)
-        {
-            ConnectionId = connectionId;
-            RemoteEndPoint = remoteEndPoint;
-            Data = netDataReader;
-            _onUserAction = onUserAction;
-        }
-
-        public bool AcceptIfKey(string key)
-        {
-            if (_used)
-                return false;
-            string dataKey;
-            try
-            {
-                dataKey = Data.GetString(key.Length);
-            }
-            catch
-            {
-                Reject();
-                return false;
-            }
-
-            if (dataKey == key)
-            {
-                Accept();
-                return true;
-            }
-
-            Reject();
-            return false;
-        }
-
-        /// <summary>
-        /// Accept connection and get new NetPeer as result
-        /// </summary>
-        /// <returns>Connected NetPeer</returns>
-        public NetPeer Accept()
-        {
-            if (_used)
-                return null;
-            _used = true;
-            Result = ConnectionRequestResult.Accept;
-            return _onUserAction(this);
-        }
-
-        public void Reject()
-        {
-            if (_used)
-                return;
-            _used = true;
-            Result = ConnectionRequestResult.Reject;
-            _onUserAction(this);
-        }
+        public NetPacketReader AdditionalData;
     }
 
     public interface INetEventListener
@@ -143,8 +67,8 @@ namespace LiteNetLib
         /// Network error (on send or receive)
         /// </summary>
         /// <param name="endPoint">From endPoint (can be null)</param>
-        /// <param name="socketErrorCode">Socket error code</param>
-        void OnNetworkError(NetEndPoint endPoint, int socketErrorCode);
+        /// <param name="socketError">Socket error</param>
+        void OnNetworkError(IPEndPoint endPoint, SocketError socketError);
 
         /// <summary>
         /// Received some data
@@ -152,7 +76,7 @@ namespace LiteNetLib
         /// <param name="peer">From peer</param>
         /// <param name="reader">DataReader containing all received data</param>
         /// <param name="deliveryMethod">Type of received packet</param>
-        void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod);
+        void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod);
 
         /// <summary>
         /// Received unconnected message
@@ -160,7 +84,7 @@ namespace LiteNetLib
         /// <param name="remoteEndPoint">From address (IP and Port)</param>
         /// <param name="reader">Message data</param>
         /// <param name="messageType">Message type (simple, discovery request or responce)</param>
-        void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType);
+        void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType);
 
         /// <summary>
         /// Latency information updated
@@ -180,9 +104,9 @@ namespace LiteNetLib
     {
         public delegate void OnPeerConnected(NetPeer peer);
         public delegate void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo);
-        public delegate void OnNetworkError(NetEndPoint endPoint, int socketErrorCode);
-        public delegate void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod);
-        public delegate void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType);
+        public delegate void OnNetworkError(IPEndPoint endPoint, SocketError socketError);
+        public delegate void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod);
+        public delegate void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType);
         public delegate void OnNetworkLatencyUpdate(NetPeer peer, int latency);
 
         public delegate void OnConnectionRequest(ConnectionRequest request);
@@ -194,6 +118,41 @@ namespace LiteNetLib
         public event OnNetworkReceiveUnconnected NetworkReceiveUnconnectedEvent;
         public event OnNetworkLatencyUpdate NetworkLatencyUpdateEvent;
         public event OnConnectionRequest ConnectionRequestEvent;
+
+        public void ClearPeerConnectedEvent()
+        {
+            PeerConnectedEvent = null;
+        }
+
+        public void ClearPeerDisconnectedEvent()
+        {
+            PeerConnectedEvent = null;
+        }
+
+        public void ClearNetworkErrorEvent()
+        {
+            NetworkErrorEvent = null;
+        }
+
+        public void ClearNetworkReceiveEvent()
+        {
+            NetworkReceiveEvent = null;
+        }
+
+        public void ClearNetworkReceiveUnconnectedEvent()
+        {
+            NetworkReceiveUnconnectedEvent = null;
+        }
+
+        public void ClearNetworkLatencyUpdateEvent()
+        {
+            NetworkLatencyUpdateEvent = null;
+        }
+
+        public void ClearConnectionRequestEvent()
+        {
+            ConnectionRequestEvent = null;
+        }
 
         void INetEventListener.OnPeerConnected(NetPeer peer)
         {
@@ -207,19 +166,19 @@ namespace LiteNetLib
                 PeerDisconnectedEvent(peer, disconnectInfo);
         }
 
-        void INetEventListener.OnNetworkError(NetEndPoint endPoint, int socketErrorCode)
+        void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode)
         {
             if (NetworkErrorEvent != null)
                 NetworkErrorEvent(endPoint, socketErrorCode);
         }
 
-        void INetEventListener.OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod)
+        void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
             if (NetworkReceiveEvent != null)
                 NetworkReceiveEvent(peer, reader, deliveryMethod);
         }
 
-        void INetEventListener.OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType)
+        void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
         {
             if (NetworkReceiveUnconnectedEvent != null)
                 NetworkReceiveUnconnectedEvent(remoteEndPoint, reader, messageType);

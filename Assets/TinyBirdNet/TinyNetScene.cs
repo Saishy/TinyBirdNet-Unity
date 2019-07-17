@@ -6,6 +6,8 @@ using LiteNetLib.Utils;
 using TinyBirdUtils;
 using TinyBirdNet.Messaging;
 using System;
+using System.Net;
+using System.Net.Sockets;
 
 namespace TinyBirdNet {
 
@@ -13,7 +15,7 @@ namespace TinyBirdNet {
 	/// Represents a Scene, which is all data required to reproduce the game state.
 	/// </summary>
 	/// <seealso cref="LiteNetLib.INetEventListener" />
-	public abstract class TinyNetScene : System.Object, INetEventListener {
+	public abstract class TinyNetScene : System.Object, INetEventListener, INetLogger {
 
 		/// <summary>
 		/// Sugar for generating debug logs.
@@ -459,16 +461,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="request">Request information (EndPoint, internal id, additional data)</param>
 		public virtual void OnConnectionRequest(ConnectionRequest request) {
-			NetDataReader dataReader = request.Data;
-
-			string key = dataReader.GetString();
-
-			if (!TinyNetGameManager.instance.CheckConnectionKey(key)) {
-				request.Reject();
-			}
-
-			NetPeer peer = request.Accept();
-			peer.Tag = dataReader.GetString();
+			
 		}
 
 		/// <summary>
@@ -476,7 +469,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="peer">Connected peer object</param>
 		public virtual void OnPeerConnected(NetPeer peer) {
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.ConnectId); }
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.Id); }
 
 			TinyNetConnection nConn = CreateTinyNetConnection(peer);
 
@@ -502,7 +495,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="endPoint">From endPoint (can be null)</param>
 		/// <param name="socketErrorCode">Socket error code</param>
-		public virtual void OnNetworkError(NetEndPoint endPoint, int socketErrorCode) {
+		public virtual void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode) {
 			if (TinyNetLogLevel.logError) { TinyLogger.LogError("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint); }
 		}
 
@@ -512,7 +505,7 @@ namespace TinyBirdNet {
 		/// <param name="peer">From peer</param>
 		/// <param name="reader">DataReader containing all received data</param>
 		/// <param name="deliveryMethod">Type of received packet</param>
-		public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader, DeliveryMethod deliveryMethod) {
+		public virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod) {
 			string msgType = TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer, deliveryMethod));
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + msgType + " from: " + peer.EndPoint + " channel: " + deliveryMethod.ToString()); }
 		}
@@ -523,12 +516,8 @@ namespace TinyBirdNet {
 		/// <param name="remoteEndPoint">From address (IP and Port)</param>
 		/// <param name="reader">Message data</param>
 		/// <param name="messageType">Message type (simple, discovery request or responce)</param>
-		public virtual void OnNetworkReceiveUnconnected(NetEndPoint remoteEndPoint, NetDataReader reader, UnconnectedMessageType messageType) {
+		public virtual void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint); }
-
-			if (messageType == UnconnectedMessageType.DiscoveryRequest) {
-				OnDiscoveryRequestReceived(remoteEndPoint, reader);
-			}
 		}
 
 		/// <summary>
@@ -544,14 +533,23 @@ namespace TinyBirdNet {
 			TinyLogger.Log("[" + TYPE + "] On network receive from: " + peer.EndPoint);
 		}*/
 
-		/// <summary>
-		/// Called when a discovery request is received.
-		/// </summary>
-		/// <param name="remoteEndPoint">The remote end point.</param>
-		/// <param name="reader">The reader.</param>
-		protected virtual void OnDiscoveryRequestReceived(NetEndPoint remoteEndPoint, NetDataReader reader) {
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response"); }
-			_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
+		//============ INetLogger ========================//
+
+		public void WriteNet(NetLogLevel level, string str, params object[] args) {
+			switch (level) {
+				case NetLogLevel.Warning:
+					if (TinyNetLogLevel.logWarn) { TinyLogger.LogFormat(str, args); }
+					break;
+				case NetLogLevel.Error:
+					if (TinyNetLogLevel.logError) { TinyLogger.LogFormat(str, args); }
+					break;
+				case NetLogLevel.Trace:
+					if (TinyNetLogLevel.logDev) { TinyLogger.LogFormat(str, args); }
+					break;
+				case NetLogLevel.Info:
+					if (TinyNetLogLevel.logInfo) { TinyLogger.LogFormat(str, args); }
+					break;
+			}
 		}
 
 		//============ TinyNetEvents ========================//

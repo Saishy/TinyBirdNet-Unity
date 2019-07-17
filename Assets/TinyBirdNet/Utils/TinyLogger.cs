@@ -22,6 +22,15 @@ namespace TinyBirdUtils {
 		}
 
 		//[Conditional("DEBUG")]
+		public static void LogFormat(string format, params object[] args) {
+			if (!UnityEngine.Debug.isDebugBuild) {
+				return;
+			}
+
+			UnityEngine.Debug.LogFormat(format, args);
+		}
+
+		//[Conditional("DEBUG")]
 		public static void LogError(object message, UnityEngine.Object context = null) {
 			if (!UnityEngine.Debug.isDebugBuild) {
 				return;

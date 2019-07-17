@@ -69,7 +69,8 @@ namespace LiteNetLib.Utils
             typeof(string),
             typeof(float),
             typeof(double),
-            typeof(bool)
+            typeof(bool),
+            typeof(char)
         };
 
         private readonly NetDataWriter _writer;
@@ -336,6 +337,13 @@ namespace LiteNetLib.Utils
                     info.ReadDelegate[i] = reader => setDelegate((T)info.Reference, reader.GetDouble());
                     info.WriteDelegate[i] = writer => writer.Put(getDelegate((T)info.Reference));
                 }
+                else if (propertyType == typeof(char))
+                {
+                    var setDelegate = ExtractSetDelegate<T, char>(setMethod);
+                    var getDelegate = ExtractGetDelegate<T, char>(getMethod);
+                    info.ReadDelegate[i] = reader => setDelegate((T)info.Reference, reader.GetChar());
+                    info.WriteDelegate[i] = writer => writer.Put(getDelegate((T)info.Reference));
+                }
                 // Array types
                 else if (propertyType == typeof(string[]))
                 {
@@ -355,6 +363,13 @@ namespace LiteNetLib.Utils
                         info.WriteDelegate[i] =
                             writer => writer.PutArray(getDelegate((T)info.Reference), _maxStringLength);
                     }
+                }
+                else if (propertyType == typeof(bool[]))
+                {
+                    var setDelegate = ExtractSetDelegate<T, bool[]>(setMethod);
+                    var getDelegate = ExtractGetDelegate<T, bool[]>(getMethod);
+                    info.ReadDelegate[i] = reader => setDelegate((T)info.Reference, reader.GetBoolArray());
+                    info.WriteDelegate[i] = writer => writer.PutArray(getDelegate((T)info.Reference));
                 }
                 else if (propertyType == typeof(byte[]))
                 {

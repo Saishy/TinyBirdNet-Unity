@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
@@ -23,44 +22,58 @@ namespace LiteNetLib
     /// </summary>
     public static class NetUtils
     {
-        /// <summary>
-        /// Request time from NTP server and calls callback (if success)
-        /// </summary>
-        /// <param name="ntpServerAddress">NTP Server address</param>
-        /// <param name="port">port</param>
-        /// <param name="onRequestComplete">callback (called from other thread!)</param>
-        public static void RequestTimeFromNTP(string ntpServerAddress, int port, Action<DateTime?> onRequestComplete)
+        public static IPEndPoint MakeEndPoint(string hostStr, int port)
         {
-            NetSocket socket = null;
-            var ntpEndPoint = new NetEndPoint(ntpServerAddress, port);
+            return new IPEndPoint(ResolveAddress(hostStr), port);
+        }
 
-            NetManager.OnMessageReceived onReceive = (data, length, code, point) =>
+        public static IPAddress ResolveAddress(string hostStr)
+        {
+            IPAddress ipAddress;
+            if (!IPAddress.TryParse(hostStr, out ipAddress))
             {
-                if (!point.Equals(ntpEndPoint) || length < 48)
+                if (NetSocket.IPv6Support)
                 {
-                    return;
+                    ipAddress = hostStr == "localhost"
+                        ? IPAddress.IPv6Loopback
+                        : ResolveAddress(hostStr, AddressFamily.InterNetworkV6);
                 }
-                socket.Close();
-
-                ulong intPart = (ulong)data[40] << 24 | (ulong)data[41] << 16 | (ulong)data[42] << 8 | (ulong)data[43];
-                ulong fractPart = (ulong)data[44] << 24 | (ulong)data[45] << 16 | (ulong)data[46] << 8 | (ulong)data[47];
-                var milliseconds = (intPart * 1000) + ((fractPart * 1000) / 0x100000000L);
-                onRequestComplete(new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds((long) milliseconds));
-            };
-
-            //Create and start socket
-            socket = new NetSocket(onReceive);
-            socket.Bind(IPAddress.Any, IPAddress.IPv6Any, 0, false);
-
-            //Send request
-            int errorCode = 0;
-            var sendData = new byte[48];
-            sendData[0] = 0x1B;
-            var sendCount = socket.SendTo(sendData, 0, sendData.Length, ntpEndPoint, ref errorCode);
-            if (errorCode != 0 || sendCount != sendData.Length)
-            {
-                onRequestComplete(null);
+                if (ipAddress == null)
+                {
+                    ipAddress = ResolveAddress(hostStr, AddressFamily.InterNetwork);
+                }
             }
+            if (ipAddress == null)
+            {
+                throw new ArgumentException("Invalid address: " + hostStr);
+            }
+
+            return ipAddress;
+        }
+
+        private static IPAddress ResolveAddress(string hostStr, AddressFamily addressFamily)
+        {
+            IPAddress[] addresses = ResolveAddresses(hostStr);
+            foreach (IPAddress ip in addresses)
+            {
+                if (ip.AddressFamily == addressFamily)
+                {
+                    return ip;
+                }
+            }
+            return null;
+        }
+
+        private static IPAddress[] ResolveAddresses(string hostStr)
+        {
+#if NETCORE
+            var hostTask = Dns.GetHostEntryAsync(hostStr);
+            hostTask.GetAwaiter().GetResult();
+            var host = hostTask.Result;
+#else
+            var host = Dns.GetHostEntry(hostStr);
+#endif
+            return host.AddressList;
         }
 
         /// <summary>
@@ -116,14 +129,8 @@ namespace LiteNetLib
             //Fallback mode (unity android)
             if (targetList.Count == 0)
             {
-#if NETCORE
-                var hostTask = Dns.GetHostEntryAsync(Dns.GetHostName());
-                hostTask.Wait();
-                var host = hostTask.Result;
-#else
-                var host = Dns.GetHostEntry(Dns.GetHostName());
-#endif
-                foreach (IPAddress ip in host.AddressList)
+                IPAddress[] addresses = ResolveAddresses(Dns.GetHostName());
+                foreach (IPAddress ip in addresses)
                 {
                     if((ipv4 && ip.AddressFamily == AddressFamily.InterNetwork) ||
                        (ipv6 && ip.AddressFamily == AddressFamily.InterNetworkV6))
@@ -160,7 +167,7 @@ namespace LiteNetLib
         // ===========================================
         internal static void PrintInterfaceInfos()
         {
-            DebugWriteForce(ConsoleColor.Green, "IPv6Support: {0}", NetSocket.IPv6Support);
+            NetDebug.WriteForce(NetLogLevel.Info, "IPv6Support: {0}", NetSocket.IPv6Support);
             try
             {
                 foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
@@ -170,8 +177,8 @@ namespace LiteNetLib
                         if (ip.Address.AddressFamily == AddressFamily.InterNetwork ||
                             ip.Address.AddressFamily == AddressFamily.InterNetworkV6)
                         {
-                            DebugWriteForce(
-                                ConsoleColor.Green,
+                            NetDebug.WriteForce(
+                                NetLogLevel.Info,
                                 "Interface: {0}, Type: {1}, Ip: {2}, OpStatus: {3}",
                                 ni.Name,
                                 ni.NetworkInterfaceType.ToString(),
@@ -183,60 +190,13 @@ namespace LiteNetLib
             }
             catch (Exception e)
             {
-                DebugWriteForce(ConsoleColor.Red, "Error while getting interface infos: {0}", e.ToString());
+                NetDebug.WriteForce(NetLogLevel.Info, "Error while getting interface infos: {0}", e.ToString());
             }
         }
 
         internal static int RelativeSequenceNumber(int number, int expected)
         {
             return (number - expected + NetConstants.MaxSequence + NetConstants.HalfMaxSequence) % NetConstants.MaxSequence - NetConstants.HalfMaxSequence;
-        }
-
-        private static readonly object DebugLogLock = new object();
-        private static void DebugWriteLogic(ConsoleColor color, string str, params object[] args)
-        {
-            lock (DebugLogLock)
-            {
-
-                if (NetDebug.Logger == null)
-                {
-#if UNITY_4 || UNITY_5 || UNITY_5_3_OR_NEWER
-                    UnityEngine.Debug.Log(string.Format(str, args));
-#else
-                    Console.ForegroundColor = color;
-                    Console.WriteLine(str, args);
-                    Console.ForegroundColor = ConsoleColor.Gray;
-#endif
-                }
-                else
-                {
-                    NetDebug.Logger.WriteNet(color, str, args);
-                }
-            }
-        }
-
-        [Conditional("DEBUG_MESSAGES")]
-        internal static void DebugWrite(string str, params object[] args)
-        {
-            DebugWriteLogic(ConsoleColor.DarkGreen, str, args);
-        }
-
-        [Conditional("DEBUG_MESSAGES")]
-        internal static void DebugWrite(ConsoleColor color, string str, params object[] args)
-        {
-            DebugWriteLogic(color, str, args);
-        }
-
-        [Conditional("DEBUG_MESSAGES"), Conditional("DEBUG")]
-        internal static void DebugWriteForce(ConsoleColor color, string str, params object[] args)
-        {
-            DebugWriteLogic(color, str, args);
-        }
-
-        [Conditional("DEBUG_MESSAGES"), Conditional("DEBUG")]
-        internal static void DebugWriteError(string str, params object[] args)
-        {
-            DebugWriteLogic(ConsoleColor.Red, str, args);
         }
     }
 }

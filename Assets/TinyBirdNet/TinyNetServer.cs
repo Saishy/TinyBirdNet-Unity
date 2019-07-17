@@ -4,6 +4,7 @@ using LiteNetLib;
 using LiteNetLib.Utils;
 using TinyBirdUtils;
 using TinyBirdNet.Messaging;
+using System.Net;
 
 namespace TinyBirdNet {
 
@@ -82,7 +83,7 @@ namespace TinyBirdNet {
 				return false;
 			}
 
-			_netManager = new NetManager(this, maxNumberOfPlayers);
+			_netManager = new NetManager(this);
 			_netManager.Start(port);
 
 			ConfigureNetManager(true);
@@ -689,6 +690,33 @@ namespace TinyBirdNet {
 		/// <returns></returns>
 		public TinyNetPlayerController GetPlayerControllerFromConnection(long connId, int playerControllerId) {
 			return GetTinyNetConnection(connId).GetPlayerController((short)playerControllerId);
+		}
+
+		//============ INetEventListener methods ============//
+
+		/// <inheritdoc />
+		public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
+			base.OnNetworkReceiveUnconnected(remoteEndPoint, reader, messageType);
+
+			if (messageType == UnconnectedMessageType.DiscoveryRequest) {
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response"); }
+				_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
+			}
+		}
+
+		public override void OnConnectionRequest(ConnectionRequest request) {
+			base.OnConnectionRequest(request);
+
+			NetDataReader dataReader = request.Data;
+
+			string key = dataReader.GetString();
+
+			if (!TinyNetGameManager.instance.CheckConnectionKey(key)) {
+				request.Reject();
+			}
+
+			NetPeer peer = request.Accept();
+			peer.Tag = dataReader.GetString();
 		}
 	}
 }

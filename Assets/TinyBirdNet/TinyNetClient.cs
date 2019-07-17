@@ -6,6 +6,7 @@ using TinyBirdUtils;
 using TinyBirdNet.Messaging;
 using System.Collections.Generic;
 using TinyBirdNet.Utils;
+using System.Net;
 
 namespace TinyBirdNet {
 
@@ -148,11 +149,17 @@ namespace TinyBirdNet {
 		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Attempt to connect at adress: " + hostAddress + ":" + hostPort); }
 
-			s_recycleWriter.Reset();
-			s_recycleWriter.Put(TinyNetGameManager.PROTOCOL_VERSION + TinyNetGameManager.instance.multiplayerConnectKey);
-			s_recycleWriter.Put(TinyNetGameManager.ApplicationGUIDString);
+			WriteConnectionRequest(s_recycleWriter);
 
 			_netManager.Connect(hostAddress, hostPort, s_recycleWriter);
+		}
+
+		protected NetDataWriter WriteConnectionRequest(NetDataWriter netDataWriter) {
+			netDataWriter.Reset();
+			netDataWriter.Put(TinyNetGameManager.PROTOCOL_VERSION + TinyNetGameManager.instance.multiplayerConnectKey);
+			netDataWriter.Put(TinyNetGameManager.ApplicationGUIDString);
+
+			return netDataWriter;
 		}
 
 		/// <summary>
@@ -350,7 +357,7 @@ namespace TinyBirdNet {
 				}
 
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, obj, s_TinyNetObjectSpawnMessage.frameTick);
-			// If not, check if the prefab have a spawn handler registered.
+				// If not, check if the prefab have a spawn handler registered.
 			} else if (TinyNetGameManager.instance.GetSpawnHandler(s_TinyNetObjectSpawnMessage.assetIndex, out handler)) {
 				GameObject obj = handler(s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.assetIndex);
 				if (obj == null) {
@@ -366,7 +373,7 @@ namespace TinyBirdNet {
 
 				localTinyNetIdentity.SetDynamicAssetGUID(TinyNetGameManager.instance.GetAssetGUIDFromAssetId(s_TinyNetObjectSpawnMessage.assetIndex));
 				ApplyInitialState(localTinyNetIdentity, s_TinyNetObjectSpawnMessage.position, s_TinyNetObjectSpawnMessage.initialState, s_TinyNetObjectSpawnMessage.networkID, obj, s_TinyNetObjectSpawnMessage.frameTick);
-			// If also not, we literally cannot spawn this object and you should feel bad.
+				// If also not, we literally cannot spawn this object and you should feel bad.
 			} else {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("Failed to spawn server object, assetId=" + s_TinyNetObjectSpawnMessage.assetIndex + " networkID=" + s_TinyNetObjectSpawnMessage.networkID); }
 			}
@@ -456,7 +463,7 @@ namespace TinyBirdNet {
 
 				_stateUpdateReader.Clear();
 				int rSize = netMsg.reader.GetInt();
-				_stateUpdateReader.SetSource(netMsg.reader.Data, netMsg.reader.Position, rSize);
+				_stateUpdateReader.SetSource(netMsg.reader.RawData, netMsg.reader.Position, rSize);
 				_stateUpdateReader.SetFrameTick(LastServerTick);
 
 				TinyNetIdentity localObject = _localIdentityObjects[networkID];
@@ -467,7 +474,7 @@ namespace TinyBirdNet {
 				}
 
 				// We jump the reader position to the amount of data we read.
-				netMsg.reader.SetSource(netMsg.reader.Data, netMsg.reader.Position + rSize);
+				netMsg.reader.SetSource(netMsg.reader.RawData, netMsg.reader.Position + rSize);
 			}
 		}
 
@@ -577,7 +584,7 @@ namespace TinyBirdNet {
 			if (connToHost.isReady) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("A connection has already been set as ready. There can only be one."); }
 				return false;
-			}			
+			}
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::Ready() called with connection [" + connToHost + "]"); }
 
@@ -703,6 +710,21 @@ namespace TinyBirdNet {
 
 			s_TinyNetRequestAddPlayerMessage.amountOfPlayers = (ushort)amountPlayers;
 			SendMessageByChannelToTargetConnection(s_TinyNetRequestAddPlayerMessage, DeliveryMethod.ReliableOrdered, connToHost);
+		}
+
+		//============ INetEventListener methods ============//
+
+		/// <inheritdoc />
+		public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
+			base.OnNetworkReceiveUnconnected(remoteEndPoint, reader, messageType);
+
+			if (messageType == UnconnectedMessageType.DiscoveryResponse && _netManager.PeersCount == 0) {
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received discovery response. Connecting to: " + remoteEndPoint); }
+
+				WriteConnectionRequest(s_recycleWriter);
+
+				_netManager.Connect(remoteEndPoint, s_recycleWriter);
+			}
 		}
 	}
 }

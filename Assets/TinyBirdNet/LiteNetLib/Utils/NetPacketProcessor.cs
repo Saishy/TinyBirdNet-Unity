@@ -5,13 +5,24 @@ namespace LiteNetLib.Utils
 {
     public class NetPacketProcessor
     {
-        protected delegate void SubscrieDelegate(NetDataReader reader, object userData);
+        protected delegate void SubscribeDelegate(NetDataReader reader, object userData);
         private readonly Dictionary<string, ulong> _hashCache = new Dictionary<string, ulong>();
         private readonly char[] _hashBuffer = new char[1024];
-        private readonly NetSerializer _netSerializer = new NetSerializer();
-        private readonly Dictionary<ulong, SubscrieDelegate> _callbacks = new Dictionary<ulong, SubscrieDelegate>();
+        private readonly NetSerializer _netSerializer;
+        private readonly Dictionary<ulong, SubscribeDelegate> _callbacks = new Dictionary<ulong, SubscribeDelegate>();
         private readonly NetDataWriter _netDataWriter = new NetDataWriter();
 
+        public NetPacketProcessor()
+        {
+            _netSerializer = new NetSerializer();
+        }
+
+        public NetPacketProcessor(int maxStringLength)
+        {
+            _netSerializer = new NetSerializer(maxStringLength);
+        }
+
+        //FNV-1 64 bit hash
         protected virtual ulong GetHash(Type type)
         {
             ulong hash;
@@ -31,10 +42,10 @@ namespace LiteNetLib.Utils
             return hash;
         }
 
-        protected virtual SubscrieDelegate GetCallbackFromData(NetDataReader reader)
+        protected virtual SubscribeDelegate GetCallbackFromData(NetDataReader reader)
         {
             var hash = reader.GetULong();
-            SubscrieDelegate action;
+            SubscribeDelegate action;
             if (!_callbacks.TryGetValue(hash, out action))
             {
                 throw new ParseException("Undefined packet in NetDataReader");
@@ -293,6 +304,16 @@ namespace LiteNetLib.Utils
                 reference.Deserialize(reader);
                 onReceive(reference);
             };
+        }
+
+        /// <summary>
+        /// Remove any subscriptions by type
+        /// </summary>
+        /// <typeparam name="T">Packet type</typeparam>
+        /// <returns>true if remove is success</returns>
+        public bool RemoveSubscription<T>()
+        {
+            return _callbacks.Remove(GetHash(typeof(T)));
         }
     }
 }

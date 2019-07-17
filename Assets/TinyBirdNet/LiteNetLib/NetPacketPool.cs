@@ -1,45 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
-using LiteNetLib.Utils;
+using System.Threading;
 
 namespace LiteNetLib
 {
-    internal class NetPacketPool
+    internal sealed class NetPacketPool
     {
-        private const int PoolLimit = 1000;
-        private readonly Stack<NetPacket> _pool;
-
-        public NetPacketPool()
-        {
-            _pool = new Stack<NetPacket>();
-        }
-
-        public NetPacket GetWithData(PacketProperty property, NetDataWriter writer)
-        {
-            var packet = Get(property, writer.Length);
-            Buffer.BlockCopy(writer.Data, 0, packet.RawData, NetPacket.GetHeaderSize(property), writer.Length);
-            return packet;
-        }
+        private readonly NetPacket[] _pool = new NetPacket[NetConstants.PacketPoolSize];
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private int _count;
 
         public NetPacket GetWithData(PacketProperty property, byte[] data, int start, int length)
         {
-            var packet = Get(property, length);
+            var packet = GetWithProperty(property, length);
             Buffer.BlockCopy(data, start, packet.RawData, NetPacket.GetHeaderSize(property), length);
             return packet;
         }
 
-        private NetPacket GetPacket(int size, bool clear)
+        public NetPacket GetPacket(int size, bool clear)
         {
             NetPacket packet = null;
             if (size <= NetConstants.MaxPacketSize)
             {
-                lock (_pool)
+                _lock.EnterUpgradeableReadLock();
+                if (_count > 0)
                 {
-                    if (_pool.Count > 0)
-                    {
-                        packet = _pool.Pop();
-                    }
+                    _lock.EnterWriteLock();
+                    _count--;
+                    packet = _pool[_count];
+                    _pool[_count] = null;
+                    _lock.ExitWriteLock();
                 }
+                _lock.ExitUpgradeableReadLock();
             }
             if (packet == null)
             {
@@ -49,51 +40,42 @@ namespace LiteNetLib
             else
             {
                 //reallocate packet data if packet not fits
-                if (!packet.Realloc(size) && clear)
-                {
-                    //clear in not reallocated
-                    Array.Clear(packet.RawData, 0, size);
-                }
-            }
-            return packet;
-        }
-
-        //Get packet just for read
-        public NetPacket GetAndRead(byte[] data, int start, int count)
-        {
-            NetPacket packet = GetPacket(count, false);
-            if (!packet.FromBytes(data, start, count))
-            {
-                Recycle(packet);
-                return null;
+                packet.Realloc(size, clear);
             }
             return packet;
         }
 
         //Get packet with size
-        public NetPacket Get(PacketProperty property, int size)
+        public NetPacket GetWithProperty(PacketProperty property, int size)
         {
             size += NetPacket.GetHeaderSize(property);
             NetPacket packet = GetPacket(size, true);
             packet.Property = property;
-            packet.Size = size;
             return packet;
         }
 
         public void Recycle(NetPacket packet)
         {
-            if (packet.Size > NetConstants.MaxPacketSize || _pool.Count > PoolLimit)
+            if (packet.RawData.Length > NetConstants.MaxPacketSize)
             {
                 //Dont pool big packets. Save memory
                 return;
             }
 
             //Clean fragmented flag
-            packet.IsFragmented = false;
-            lock (_pool)
+            packet.RawData[0] = 0;
+
+            _lock.EnterUpgradeableReadLock();
+            if (_count == NetConstants.PacketPoolSize)
             {
-                _pool.Push(packet);
+                _lock.ExitUpgradeableReadLock();
+                return;
             }
+            _lock.EnterWriteLock();
+            _pool[_count] = packet;
+            _count++;
+            _lock.ExitWriteLock();
+            _lock.ExitUpgradeableReadLock();
         }
     }
 }

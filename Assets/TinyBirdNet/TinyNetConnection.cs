@@ -80,7 +80,7 @@ namespace TinyBirdNet {
 		/// <value>
 		/// The connect identifier.
 		/// </value>
-		public virtual long ConnectId {	get { return _peer.ConnectId; }
+		public virtual long ConnectId {	get { return _peer.Id; }
 		}
 
 		/// <summary>
