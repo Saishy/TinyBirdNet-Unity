@@ -454,23 +454,22 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netMsg">A wrapper for a <see cref="TinyNetMsgType.StateUpdate"/> message.</param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
-			//int pos1 = netMsg.reader.Position;
-			//int bytes1 = netMsg.reader.AvailableBytes;
-			//Debug.Log("Position: " + netMsg.reader.Position + ", AvailableBytes: " + netMsg.reader.AvailableBytes);
 			LastServerTick = netMsg.reader.GetUShort();
-			//int pos2 = netMsg.reader.Position;
-			//int bytes2 = netMsg.reader.AvailableBytes;
-			//Debug.Log("Position: " + netMsg.reader.Position + ", AvailableBytes: " + netMsg.reader.AvailableBytes);
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + LastServerTick + " channel: " + netMsg.channelId); }
+
+			int cacheDataSize = netMsg.reader.RawDataSize;
 
 			while (netMsg.reader.AvailableBytes > 0) {
 				int networkID = netMsg.reader.GetInt();
 
-				_stateUpdateReader.Clear();
 				int rSize = netMsg.reader.GetInt();
-				_stateUpdateReader.SetSource(netMsg.reader.RawData, netMsg.reader.Position, rSize);
+
+				_stateUpdateReader.Clear();
+				Debug.Log("OnStateUpdate: RawDataSize: " + netMsg.reader.RawDataSize + ", Position: " + netMsg.reader.Position + ", rSize: " + rSize);
+				_stateUpdateReader.SetSource(netMsg.reader.RawData, netMsg.reader.Position, rSize + netMsg.reader.Position);
 				_stateUpdateReader.SetFrameTick(LastServerTick);
+				Debug.Log("OnStateUpdate: _stateUpdateReader " + _stateUpdateReader.RawDataSize + ", Position: " + _stateUpdateReader.Position);
 
 				TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(networkID);
 				if (localObject != null) {
@@ -480,7 +479,8 @@ namespace TinyBirdNet {
 				}
 
 				// We jump the reader position to the amount of data we read.
-				netMsg.reader.SetSource(netMsg.reader.RawData, netMsg.reader.Position + rSize);
+				//netMsg.reader.SetSource(netMsg.reader.RawData, netMsg.reader.Position + rSize, netMsg.reader.RawDataSize);
+				netMsg.reader.SkipBytes(rSize);
 			}
 		}
 

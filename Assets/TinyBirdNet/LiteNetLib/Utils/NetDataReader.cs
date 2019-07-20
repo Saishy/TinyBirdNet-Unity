@@ -51,7 +51,11 @@ namespace LiteNetLib.Utils
             get { return _dataSize - _position; }
         }
 
-        public void SetSource(NetDataWriter dataWriter)
+		public void SkipBytes(int count) {
+			_position += count;
+		}
+
+		public void SetSource(NetDataWriter dataWriter)
         {
             _data = dataWriter.Data;
             _position = 0;
