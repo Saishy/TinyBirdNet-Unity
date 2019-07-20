@@ -60,7 +60,7 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public override void TinyNetUpdate() {
-			foreach (var item in _localIdentityObjects) {
+			foreach (var item in LocalIdentityObjects) {
 				item.Value.TinyNetUpdate();
 			}
 
@@ -456,7 +456,7 @@ namespace TinyBirdNet {
 				// Setup spawned objects for local player
 				// Only handle the local objects for the first player (no need to redo it when doing more local players)
 				// and don't handle player objects here, they were done above
-				foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
+				foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
 					// Need to call OnStartClient directly here, as it's already been added to the local object dictionary
 					// in the above SetLocalPlayer call
 					if (tinyNetId != null && tinyNetId.gameObject != null) {
@@ -473,13 +473,13 @@ namespace TinyBirdNet {
 			}
 
 			// Spawn/update all current server objects
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning " + _localIdentityObjects.Count + " objects for conn " + conn.ConnectId); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning " + LocalIdentityObjects.Count + " objects for conn " + conn.ConnectId); }
 
 			TinyNetObjectSpawnFinishedMessage msg = new TinyNetObjectSpawnFinishedMessage();
 			msg.state = 0; //State 0 means we are starting the spawn messages 'spam'.
 			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
 
-			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
+			foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
 
 				if (tinyNetId == null) {
 					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Invalid object found in server local object list (null TinyNetIdentity)."); }

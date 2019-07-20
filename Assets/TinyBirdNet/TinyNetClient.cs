@@ -116,7 +116,7 @@ namespace TinyBirdNet {
 				return;
 			}
 
-			foreach (var item in _localIdentityObjects) {
+			foreach (var item in LocalIdentityObjects) {
 				item.Value.TinyNetUpdate();
 			}
 		}
@@ -285,7 +285,7 @@ namespace TinyBirdNet {
 		void OnLocalClientObjectSpawnScene(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetObjectSpawnSceneMessage);
 
-			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectSpawnSceneMessage.networkID];
+			TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(s_TinyNetObjectSpawnSceneMessage.networkID);
 			if (localObject != null) {
 				localObject.OnGiveLocalVisibility();
 			}
@@ -300,7 +300,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnObjDestroy networkID:" + s_TinyNetObjectDestroyMessage.networkID); }
 
-			TinyNetIdentity localObject = _localIdentityObjects[s_TinyNetObjectDestroyMessage.networkID];
+			TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(s_TinyNetObjectDestroyMessage.networkID);
 			if (localObject != null) {
 				RemoveTinyNetIdentityFromList(localObject);
 				localObject.OnNetworkDestroy();
@@ -424,7 +424,7 @@ namespace TinyBirdNet {
 			}
 
 			// when 1, means we have received every single spawn message!
-			foreach (TinyNetIdentity tinyNetId in _localIdentityObjects.Values) {
+			foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
 				if (tinyNetId.isClient) {
 					tinyNetId.OnStartClient();
 				}
@@ -442,7 +442,7 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetClient::OnClientAuthority for  connectionId=" + netMsg.tinyNetConn.ConnectId + " netId: " + s_TinyNetClientAuthorityMessage.networkID); }
 
-			TinyNetIdentity tni = _localIdentityObjects[s_TinyNetClientAuthorityMessage.networkID];
+			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(s_TinyNetClientAuthorityMessage.networkID);
 
 			if (tni != null) {
 				tni.HandleClientAuthority(s_TinyNetClientAuthorityMessage.authority);
@@ -454,7 +454,13 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netMsg">A wrapper for a <see cref="TinyNetMsgType.StateUpdate"/> message.</param>
 		void OnStateUpdateMessage(TinyNetMessageReader netMsg) {
+			//int pos1 = netMsg.reader.Position;
+			//int bytes1 = netMsg.reader.AvailableBytes;
+			//Debug.Log("Position: " + netMsg.reader.Position + ", AvailableBytes: " + netMsg.reader.AvailableBytes);
 			LastServerTick = netMsg.reader.GetUShort();
+			//int pos2 = netMsg.reader.Position;
+			//int bytes2 = netMsg.reader.AvailableBytes;
+			//Debug.Log("Position: " + netMsg.reader.Position + ", AvailableBytes: " + netMsg.reader.AvailableBytes);
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + LastServerTick + " channel: " + netMsg.channelId); }
 
@@ -466,7 +472,7 @@ namespace TinyBirdNet {
 				_stateUpdateReader.SetSource(netMsg.reader.RawData, netMsg.reader.Position, rSize);
 				_stateUpdateReader.SetFrameTick(LastServerTick);
 
-				TinyNetIdentity localObject = _localIdentityObjects[networkID];
+				TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(networkID);
 				if (localObject != null) {
 					localObject.TinyDeserialize(_stateUpdateReader, false);
 				} else {

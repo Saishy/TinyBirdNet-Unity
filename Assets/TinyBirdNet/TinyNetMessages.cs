@@ -113,19 +113,7 @@ namespace TinyBirdNet.Messaging {
 	/// <summary>
 	/// An interface used by all messages.
 	/// </summary>
-	public interface ITinyNetMessage {
-		/// <summary>
-		/// Deserializes the contents of the <see cref="NetDataReader"/> into this message.
-		/// </summary>
-		/// <param name="reader">The <see cref="NetDataReader"/>.</param>
-		void Deserialize(NetDataReader reader);
-
-		/// <summary>
-		/// Serializes the contents of this message into the <see cref="NetDataWriter"/>.
-		/// </summary>
-		/// <param name="writer">The <see cref="NetDataWriter"/>.</param>
-		void Serialize(NetDataWriter writer);
-
+	public interface ITinyNetMessage : INetSerializable {
 		ushort msgType { get; }
 	}
 

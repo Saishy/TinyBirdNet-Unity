@@ -32,7 +32,13 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// int is the NetworkID of the TinyNetIdentity object.
 		/// </summary>
-		protected static Dictionary<int, TinyNetIdentity> _localIdentityObjects = new Dictionary<int, TinyNetIdentity>();
+		private static Dictionary<int, TinyNetIdentity> _localIdentityObjects = new Dictionary<int, TinyNetIdentity>();
+
+		protected Dictionary<int, TinyNetIdentity> LocalIdentityObjects {
+			get {
+				return _localIdentityObjects;
+			}
+		}
 
 		/// <summary>
 		/// If using this, always Reset before use!
@@ -191,6 +197,8 @@ namespace TinyBirdNet {
 			} else {
 				_netManager.UpdateTime = 15;
 			}
+
+			_netManager.AutoRecycle = true;
 
 			_netManager.PingInterval = TinyNetGameManager.instance.PingInterval;
 			_netManager.NatPunchEnabled = TinyNetGameManager.instance.bNatPunchEnabled;

@@ -186,9 +186,7 @@ namespace TinyBirdNet {
 				_tinyNetComponents = GetComponentsInChildren<ITinyNetComponent>(true);
 			}
 
-			if (_tinyNetComponents.Length == 1) {
-				_dirtyFlag = new BitArray(1);
-			} else if (_tinyNetComponents.Length <= 8) {
+			if (_tinyNetComponents.Length <= 8) {
 				_dirtyFlag = new BitArray(8);
 			} else if (_tinyNetComponents.Length <= 16) {
 				_dirtyFlag = new BitArray(16);
@@ -301,9 +299,6 @@ namespace TinyBirdNet {
 			}
 
 			switch (_dirtyFlag.Length) {
-				case 1:
-					// Do nothing!
-					break;
 				case 8:
 					writer.Put((byte)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
 					break;
@@ -360,9 +355,6 @@ namespace TinyBirdNet {
 			}
 
 			switch (_dirtyFlag.Length) {
-				case 1:
-					_dirtyFlag[0] = true;
-					break;
 				case 8:
 					TinyBitArrayUtil.U64ToBitArray(reader.GetByte(), _dirtyFlag);
 					break;

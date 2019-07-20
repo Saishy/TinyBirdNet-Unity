@@ -132,14 +132,16 @@ public class ExamplePawn : TinyNetBehaviour {
 	}
 
 	private void FixedUpdate() {
-		byte dir = movementInput == Vector2.zero ? (byte)0 : VectorToDirection(movementInput);
-		MoveToDir(dir);
+		if (isServer) {
+			byte dir = movementInput == Vector2.zero ? (byte)0 : VectorToDirection(movementInput);
+			MoveToDir(dir);
 
-		if (bFireInput) {
-			Shoot();
+			if (bFireInput) {
+				Shoot();
+			}
 		}
 
-		if (!hasAuthority) {
+		if (!isServer) {
 			Vector3 pos = transform.position;
 			Vector3 result = Vector3.MoveTowards(pos, _networkPosition, movementSpeed * Time.fixedDeltaTime);
 

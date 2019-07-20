@@ -61,9 +61,9 @@ public class ExamplePlayerController : TinyNetPlayerController {
 			bFire = true;
 		}
 
-		if (!IsServerVersion()) {
+		/*if (!IsServerVersion()) {
 			InsertInput(axis, bFire);
-		}
+		}*/
 
 		inputMessageBuffer.keys = 0;
 
