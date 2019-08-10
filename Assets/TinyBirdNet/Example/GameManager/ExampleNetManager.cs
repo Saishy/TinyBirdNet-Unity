@@ -9,13 +9,6 @@ class ExampleNetManager : TinyNetGameManager {
 
 	protected override void AwakeVirtual() {
 		base.AwakeVirtual();
-
-		TinyNetScene.createPlayerAction = CreatePlayerAndAdd;
-		TinyNetClient.OnClientReadyEvent = OnClientReady;
-	}
-
-	void CreatePlayerAndAdd(TinyNetConnection conn, int playerId) {
-		conn.SetPlayerController<ExamplePlayerController>(new ExamplePlayerController((short)playerId, conn));
 	}
 
 	public override void StartServer() {
@@ -40,8 +33,12 @@ class ExampleNetManager : TinyNetGameManager {
 		serverManager.RegisterHandlerSafe(TinyNetMsgType.Highest + 1, OnPlayerNameReceive);
 	}
 
-	protected void OnClientReady() {
-		clientManager.RequestAddPlayerControllerToServer();
+	public override TinyNetPlayerController CreatePlayerController(TinyNetConnection conn, int playerId) {
+		return new ExamplePlayerController((short)playerId, conn);
+	}
+
+	public override void OnClientReady() {
+		base.OnClientReady();
 
 		//Remember this only works cos we only have 1 player per connection in this demo.
 		stringMsg.msgType = TinyNetMsgType.Highest + 1;

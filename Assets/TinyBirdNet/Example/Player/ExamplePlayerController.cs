@@ -34,12 +34,6 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	}
 
 	public ExamplePlayerController(short playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
-		if (TinyNetGameManager.instance.isListenServer) {
-			if (!(nConn is TinyNetLocalConnectionToClient)) {
-				return;
-			}
-		}
-
 		inputMessageBuffer.playerControllerId = playerControllerId;
 	}
 
@@ -49,6 +43,12 @@ public class ExamplePlayerController : TinyNetPlayerController {
 			TinyNetGameManager.instance.StopCoroutine(fixedUpdateCoroutine);
 		}
 	}*/
+
+	public override void OnDisconnect() {
+		if (TinyNetGameManager.instance.isServer && pawn != null) {
+			TinyNetServer.instance.DestroyObject(pawn.gameObject);
+		}
+	}
 
 	public override void Update() {
 		if (!TinyNetGameManager.instance.isClient) {

@@ -25,11 +25,6 @@ namespace TinyBirdNet {
 		//protected static Dictionary<string, GameObject> guidToPrefab;
 
 		/// <summary>
-		/// If set, overrides the <see cref="CreatePlayerAndAdd(TinyNetConnection, int)"/> implementation.
-		/// </summary>
-		public static Action<TinyNetConnection, int> createPlayerAction;
-
-		/// <summary>
 		/// int is the NetworkID of the TinyNetIdentity object.
 		/// </summary>
 		private static Dictionary<int, TinyNetIdentity> _localIdentityObjects = new Dictionary<int, TinyNetIdentity>();
@@ -166,12 +161,6 @@ namespace TinyBirdNet {
 			}
 		}
 
-		/// <summary>
-		/// Called from <see cref="TinyNetGameManager"/> every physics update, after all FixedUpdate have been called.
-		/// </summary>
-		public virtual void TinyNetUpdate() {
-		}
-
 		public virtual void CallUpdateOnControllers() {
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				tinyNetConns[i].CallUpdateOnControllers();
@@ -228,7 +217,7 @@ namespace TinyBirdNet {
 		/// Creates a <see cref="TinyNetConnection"/> for the given <see cref="NetPeer"/>.
 		/// </summary>
 		/// <param name="peer">The peer.</param>
-		/// <returns></returns>
+		/// <returns>A new <see cref="TinyNetConnection"/>.</returns>
 		protected abstract TinyNetConnection CreateTinyNetConnection(NetPeer peer);
 
 		/// <summary>
@@ -574,6 +563,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="nConn">The connection that disconnected.</param>
 		protected virtual void OnDisconnect(TinyNetConnection nConn) {
+			nConn.OnDisconnect();
 		}
 
 		//============ TinyNetMessages Handlers =============//
@@ -633,12 +623,7 @@ namespace TinyBirdNet {
 		/// <param name="conn">The connection.</param>
 		/// <param name="playerControllerId">The player controller identifier.</param>
 		protected virtual void CreatePlayerAndAdd(TinyNetConnection conn, int playerControllerId) {
-			if (createPlayerAction != null) {
-				createPlayerAction(conn, playerControllerId);
-				return;
-			}
-			// If no action is set, we just use default implementation
-			conn.SetPlayerController<TinyNetPlayerController>(new TinyNetPlayerController((short)playerControllerId, conn));
+			conn.SetPlayerController<TinyNetPlayerController>(TinyNetGameManager.instance.CreatePlayerController(conn, playerControllerId));
 		}
 	}
 }

@@ -259,22 +259,18 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called every physics frame after all FixedUpdates.
+		/// [Server Only] Called every server update, after all FixedUpdates.
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
-		/// </summary>>
+		/// </summary>
 		public void TinyNetUpdate() {
-			if (isServer) {
-				IsDirty = false;
-			}
+			IsDirty = false;
 
 			for (int i = 0; i < _tinyNetComponents.Length; i++) {
 				_tinyNetComponents[i].TinyNetUpdate();
 
-				if (isServer) {
-					_dirtyFlag[i] = _tinyNetComponents[i].IsDirty;
-					if (_dirtyFlag[i] == true) {
-						IsDirty = true;
-					}
+				_dirtyFlag[i] = _tinyNetComponents[i].IsDirty;
+				if (_dirtyFlag[i] == true) {
+					IsDirty = true;
 				}
 			}
 		}
@@ -319,6 +315,7 @@ namespace TinyBirdNet {
 					_recycleWriter.Reset();
 
 					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
+					//Debug.Log("[Serialize] Size: " + _recycleWriter.Length + ", DirtyFlag: " + TinyBitArrayUtil.Display(_recycleWriter.Data[0]));
 					// TODO: Compact this
 					writer.Put(_recycleWriter.Length);
 					writer.Put(_recycleWriter.Data, 0, _recycleWriter.Length);
@@ -348,7 +345,7 @@ namespace TinyBirdNet {
 					_recycleReader.SetFrameTick(reader.FrameTick);
 					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
 					// We jump the reader position to the amount of data we read.
-					reader.SetSource(reader.RawData, reader.Position + rSize);
+					reader.SkipBytes(rSize);
 				}
 
 				return;
@@ -376,9 +373,10 @@ namespace TinyBirdNet {
 					_recycleReader.SetSource(reader.RawData, reader.Position, rSize);
 
 					_recycleReader.SetFrameTick(reader.FrameTick);
+					//Debug.Log("[Deserialize] Size: " + rSize + ", DirtyFlag: " + TinyBitArrayUtil.Display(_recycleReader.PeekByte()));
 					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
 					// We jump the reader position to the amount of data we read.
-					reader.SetSource(reader.RawData, reader.Position + rSize);
+					reader.SkipBytes(rSize);
 				}
 			}
 		}

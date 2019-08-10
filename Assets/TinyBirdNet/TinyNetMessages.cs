@@ -245,11 +245,11 @@ namespace TinyBirdNet.Messaging {
 		/// <param name="value">The message type id.</param>
 		/// <returns></returns>
 		static public string MsgTypeToString(ushort value) {
-			if (value < 0 || value > Highest) {
-				return string.Empty;
-			}
+			string result = string.Empty;
 
-			string result = msgLabels[value];
+			if (value >= 0 && value <= Highest) {
+				result = msgLabels[value];
+			}
 
 			if (string.IsNullOrEmpty(result)) {
 				result = "[" + value + "]";
@@ -263,10 +263,6 @@ namespace TinyBirdNet.Messaging {
 	/// Used to provide an easy way to read different messages.
 	/// </summary>
 	public class TinyNetMessageReader {
-		/// <summary>
-		/// The maximum message size allowed.
-		/// </summary>
-		public const int MaxMessageSize = (64 * 1024) - 1;
 
 		/// <summary>
 		/// The message type id
@@ -281,8 +277,7 @@ namespace TinyBirdNet.Messaging {
 		/// </summary>
 		public NetDataReader reader;
 		/// <summary>
-		/// The delivery method of this message.
-		/// <para>Not implemmented yet.</para>
+		/// The delivery method this message was received with.
 		/// </summary>
 		public DeliveryMethod channelId;
 
@@ -304,7 +299,7 @@ namespace TinyBirdNet.Messaging {
 		}
 
 		/// <summary>
-		/// Reads the message.
+		/// Reads the message, generates garbage.
 		/// </summary>
 		/// <typeparam name="TMsg">The type id of the message.</typeparam>
 		/// <returns></returns>

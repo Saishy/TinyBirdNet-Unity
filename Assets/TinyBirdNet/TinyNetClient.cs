@@ -29,11 +29,6 @@ namespace TinyBirdNet {
 		/// </summary>
 		protected static TinyNetStateReader _stateUpdateReader = new TinyNetStateReader();
 
-		/// <summary>
-		/// The client ready event.
-		/// </summary>
-		public static System.Action OnClientReadyEvent;
-
 		public ushort LastServerTick {
 			get; protected set;
 		}
@@ -108,17 +103,6 @@ namespace TinyBirdNet {
 			RegisterHandlerSafe(TinyNetMsgType.LocalClientAuthority, OnClientAuthorityMessage);
 
 			RegisterHandler(TinyNetMsgType.Scene, OnClientChangeSceneMessage);
-		}
-
-		/// <inheritdoc />
-		public override void TinyNetUpdate() {
-			if (TinyNetGameManager.instance.isServer) {
-				return;
-			}
-
-			foreach (var item in LocalIdentityObjects) {
-				item.Value.TinyNetUpdate();
-			}
 		}
 
 		/// <summary>
@@ -466,10 +450,10 @@ namespace TinyBirdNet {
 				int rSize = netMsg.reader.GetInt();
 
 				_stateUpdateReader.Clear();
-				Debug.Log("OnStateUpdate: RawDataSize: " + netMsg.reader.RawDataSize + ", Position: " + netMsg.reader.Position + ", rSize: " + rSize);
+				//Debug.Log("OnStateUpdate: RawDataSize: " + netMsg.reader.RawDataSize + ", Position: " + netMsg.reader.Position + ", rSize: " + rSize);
 				_stateUpdateReader.SetSource(netMsg.reader.RawData, netMsg.reader.Position, rSize + netMsg.reader.Position);
 				_stateUpdateReader.SetFrameTick(LastServerTick);
-				Debug.Log("OnStateUpdate: _stateUpdateReader " + _stateUpdateReader.RawDataSize + ", Position: " + _stateUpdateReader.Position);
+				//Debug.Log("OnStateUpdate: _stateUpdateReader " + _stateUpdateReader.RawDataSize + ", Position: " + _stateUpdateReader.Position);
 
 				TinyNetIdentity localObject = GetTinyNetIdentityByNetworkID(networkID);
 				if (localObject != null) {
@@ -599,9 +583,7 @@ namespace TinyBirdNet {
 
 			connToHost.isReady = true;
 
-			if (OnClientReadyEvent != null) {
-				OnClientReadyEvent();
-			}
+			TinyNetGameManager.instance.OnClientReady();
 
 			return true;
 		}
@@ -666,6 +648,7 @@ namespace TinyBirdNet {
 		/// <inheritdoc />
 		protected override void CreatePlayerAndAdd(TinyNetConnection conn, int playerControllerId) {
 			if (TinyNetGameManager.instance.isListenServer) {
+				// In a listen server we only have one player controller, the one for the server.
 				conn.SetPlayerController<TinyNetPlayerController>(TinyNetServer.instance.GetPlayerControllerFromConnection(connToHost.ConnectId, (short)playerControllerId));
 				return;
 			}

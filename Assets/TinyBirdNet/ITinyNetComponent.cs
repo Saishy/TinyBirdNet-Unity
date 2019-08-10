@@ -32,7 +32,7 @@ namespace TinyBirdNet {
 		void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate);
 
 		/// <summary>
-		/// Called every physics frame after all FixedUpdates.
+		/// [Server Only] Called every server update, after all FixedUpdates.
 		/// </summary>
 		void TinyNetUpdate();
 	}

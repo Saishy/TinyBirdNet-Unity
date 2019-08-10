@@ -59,14 +59,14 @@ namespace TinyBirdNet {
 		}
 
 		/// <inheritdoc />
-		public override void TinyNetUpdate() {
-			foreach (var item in LocalIdentityObjects) {
-				item.Value.TinyNetUpdate();
-			}
-
+		public virtual void TinyNetUpdate() {
 			ServerTick = (ushort)((ServerTick + 1) % TinyNetGameManager.instance.MaxGameSequence);
 
 			if (ServerTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames == 0) {
+				foreach (var item in LocalIdentityObjects) {
+					item.Value.TinyNetUpdate();
+				}
+
 				SendStateUpdatesToAll();
 			}
 		}

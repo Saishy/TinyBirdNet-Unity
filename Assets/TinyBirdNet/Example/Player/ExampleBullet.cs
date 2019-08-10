@@ -25,6 +25,8 @@ public class ExampleBullet : TinyNetBehaviour {
 
 		cMeshRender = GetComponent<MeshRenderer>();
 		rbody = GetComponent<Rigidbody>();
+
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartClient, OnStartClient);
 	}
 
 	private void OnTriggerEnter(Collider other) {
@@ -102,6 +104,9 @@ public class ExampleBullet : TinyNetBehaviour {
 		base.OnStartClient();
 
 		switch (direction) {
+			case 0:
+				Debug.LogWarning("ExampleBullet direction is zero.");
+				break;
 			case 1:
 				transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 0f));
 				break;

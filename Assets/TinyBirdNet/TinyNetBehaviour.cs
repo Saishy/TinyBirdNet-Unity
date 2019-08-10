@@ -144,21 +144,43 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="index">The index.</param>
 		/// <param name="bValue">The new bool value.</param>
-		protected void SetDirtyFlag(int index, bool bValue) {
+		public void SetDirtyFlag(int index, bool bValue) {
 			_dirtyFlag[index] = bValue;
 
-			if (bValue) {
-				IsDirty = true;
+			IsDirty = false;
+			for (int i = 0; i < _dirtyFlag.Length; i++) {
+				if (_dirtyFlag[i]) {
+					IsDirty = true;
+				}
 			}
 		}
 
 		/// <summary>
 		/// Updates the dirty flag.
+		/// <para>This will only set dirty values to true, it will not revert them to false.</para>
 		/// </summary>
 		private void UpdateDirtyFlag() {
-			IsDirty = TinyNetStateSyncer.UpdateDirtyFlagOf(this, _dirtyFlag);
+			TinyNetStateSyncer.UpdateDirtyFlagOf(this, _dirtyFlag);
+
+			IsDirty = false;
+			for (int i = 0; i < _dirtyFlag.Length; i++) {
+				if (_dirtyFlag[i]) {
+					IsDirty = true;
+				}
+			}
 
 			_lastSendTime = Time.time;
+		}
+
+		/// <summary>
+		/// Sets all the dirty flags and IsDirty to <c>false</c>.
+		/// </summary>
+		private void ClearDirtyFlag() {
+			IsDirty = false;
+
+			for (int i = 0; i < _dirtyFlag.Length; i++) {
+				_dirtyFlag[i] = false;
+			}
 		}
 
 		/// <summary>
@@ -247,6 +269,8 @@ namespace TinyBirdNet {
 						// Do nothing!
 						break;
 					case 8:
+						//byte test = (byte)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag);
+						//Debug.Log("Serialize DirtyFlag: " + test);
 						writer.Put((byte)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
 						break;
 					case 16:
@@ -260,6 +284,9 @@ namespace TinyBirdNet {
 						break;
 				}
 			}
+
+			//Debug.Log("DirtyFlag: " + _dirtyFlag[0]);
+			//Debug.Log("DirtyFlag: " + TinyBitArrayUtil.Display(_dirtyFlag));
 
 			Type type;
 			int maxSyncVar = propertiesName.Length;
@@ -308,6 +335,7 @@ namespace TinyBirdNet {
 					case 0:
 						break;
 					case 8:
+						//Debug.Log("Deserialize DirtyFlag: " + reader.PeekByte());
 						TinyBitArrayUtil.U64ToBitArray(reader.GetByte(), _dirtyFlag);
 						break;
 					case 16:
@@ -321,6 +349,9 @@ namespace TinyBirdNet {
 						break;
 				}
 			}
+
+			//Debug.Log("DirtyFlag: " + _dirtyFlag[0]);
+			//Debug.Log("DirtyFlag: " + TinyBitArrayUtil.Display(_dirtyFlag));
 
 			Type type;
 			int maxSyncVar = propertiesName.Length;
@@ -442,13 +473,12 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called every physics frame after all FixedUpdates.
+		/// [Server Only] Called every server update, after all FixedUpdates.
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
-		/// </summary>>
+		/// </summary>
 		public virtual void TinyNetUpdate() {
-			if (isServer) {
-				UpdateDirtyFlag();
-			}
+			ClearDirtyFlag();
+			UpdateDirtyFlag();
 		}
 
 		/// <summary>
@@ -497,19 +527,6 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public virtual void OnSetLocalVisibility(bool vis) {
-		}
-
-		/// <inheritdoc />
-		public virtual LiteNetLib.DeliveryMethod GetNetworkChannel() {
-			return LiteNetLib.DeliveryMethod.ReliableOrdered;
-		}
-
-		/// <summary>
-		/// Not implemented yet.
-		/// </summary>
-		/// <returns></returns>
-		public virtual float GetNetworkSendInterval() {
-			return 0.1f;
 		}
 	}
 }

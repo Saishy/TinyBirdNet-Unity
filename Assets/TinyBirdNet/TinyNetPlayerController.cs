@@ -87,6 +87,13 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
+		/// Called when a disconnect event happens.
+		/// </summary>
+		public virtual void OnDisconnect() {
+
+		}
+
+		/// <summary>
 		/// This is called every frame, like an Unity Update call.
 		/// </summary>
 		public virtual void Update() {

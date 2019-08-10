@@ -201,6 +201,15 @@ namespace TinyBirdNet {
 		//============ Player Controllers ===================//
 
 		/// <summary>
+		/// Called when a disconnect event happens.
+		/// </summary>
+		public void OnDisconnect() {
+			for (int i = 0; i < _playerControllers.Count; i++) {
+				_playerControllers[i].OnDisconnect();
+			}
+		}
+
+		/// <summary>
 		/// Calls Update on all controllers.
 		/// <para>This is called every frame, like an Unity Update call.</para>
 		/// </summary>

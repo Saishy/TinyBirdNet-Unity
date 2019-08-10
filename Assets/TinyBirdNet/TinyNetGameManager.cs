@@ -298,19 +298,9 @@ namespace TinyBirdNet {
 				if (serverManager != null) {
 					serverManager.TinyNetUpdate();
 				}
-				if (clientManager != null) {
-					clientManager.TinyNetUpdate();
-				}
 
 				yield return new WaitForFixedUpdate();
 			}
-		}
-
-		/// <summary>
-		/// Called by UnityEngine when destroyed.
-		/// </summary>
-		void OnDestroy() {
-			ClearNetManager();
 		}
 
 		/// <summary>
@@ -425,6 +415,8 @@ namespace TinyBirdNet {
 		public void RebuildAllRegisteredPrefabs(GameObject[] newArray) {
 			registeredPrefabs = new List<GameObject>(newArray);
 		}
+
+		//============ Spawn Handling =======================//
 
 		/// <summary>
 		/// Unregisters a spawn handler.
@@ -591,17 +583,6 @@ namespace TinyBirdNet {
 			return key == (PROTOCOL_VERSION + multiplayerConnectKey);
 		}
 
-		//============ Server Methods =======================//
-
-		/// <summary>
-		/// Called when a client connect to the server.
-		/// <para>Currently not implemented!</para>
-		/// </summary>
-		/// <param name="conn">The connection.</param>
-		public void OnClientConnectToServer(TinyNetConnection conn) {
-
-		}
-
 		//============ Scenes Methods =======================//
 
 		/// <summary>
@@ -693,12 +674,43 @@ namespace TinyBirdNet {
 
 		//============ Players Methods ======================//
 
-		
-
-		
-
-		//============ Messages Handlers ====================//
 
 
+
+
+		//============ Event Handling =======================//
+
+		/// <summary>
+		/// Creates and returns a new <see cref="TinyNetPlayerController"/>.
+		/// </summary>
+		/// <param name="conn">The connection to create a player controller for.</param>
+		/// <param name="playerControllerId">The player controller's id.</param>
+		/// <returns>A new <see cref="TinyNetPlayerController"/>.</returns>
+		public virtual TinyNetPlayerController CreatePlayerController(TinyNetConnection conn, int playerControllerId) {
+			return new TinyNetPlayerController((short)playerControllerId, conn);
+		}
+
+		/// <summary>
+		/// Called by [Client] after sending a Ready message to server.
+		/// </summary>
+		public virtual void OnClientReady() {
+			clientManager.RequestAddPlayerControllerToServer();
+		}
+
+		//============ Unity Events =========================//
+
+		/// <summary>
+		/// Called by UnityEngine when closed.
+		/// </summary>
+		private void OnApplicationQuit() {
+			ClearNetManager();
+		}
+
+		/// <summary>
+		/// Called by UnityEngine when destroyed.
+		/// </summary>
+		void OnDestroy() {
+			ClearNetManager();
+		}
 	}
 }

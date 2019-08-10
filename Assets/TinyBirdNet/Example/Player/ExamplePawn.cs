@@ -150,7 +150,6 @@ public class ExamplePawn : TinyNetBehaviour {
 				result = _networkPosition;
 			}
 
-			Debug.Log("netDir: " + netDir);
 			FaceDir(netDir);
 
 			transform.position = result;
@@ -198,7 +197,6 @@ public class ExamplePawn : TinyNetBehaviour {
 			return;
 		}
 		netDir = direction;
-		Debug.Log("netDir: " + netDir);
 	}
 
 	public void GetMovementInput(Vector2 axis, bool bFire) {
