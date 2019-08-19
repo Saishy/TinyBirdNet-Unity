@@ -63,8 +63,8 @@ namespace TinyBirdNet {
 			ServerTick = (ushort)((ServerTick + 1) % TinyNetGameManager.instance.MaxGameSequence);
 
 			if (ServerTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames == 0) {
-				foreach (var item in LocalIdentityObjects) {
-					item.Value.TinyNetUpdate();
+				foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
+					tinyNetId.TinyNetUpdate();
 				}
 
 				SendStateUpdatesToAll();

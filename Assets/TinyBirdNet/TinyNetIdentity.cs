@@ -72,6 +72,7 @@ namespace TinyBirdNet {
 			OnNetworkDestroy,
 			OnStartServer,
 			OnStartClient,
+			OnStateUpdate,
 			OnStartAuthority,
 			OnStopAuthority,
 			OnGiveAuthority,
@@ -568,6 +569,21 @@ namespace TinyBirdNet {
 			}
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("OnStartClient " + gameObject + " netId:" + TinyInstanceID + " localPlayerAuthority: " + _localPlayerAuthority); }
+		}
+
+		/// <summary>
+		/// Called after a StateUpdate packet is read on client.
+		/// <para> Called on the client after all state updates are applied. This is called for all TinyNetIdentity, even if nothing was changed. </para>
+		/// </summary>
+		public virtual void OnStateUpdate() {
+			LinkedList<System.Action> handlers;
+			if (!_registeredEventHandlers.TryGetValue(TinyNetComponentEvents.OnStateUpdate, out handlers)) {
+				return;
+			}
+
+			for (LinkedListNode<System.Action> currentNode = handlers.First; currentNode != null; currentNode = currentNode.Next) {
+				currentNode.Value();
+			}
 		}
 
 		/// <summary>

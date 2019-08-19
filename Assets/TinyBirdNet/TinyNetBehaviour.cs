@@ -497,35 +497,30 @@ namespace TinyBirdNet {
 			}
 		}
 
-		/// <inheritdoc />
 		public virtual void OnNetworkDestroy() {
 		}
 
-		/// <inheritdoc />
 		public virtual void OnStartServer() {
 		}
 
-		/// <inheritdoc />
 		public virtual void OnStartClient() {
 		}
 
-		/// <inheritdoc />
+		public virtual void OnStateUpdate() {
+		}
+
 		public virtual void OnStartAuthority() {
 		}
 
-		/// <inheritdoc />
 		public virtual void OnStopAuthority() {
 		}
 
-		/// <inheritdoc />
 		public virtual void OnGiveAuthority() {
 		}
 
-		/// <inheritdoc />
 		public virtual void OnRemoveAuthority() {
 		}
 
-		/// <inheritdoc />
 		public virtual void OnSetLocalVisibility(bool vis) {
 		}
 	}

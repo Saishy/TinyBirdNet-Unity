@@ -406,8 +406,8 @@ namespace TinyBirdNet {
 
 				return;
 			}
-
 			// when 1, means we have received every single spawn message!
+
 			foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
 				if (tinyNetId.isClient) {
 					tinyNetId.OnStartClient();
@@ -442,8 +442,6 @@ namespace TinyBirdNet {
 
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnStateUpdateMessage frame: " + LastServerTick + " channel: " + netMsg.channelId); }
 
-			int cacheDataSize = netMsg.reader.RawDataSize;
-
 			while (netMsg.reader.AvailableBytes > 0) {
 				int networkID = netMsg.reader.GetInt();
 
@@ -465,6 +463,10 @@ namespace TinyBirdNet {
 				// We jump the reader position to the amount of data we read.
 				//netMsg.reader.SetSource(netMsg.reader.RawData, netMsg.reader.Position + rSize, netMsg.reader.RawDataSize);
 				netMsg.reader.SkipBytes(rSize);
+			}
+
+			foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
+				tinyNetId.OnStateUpdate();
 			}
 		}
 
