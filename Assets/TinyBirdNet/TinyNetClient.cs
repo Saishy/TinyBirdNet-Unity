@@ -180,6 +180,10 @@ namespace TinyBirdNet {
 		protected override void OnConnectionCreated(TinyNetConnection nConn) {
 			base.OnConnectionCreated(nConn);
 
+			if (connToHost == nConn) {
+				OnClientFinishedConnecting();
+			}
+
 			TinyNetEmptyMessage msg = new TinyNetEmptyMessage();
 			msg.msgType = TinyNetMsgType.Connect;
 			nConn.Send(msg, DeliveryMethod.ReliableOrdered);
@@ -566,7 +570,7 @@ namespace TinyBirdNet {
 		/// <returns></returns>
 		public virtual bool Ready() {
 			if (!isConnected) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("Ready() called but we are not connected to anything."); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetClient::Ready() called but we are not connected to anything."); }
 				return false;
 			}
 
@@ -574,7 +578,7 @@ namespace TinyBirdNet {
 			//TinyNetConnection conn = _tinyNetConns[0];
 
 			if (connToHost.isReady) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("A connection has already been set as ready. There can only be one."); }
+				//if (TinyNetLogLevel.logError) { TinyLogger.LogError("A connection has already been set as ready. There can only be one."); }
 				return false;
 			}
 
@@ -596,30 +600,16 @@ namespace TinyBirdNet {
 		public virtual void OnClientSceneChanged() {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnClientSceneChanged() called"); }
 
-			// always become ready.
 			Ready();
+		}
 
-			// Saishy: I don't think the client should be the one managing the spawn of player controllers?
+		/// <summary>
+		/// Called when clientManager.isConnected is <c>true</c>, this is another ready check if we only finished connecting after the scene change.
+		/// </summary>
+		public virtual void OnClientFinishedConnecting() {
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetClient::OnClientFinishedConnecting() called"); }
 
-			/*if (!m_AutoCreatePlayer) {
-				return;
-			}
-
-			bool addPlayer = (ClientScene.localPlayers.Count == 0);
-			bool foundPlayer = false;
-			foreach (var playerController in ClientScene.localPlayers) {
-				if (playerController.gameObject != null) {
-					foundPlayer = true;
-					break;
-				}
-			}
-			if (!foundPlayer) {
-				// there are players, but their game objects have all been deleted
-				addPlayer = true;
-			}
-			if (addPlayer) {
-				ClientScene.AddPlayer(0);
-			}*/
+			Ready();
 		}
 
 		//============ Scenes Methods =======================//

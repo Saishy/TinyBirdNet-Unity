@@ -89,6 +89,19 @@ namespace TinyBirdNet {
 		protected NetManager _netManager;
 
 		/// <summary>
+		/// Access to the NetManager.
+		/// <para> Please use this with caution. </para>
+		/// </summary>
+		/// <value>
+		/// The NetManager this scene uses.
+		/// </value>
+		public NetManager NetManager {
+			get {
+				return _netManager;
+			}
+		}
+
+		/// <summary>
 		/// Returns true if socket is listening and update thread is running.
 		/// </summary>
 		public virtual bool isRunning {
