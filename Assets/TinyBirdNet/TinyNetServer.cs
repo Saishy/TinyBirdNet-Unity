@@ -60,7 +60,7 @@ namespace TinyBirdNet {
 
 		/// <inheritdoc />
 		public virtual void TinyNetUpdate() {
-			ServerTick = (ushort)((ServerTick + 1) % TinyNetGameManager.instance.MaxGameSequence);
+			ServerTick = (ushort)((ServerTick + 1) % TinyNetGameManager.instance.MaxFrameSequence);
 
 			if (ServerTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames == 0) {
 				foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {

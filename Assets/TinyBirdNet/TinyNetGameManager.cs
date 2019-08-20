@@ -38,18 +38,32 @@ namespace TinyBirdNet {
 		[Range(1, 120)]
 		public int NetworkEveryXFixedFrames = 2;
 
-		public virtual int MaxGameSequence {
+		/// <summary>
+		/// The biggest amount of frames the server counts to until resetting to 0.
+		/// <para> It must be even. </para>
+		/// </summary>
+		/// <value>
+		/// The maximum frame sequence.
+		/// </value>
+		public virtual int MaxFrameSequence {
 			get {
 				return 512;
 			}
 		}
 
-		public int HalfMaxGameSequence {
+		/// <summary>
+		/// Half the amount of <see cref="MaxFrameSequence"/>.
+		/// </summary>
+		/// <value>
+		/// Half the maximum frame sequence.
+		/// </value>
+		/// <exception cref="Exception">TinyNetGameManager::MaxGameSequence is not an even number.</exception>
+		public int HalfMaxFrameSequence {
 			get {
-				if (MaxGameSequence % 2 != 0) {
+				if (MaxFrameSequence % 2 != 0) {
 					throw new Exception("TinyNetGameManager::MaxGameSequence is not an even number.");
 				}
-				return MaxGameSequence / 2;
+				return MaxFrameSequence / 2;
 			}
 		}
 
@@ -308,7 +322,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <returns>Returns how far between two ticks are, positive means tick A is ahead of B, negative otherwise, zero is the same tick.</returns>
 		public int SeqDiff(int a, int b) {
-			return Diff(a, b, HalfMaxGameSequence);
+			return Diff(a, b, HalfMaxFrameSequence);
 		}
 
 		public int Diff(int a, int b, int halfMax) {

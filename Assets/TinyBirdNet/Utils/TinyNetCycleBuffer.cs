@@ -65,6 +65,10 @@ namespace TinyBirdNet.Utils {
 			_count = 0;
 		}
 
+		public void Clear() {
+			Reset();
+		}
+
 		public void RemoveFromStart(int count) {
 			if (count > _capacity || count > _count) {
 				throw new OverflowException("TinyNetFrameBuffer::RemoveFromStart count is bigger than current array.");
