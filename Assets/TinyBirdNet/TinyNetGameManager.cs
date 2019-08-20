@@ -17,7 +17,7 @@ namespace TinyBirdNet {
 	public class TinyNetGameManager : MonoBehaviour {
 
 		// Different protocols can't connect to each other
-		public const int PROTOCOL_VERSION = 1;
+		public const int PROTOCOL_VERSION = 2;
 
 		/// <summary>
 		/// The singleton instance.

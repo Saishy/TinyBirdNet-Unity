@@ -7,12 +7,13 @@ using UnityEngine;
 
 public class ExamplePawn : TinyNetBehaviour {
 
-	string _playerName;
+	// The name that appears over this pawn
 	[TinyNetSyncVar]
-	public string PlayerName { get { return _playerName; } set { _playerName = value; } }
+	public string PlayerName { get; set; }
 
 	Vector3 _networkPosition;
 
+	// The position and direction from the network
 	[TinyNetSyncVar]
 	float xPos { get { return _networkPosition.x; } set { _networkPosition.x = value; } }
 	[TinyNetSyncVar]
@@ -43,7 +44,7 @@ public class ExamplePawn : TinyNetBehaviour {
 
 	protected byte currentDir = 1;
 
-	protected Vector2 movementInput = Vector2.zero;
+	protected byte movementInput = 0;
 	protected bool bFireInput = false;
 
 	public byte GetDir {
@@ -62,6 +63,7 @@ public class ExamplePawn : TinyNetBehaviour {
 		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartAuthority, OnStartAuthority);
 		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnGiveAuthority, OnGiveAuthority);
 		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStartClient, OnStartClient);
+		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnStateUpdate, OnStateUpdate);
 		NetIdentity.RegisterEventHandler(TinyNetIdentity.TinyNetComponentEvents.OnNetworkDestroy, OnNetworkDestroy);
 	}
 
@@ -104,6 +106,10 @@ public class ExamplePawn : TinyNetBehaviour {
 		playerText.text = PlayerName;
 	}
 
+	public override void OnStateUpdate() {
+		base.OnStateUpdate();
+	}
+
 	public override void OnNetworkDestroy() {
 		base.OnNetworkDestroy();
 
@@ -133,8 +139,7 @@ public class ExamplePawn : TinyNetBehaviour {
 
 	private void FixedUpdate() {
 		if (isServer) {
-			byte dir = movementInput == Vector2.zero ? (byte)0 : VectorToDirection(movementInput);
-			MoveToDir(dir);
+			MoveToDir(movementInput);
 
 			if (bFireInput) {
 				Shoot();
@@ -202,20 +207,22 @@ public class ExamplePawn : TinyNetBehaviour {
 	public void GetMovementInput(Vector2 axis, bool bFire) {
 		bFireInput = bFire;
 
-		movementInput = Vector2.zero;
+		Vector2 movementTemp = Vector2.zero;
 
 		if (axis.x > 0.5f) {
-			movementInput.x = 1f;
+			movementTemp.x = 1f;
 		}
 		if (axis.x < -0.5f) {
-			movementInput.x = -1f;
+			movementTemp.x = -1f;
 		}
 		if (axis.y > 0.5f) {
-			movementInput.y = 1f;
+			movementTemp.y = 1f;
 		}
 		if (axis.y < -0.5f) {
-			movementInput.y = -1f;
+			movementTemp.y = -1f;
 		}
+
+		movementInput = movementTemp == Vector2.zero ? (byte)0 : VectorToDirection(movementTemp);
 	}
 
 	private Quaternion GetQuaternionForDir(byte direction) {

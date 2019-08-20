@@ -14,6 +14,12 @@ class ExampleNetManager : TinyNetGameManager {
 	public override void StartServer() {
 		base.StartServer();
 
+#if DEBUG
+		//serverManager.NetManager.SimulateLatency = true;
+		//serverManager.NetManager.SimulationMaxLatency = 800;
+		//serverManager.NetManager.SimulationMinLatency = 600;
+#endif
+
 		if (serverManager != null && serverManager.isRunning) {
 			ServerChangeScene("MainScene");
 		}

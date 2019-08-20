@@ -572,7 +572,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called after a StateUpdate packet is read on client.
+		/// Called after a StateUpdate packet is read on client. This is not called on a listen server.
 		/// <para> Called on the client after all state updates are applied. This is called for all TinyNetIdentity, even if nothing was changed. </para>
 		/// </summary>
 		public virtual void OnStateUpdate() {

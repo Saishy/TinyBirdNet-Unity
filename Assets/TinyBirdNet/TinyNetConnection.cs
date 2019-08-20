@@ -344,7 +344,10 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="netMsg">The <see cref="TinyNetInputMessage"/>.</param>
 		public void GetPlayerInputMessage(TinyNetMessageReader netMsg) {
-			GetPlayerController(TinyNetInputMessage.PeekAtPlayerControllerId(netMsg)).GetInputMessage(netMsg);
+			TinyNetPlayerController netPlayerController = GetPlayerController(TinyNetInputMessage.PeekAtPlayerControllerId(netMsg));
+			if (netPlayerController != null) {
+				netPlayerController.GetInputMessage(netMsg);
+			}
 		}
 	}
 }
