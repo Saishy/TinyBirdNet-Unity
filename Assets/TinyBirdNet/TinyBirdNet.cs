@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace TinyBirdNet {
 
+	// TinyBirdNet: 2.0.0.a2
+	// LiteNetLib: 0.9.3.2
+
 	/// <summary>
 	/// Handles requests to spawn objects on the client
 	/// </summary>

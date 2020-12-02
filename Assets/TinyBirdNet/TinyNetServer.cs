@@ -29,10 +29,6 @@ namespace TinyBirdNet {
 		/// </summary> 
 		protected NetDataWriter _serializeWriter = new NetDataWriter();
 
-		public ushort ServerTick {
-			get; protected set;
-		}
-
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TinyNetServer"/> class.
 		/// </summary>
@@ -44,7 +40,7 @@ namespace TinyBirdNet {
 		protected override void RegisterMessageHandlers() {
 			base.RegisterMessageHandlers();
 
-			TinyNetGameManager.instance.RegisterMessageHandlersServer();
+			TinyNetGameManager.Instance.RegisterMessageHandlersServer();
 
 			RegisterHandlerSafe(TinyNetMsgType.Connect, OnConnectMessage);
 			RegisterHandlerSafe(TinyNetMsgType.Ready, OnClientReadyMessage);
@@ -59,10 +55,10 @@ namespace TinyBirdNet {
 		}
 
 		/// <inheritdoc />
-		public virtual void TinyNetUpdate() {
-			ServerTick = (ushort)((ServerTick + 1) % TinyNetGameManager.instance.MaxFrameSequence);
+		public override void TinyNetUpdate() {
+			base.TinyNetUpdate();
 
-			if (ServerTick % TinyNetGameManager.instance.NetworkEveryXFixedFrames == 0) {
+			if (CurrentTick % TinyNetGameManager.Instance.NetworkEveryXFixedFrames == 0) {
 				foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
 					tinyNetId.TinyNetUpdate();
 				}
@@ -78,31 +74,38 @@ namespace TinyBirdNet {
 		/// <param name="maxNumberOfPlayers">The maximum number of players.</param>
 		/// <returns></returns>
 		public virtual bool StartServer(int port, int maxNumberOfPlayers) {
-			if (_netManager != null) {
+			if (_netManager != null && _netManager.IsRunning) {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("[" + TYPE + "] StartServer() called multiple times."); }
 				return false;
 			}
 
-			_netManager = new NetManager(this);
-			_netManager.Start(port);
+			if (_netManager == null) {
+				_netManager = new NetManager(this);
+			} else {
+				ClearHandlers();
+			}
+			bool bResult = _netManager.Start(port);
 
-			ConfigureNetManager(true);
+			if (bResult) {
+				ConfigureNetManager(true);
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers); }
+			} else {
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError("[" + TYPE + "] Something went wrong while starting the server."); }
+			}
 
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Started server at port: " + port + " with maxNumberOfPlayers: " + maxNumberOfPlayers); }
-
-			return true;
+			return bResult;
 		}
 
 		/// <inheritdoc />
 		protected override TinyNetConnection CreateTinyNetConnection(NetPeer peer) {
 			TinyNetConnection tinyConn;
 
-			if ( ((string)peer.Tag).Equals(TinyNetGameManager.ApplicationGUIDString) ) {
+			if (((string)peer.Tag).Equals(TinyNetGameManager.ApplicationGUIDString)) {
 				tinyConn = new TinyNetLocalConnectionToClient(peer);
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetServer::CreateTinyNetConnection created new TinyNetLocalConnectionToClient."); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] CreateTinyNetConnection created new TinyNetLocalConnectionToClient."); }
 			} else {
 				tinyConn = new TinyNetConnection(peer);
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("TinyNetServer::CreateTinyNetConnection created new TinyNetConnection."); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] CreateTinyNetConnection created new TinyNetConnection."); }
 			}
 
 			peer.Tag = tinyConn;
@@ -110,24 +113,6 @@ namespace TinyBirdNet {
 			tinyNetConns.Add(tinyConn);
 
 			return tinyConn;
-		}
-
-		//============ TinyNetEvents ========================//
-
-		/// <summary>
-		/// Called when a connection message is received.
-		/// </summary>
-		/// <param name="netMsg">The net message.</param>
-		protected virtual void OnConnectMessage(TinyNetMessageReader netMsg) {
-			if (TinyNetGameManager.instance.isClient && TinyNetClient.instance.connToHost.ConnectId == netMsg.tinyNetConn.ConnectId) {
-				return;
-			}
-
-			if (TinyNetGameManager.networkSceneName != null && TinyNetGameManager.networkSceneName != "") {
-				TinyNetStringMessage msg = new TinyNetStringMessage(TinyNetGameManager.networkSceneName);
-				msg.msgType = TinyNetMsgType.Scene;
-				netMsg.tinyNetConn.Send(msg, DeliveryMethod.ReliableOrdered);
-			}
 		}
 
 		//============ Static Methods =======================//
@@ -194,7 +179,7 @@ namespace TinyBirdNet {
 
 			AddTinyNetIdentityToList(objTinyNetIdentity);
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objTinyNetIdentity.TinyInstanceID + " asset GUID " + objTinyNetIdentity.assetGUID); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObject instance ID " + objTinyNetIdentity.TinyInstanceID + " asset GUID " + objTinyNetIdentity.AssetGUID); }
 
 			// Using ShowObjectToConnection prevents the server from sending spawn messages of objects that are already spawned.
 			for (int i = 0; i < tinyNetConns.Count; i++) {
@@ -214,13 +199,13 @@ namespace TinyBirdNet {
 
 			TinyNetObjectSpawnMessage msg = new TinyNetObjectSpawnMessage();
 			msg.networkID = netIdentity.TinyInstanceID.NetworkID;
-			msg.assetIndex = TinyNetGameManager.instance.GetAssetIdFromAssetGUID(netIdentity.assetGUID);
+			msg.assetIndex = TinyNetGameManager.Instance.GetAssetIdFromAssetGUID(netIdentity.AssetGUID);
 			msg.position = netIdentity.transform.position;
-			msg.frameTick = ServerTick;
+			msg.frameTick = CurrentTick;
 
 			// Include state of TinyNetObjects.
 			s_recycleWriter.Reset();
-			netIdentity.TinySerialize(s_recycleWriter, true);
+			netIdentity.TinySerialize(s_recycleWriter, true, new SerializationMethod(DeliveryMethod.ReliableOrdered, 0));
 
 			if (s_recycleWriter.Length > 0) {
 				msg.initialState = s_recycleWriter.CopyData();
@@ -241,7 +226,7 @@ namespace TinyBirdNet {
 		/// <param name="obj">The object to unspawn.</param>
 		public void UnSpawnObject(GameObject obj) {
 			if (obj == null) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer UnspawnObject is null"); }
+				if (TinyNetLogLevel.logWarn) { TinyLogger.Log("NetworkServer UnspawnObject is null"); }
 				return;
 			}
 
@@ -267,7 +252,7 @@ namespace TinyBirdNet {
 		/// <param name="obj">The object to destroy.</param>
 		public void DestroyObject(GameObject obj) {
 			if (obj == null) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer DestroyObject is null"); }
+				if (TinyNetLogLevel.logWarn) { TinyLogger.Log("NetworkServer DestroyObject is null"); }
 				return;
 			}
 
@@ -330,7 +315,7 @@ namespace TinyBirdNet {
 			msg.networkID = iObj.TinyInstanceID.NetworkID;
 			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.frameTick = ServerTick;
+			msg.frameTick = CurrentTick;
 			msg.parameters = stream.Data;
 
 			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(iObj.TinyInstanceID.NetworkID);
@@ -351,7 +336,7 @@ namespace TinyBirdNet {
 			msg.networkID = iObj.TinyInstanceID.NetworkID;
 			msg.componentID = iObj.TinyInstanceID.ComponentID;
 			msg.rpcMethodIndex = rpcMethodIndex;
-			msg.frameTick = ServerTick;
+			msg.frameTick = CurrentTick;
 			msg.parameters = stream.Data;
 
 			TinyNetIdentity tni = GetTinyNetIdentityByNetworkID(iObj.TinyInstanceID.NetworkID);
@@ -366,38 +351,38 @@ namespace TinyBirdNet {
 		/// Sends the state updates for all observing objects of each connection.
 		/// </summary>
 		public virtual void SendStateUpdatesToAll() {
-			int objectsCount = 0;
+			//int objectsCount = 0;
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 
-				if (tinyNetConns[i].ObservingNetObjects.Count == 0) {
+				/*if (tinyNetConns[i].ObservingNetObjects.Count == 0) {
 					continue;
-				}
+				}*/
 
-				s_recycleWriter.Reset();
+				foreach(SerializationMethod serializationMethod in tinyNetConns[i].ObservingNetObjectsPerSerializationMethod.Keys) {
+					s_recycleWriter.Reset();
 
-				s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
-				s_recycleWriter.Put(ServerTick);
+					s_recycleWriter.Put(TinyNetMsgType.StateUpdate);
+					s_recycleWriter.Put(CurrentTick);
 
-				objectsCount = 0;
+					foreach (TinyNetIdentity tNetId in tinyNetConns[i].ObservingNetObjectsPerSerializationMethod[serializationMethod]) {
+						if (!tNetId.IsDirty) {
+							continue;
+						}
 
-				foreach (TinyNetIdentity tNetId in tinyNetConns[i].ObservingNetObjects) {
-					if (!tNetId.IsDirty) {
-						continue;
+						//objectsCount++;
+
+						s_recycleWriter.Put(tNetId.TinyInstanceID.NetworkID);
+
+						_serializeWriter.Reset();
+						tNetId.TinySerialize(_serializeWriter, false, serializationMethod);
+
+						s_recycleWriter.Put(_serializeWriter.Length);
+						s_recycleWriter.Put(_serializeWriter.Data, 0, _serializeWriter.Length);
 					}
 
-					objectsCount++;
-
-					s_recycleWriter.Put(tNetId.TinyInstanceID.NetworkID);
-
-					_serializeWriter.Reset();
-					tNetId.TinySerialize(_serializeWriter, false);
-
-					s_recycleWriter.Put(_serializeWriter.Length);
-					s_recycleWriter.Put(_serializeWriter.Data, 0, _serializeWriter.Length);
+					tinyNetConns[i].Send(s_recycleWriter, serializationMethod.deliveryMethod, serializationMethod.channel);
 				}
-
-				tinyNetConns[i].Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
 			}
 		}
 
@@ -417,13 +402,37 @@ namespace TinyBirdNet {
 
 		//============ TinyNetMessages Handlers =============//
 
+		/// <summary>
+		/// Called when a connection message is received.
+		/// </summary>
+		/// <param name="netMsg">The net message.</param>
+		protected virtual void OnConnectMessage(TinyNetMessageReader netMsg) {
+			// If we are the server and the connection didn't come from ourselves.
+			if (TinyNetGameManager.Instance.isServer && !(netMsg.tinyNetConn is TinyNetLocalConnectionToClient)) {
+				if (!string.IsNullOrWhiteSpace(TinyNetGameManager.networkSceneName)) {
+					if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] OnConnectMessage sent Scene msgType."); }
+					TinyNetStringMessage msg = new TinyNetStringMessage(TinyNetGameManager.networkSceneName);
+					msg.msgType = TinyNetMsgType.Scene;
+					netMsg.tinyNetConn.Send(msg, DeliveryMethod.ReliableOrdered);
+				}
+			}
+
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] OnConnectMessage"); }
+
+			s_recycleWriter.Reset();
+			s_recycleWriter.Put(TinyNetMsgType.Connect);
+			s_recycleWriter.Put(netMsg.reader.GetUShort());
+			s_recycleWriter.Put(CurrentTick);
+			netMsg.tinyNetConn.Send(s_recycleWriter, DeliveryMethod.ReliableOrdered);
+		}
+
 		// default ready handler.
 		/// <summary>
 		/// Called when we receive a client ready message.
 		/// </summary>
 		/// <param name="netMsg">The net MSG.</param>
 		void OnClientReadyMessage(TinyNetMessageReader netMsg) {
-			if (TinyNetLogLevel.logDev) { TinyLogger.Log("Default handler for ready message from " + netMsg.tinyNetConn); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] OnClientReadyMessage called from " + netMsg.tinyNetConn); }
 
 			SetClientReady(netMsg.tinyNetConn);
 		}
@@ -435,23 +444,23 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="conn">The connection.</param>
 		void SetClientReady(TinyNetConnection conn) {
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SetClientReady for conn:" + conn.ConnectId); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] SetClientReady for conn:" + conn.ConnectId); }
 
-			if (conn.isReady) {
-				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SetClientReady conn " + conn.ConnectId + " already ready"); }
+			if (conn.bReady) {
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] SetClientReady conn " + conn.ConnectId + " already ready"); }
 				return;
 			}
 
 			if (conn.playerControllers.Count == 0) {
-				if (TinyNetLogLevel.logDebug) { TinyLogger.LogWarning("Ready with no player object"); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.LogWarning("[" + TYPE + "] Ready with no player object"); }
 			}
 
-			conn.isReady = true;
+			conn.bReady = true;
 
 			// This is only in case this is a listen server.
 			TinyNetLocalConnectionToClient localConnection = conn as TinyNetLocalConnectionToClient;
 			if (localConnection != null) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("NetworkServer Ready handling TinyNetLocalConnectionToClient"); }
+				if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Ready handling TinyNetLocalConnectionToClient"); }
 
 				// Setup spawned objects for local player
 				// Only handle the local objects for the first player (no need to redo it when doing more local players)
@@ -463,7 +472,7 @@ namespace TinyBirdNet {
 						if (!tinyNetId.isClient) {
 							localConnection.ShowObjectToConnection(tinyNetId);
 
-							if (TinyNetLogLevel.logDev) { TinyLogger.Log("LocalClient.SetSpawnObject calling OnStartClient"); }
+							if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] LocalClient.SetSpawnObject calling OnStartClient"); }
 							tinyNetId.OnStartClient();
 						}
 					}
@@ -473,7 +482,7 @@ namespace TinyBirdNet {
 			}
 
 			// Spawn/update all current server objects
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning " + LocalIdentityObjects.Count + " objects for conn " + conn.ConnectId); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] Spawning " + LocalIdentityObjects.Count + " objects for conn " + conn.ConnectId); }
 
 			TinyNetObjectSpawnFinishedMessage msg = new TinyNetObjectSpawnFinishedMessage();
 			msg.state = 0; //State 0 means we are starting the spawn messages 'spam'.
@@ -482,19 +491,19 @@ namespace TinyBirdNet {
 			foreach (TinyNetIdentity tinyNetId in LocalIdentityObjects.Values) {
 
 				if (tinyNetId == null) {
-					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("Invalid object found in server local object list (null TinyNetIdentity)."); }
+					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("[" + TYPE + "] Invalid object found in server local object list (null TinyNetIdentity)."); }
 					continue;
 				}
 				if (!tinyNetId.gameObject.activeSelf) {
 					continue;
 				}
 
-				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Sending spawn message for current server objects name='" + tinyNetId.gameObject.name + "' netId=" + tinyNetId.TinyInstanceID); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] Sending spawn message for current server objects name='" + tinyNetId.gameObject.name + "' netId=" + tinyNetId.TinyInstanceID); }
 
 				conn.ShowObjectToConnection(tinyNetId);
 			}
 
-			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("Spawning objects for conn " + conn.ConnectId + " finished"); }
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] Spawning objects for conn " + conn.ConnectId + " finished"); }
 
 			msg.state = 1; //We finished spamming the spawn messages!
 			SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
@@ -518,10 +527,10 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="conn">The connection.</param>
 		void SetClientNotReady(TinyNetConnection conn) {
-			if (conn.isReady) {
-				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("PlayerNotReady " + conn); }
+			if (conn.bReady) {
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] SetClientNotReady " + conn); }
 
-				conn.isReady = false;
+				conn.bReady = false;
 
 				TinyNetNotReadyMessage msg = new TinyNetNotReadyMessage();
 				SendMessageByChannelToTargetConnection(msg, DeliveryMethod.ReliableOrdered, conn);
@@ -536,7 +545,7 @@ namespace TinyBirdNet {
 		/// <param name="tinyNetId">The tiny net identifier.</param>
 		/// <param name="conn">The connection.</param>
 		public void ShowForConnection(TinyNetIdentity tinyNetId, TinyNetConnection conn) {
-			if (conn.isReady) {
+			if (conn.bReady) {
 				instance.SendSpawnMessage(tinyNetId, conn);
 			}
 		}
@@ -569,10 +578,10 @@ namespace TinyBirdNet {
 					if (tni.gameObject.hideFlags == HideFlags.NotEditable || tni.gameObject.hideFlags == HideFlags.HideAndDontSave)
 						continue;
 
-					if (tni.sceneID == 0)
+					if (tni.SceneID == 0)
 						continue;
 
-					if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObjects sceneID:" + tni.sceneID + " name:" + tni.gameObject.name); }
+					if (TinyNetLogLevel.logDebug) { TinyLogger.Log("SpawnObjects sceneID:" + tni.SceneID + " name:" + tni.gameObject.name); }
 
 					tni.gameObject.SetActive(true);
 				}
@@ -582,7 +591,7 @@ namespace TinyBirdNet {
 						continue;
 
 					// If not a scene object
-					if (tni2.sceneID == 0)
+					if (tni2.SceneID == 0)
 						continue;
 
 					// What does this mean???
@@ -619,7 +628,7 @@ namespace TinyBirdNet {
 		/// Called when a <see cref="TinyNetInputMessage"/> is received.
 		/// </summary>
 		/// <param name="netMsg">The net message.</param>
-		void OnPlayerInputMessage(TinyNetMessageReader netMsg) {
+		protected virtual void OnPlayerInputMessage(TinyNetMessageReader netMsg) {
 			netMsg.tinyNetConn.GetPlayerInputMessage(netMsg);
 		}
 
@@ -627,22 +636,18 @@ namespace TinyBirdNet {
 		/// Called when a <see cref="TinyNetRequestAddPlayerMessage"/> is received.
 		/// </summary>
 		/// <param name="netMsg">The net message.</param>
-		void OnRequestAddPlayerMessage(TinyNetMessageReader netMsg) {
+		protected virtual void OnRequestAddPlayerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetRequestAddPlayerMessage);
-
-			if (s_TinyNetRequestAddPlayerMessage.amountOfPlayers <= 0) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("OnRequestAddPlayerMessage() called with amountOfPlayers <= 0"); }
-				return;
-			}
 
 			// Check here if you should create another player controller for that connection.
 
-			int playerId = TinyNetGameManager.instance.NextPlayerID;//netMsg.tinyNetConn.playerControllers.Count;
+			byte playerId = TinyNetGameManager.Instance.NextPlayerID;//netMsg.tinyNetConn.playerControllers.Count;
 
-			AddPlayerControllerToConnection(netMsg.tinyNetConn, playerId);
+			AddPlayerControllerToConnection(netMsg.tinyNetConn, playerId, s_TinyNetRequestAddPlayerMessage.msgData);
 
 			// Tell the origin client to add them too!
-			s_TinyNetAddPlayerMessage.playerControllerId = (short)playerId;
+			s_TinyNetAddPlayerMessage.msgData = s_TinyNetRequestAddPlayerMessage.msgData;
+			s_TinyNetAddPlayerMessage.playerControllerId = playerId;
 			SendMessageByChannelToTargetConnection(s_TinyNetAddPlayerMessage, DeliveryMethod.ReliableOrdered, netMsg.tinyNetConn);
 		}
 
@@ -650,7 +655,7 @@ namespace TinyBirdNet {
 		/// Called when a <see cref="TinyNetRequestRemovePlayerMessage"/> is received.
 		/// </summary>
 		/// <param name="netMsg">The net message.</param>
-		void OnRequestRemovePlayerMessage(TinyNetMessageReader netMsg) {
+		protected virtual void OnRequestRemovePlayerMessage(TinyNetMessageReader netMsg) {
 			netMsg.ReadMessage(s_TinyNetRequestRemovePlayerMessage);
 
 			if (s_TinyNetRequestRemovePlayerMessage.playerControllerId <= 0) {
@@ -670,11 +675,11 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="playerControllerId">The player controller identifier.</param>
 		/// <returns></returns>
-		public TinyNetPlayerController GetPlayerController(int playerControllerId) {
+		public TinyNetPlayerController GetPlayerController(byte playerControllerId) {
 			TinyNetPlayerController tPC = null;
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
-				if (tinyNetConns[i].GetPlayerController((short)playerControllerId, out tPC)) {
+				if (tinyNetConns[i].GetPlayerController(playerControllerId, out tPC)) {
 					break;
 				}
 			}
@@ -688,8 +693,8 @@ namespace TinyBirdNet {
 		/// <param name="connId">The connection identifier.</param>
 		/// <param name="playerControllerId">The player controller identifier.</param>
 		/// <returns></returns>
-		public TinyNetPlayerController GetPlayerControllerFromConnection(long connId, int playerControllerId) {
-			return GetTinyNetConnection(connId).GetPlayerController((short)playerControllerId);
+		public TinyNetPlayerController GetPlayerControllerFromConnection(long connId, byte playerControllerId) {
+			return GetTinyNetConnection(connId).GetPlayerController(playerControllerId);
 		}
 
 		//============ INetEventListener methods ============//
@@ -698,9 +703,9 @@ namespace TinyBirdNet {
 		public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
 			base.OnNetworkReceiveUnconnected(remoteEndPoint, reader, messageType);
 
-			if (messageType == UnconnectedMessageType.DiscoveryRequest) {
+			if (messageType == UnconnectedMessageType.Broadcast) {
 				if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received discovery request. Send discovery response"); }
-				_netManager.SendDiscoveryResponse(new byte[] { 1 }, remoteEndPoint);
+				_netManager.SendUnconnectedMessage(new byte[] { 1 }, remoteEndPoint);
 			}
 		}
 
@@ -711,8 +716,9 @@ namespace TinyBirdNet {
 
 			string key = dataReader.GetString();
 
-			if (!TinyNetGameManager.instance.CheckConnectionKey(key)) {
+			if (!TinyNetGameManager.Instance.CheckConnectionKey(key)) {
 				request.Reject();
+				return;
 			}
 
 			NetPeer peer = request.Accept();

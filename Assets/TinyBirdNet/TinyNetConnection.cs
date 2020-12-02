@@ -6,6 +6,42 @@ using System.Collections.Generic;
 
 namespace TinyBirdNet {
 
+#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
+#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
+#pragma warning disable CA1815 // Override equals and operator equals on value types
+    public struct SerializationMethod : IEqualityComparer<SerializationMethod> {
+#pragma warning restore CA1815 // Override equals and operator equals on value types
+#pragma warning restore CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
+#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
+        public DeliveryMethod deliveryMethod;
+		public byte channel;
+
+        public SerializationMethod(DeliveryMethod deliveryMethod, byte channel) {
+            this.deliveryMethod = deliveryMethod;
+            this.channel = channel;
+        }
+
+		public static bool operator ==(SerializationMethod x, SerializationMethod y) {
+			return x.deliveryMethod == y.deliveryMethod && x.channel == y.channel;
+		}
+
+		public static bool operator !=(SerializationMethod x, SerializationMethod y) {
+			return x.deliveryMethod != y.deliveryMethod || x.channel != y.channel;
+		}
+
+		public bool Equals(SerializationMethod sMethod) {
+			return sMethod.deliveryMethod == this.deliveryMethod && sMethod.channel == this.channel;
+        }
+
+        public bool Equals(SerializationMethod x, SerializationMethod y) {
+			return x.channel == y.channel && x.deliveryMethod == y.deliveryMethod;
+        }
+
+        public int GetHashCode(SerializationMethod obj) {
+			return (int)deliveryMethod * 256 + channel;
+        }
+    }
+
 	/// <summary>
 	/// A container for a connection to a <see cref="NetPeer"/>.
 	/// </summary>
@@ -51,6 +87,8 @@ namespace TinyBirdNet {
 		///<summary>A hash containing the NetworkIDs of objects owned by this connection.</summary>
 		protected HashSet<int> _ownedObjectsId;
 
+		public Dictionary<SerializationMethod, HashSet<TinyNetIdentity>> ObservingNetObjectsPerSerializationMethod { get; protected set; } = new Dictionary<SerializationMethod, HashSet<TinyNetIdentity>>();
+
 		public HashSet<TinyNetIdentity> ObservingNetObjects {
 			get {
 				return _observingNetObjects;
@@ -60,7 +98,12 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// If this instance is ready
 		/// </summary>
-		public bool isReady;
+		public bool bReady;
+
+		/// <summary>
+		/// Application defined object containing custom data
+		/// </summary>
+		public object AdditionalData;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TinyNetConnection"/> class.
@@ -90,7 +133,7 @@ namespace TinyBirdNet {
 		/// A <see cref="System.String" /> that represents this instance.
 		/// </returns>
 		public override string ToString() {
-			return string.Format("{0} EndPoint: {1} ConnectId: {2} isReady: {3}", GetType(), netPeer.EndPoint, ConnectId, isReady);
+			return string.Format("{0} EndPoint: {1} ConnectId: {2} isReady: {3}", GetType(), netPeer.EndPoint, ConnectId, bReady);
 		}
 
 		//============ Network Data =========================//
@@ -100,8 +143,8 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="data">The data.</param>
 		/// <param name="options">The options.</param>
-		public virtual void Send(byte[] data, DeliveryMethod options) {
-			_peer.Send(data, options);
+		public virtual void Send(byte[] data, DeliveryMethod options, byte channelNumber = 0) {
+			_peer.Send(data, channelNumber, options);
 		}
 
 		/// <summary>
@@ -109,8 +152,8 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="dataWriter">The data writer.</param>
 		/// <param name="options">The options.</param>
-		public virtual void Send(NetDataWriter dataWriter, DeliveryMethod options) {
-			_peer.Send(dataWriter, options);
+		public virtual void Send(NetDataWriter dataWriter, DeliveryMethod options, byte channelNumber = 0) {
+			_peer.Send(dataWriter, channelNumber, options);
 		}
 
 		/// <summary>
@@ -118,13 +161,13 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="msg">The message.</param>
 		/// <param name="options">The options.</param>
-		public virtual void Send(ITinyNetMessage msg, DeliveryMethod options) {
+		public virtual void Send(ITinyNetMessage msg, DeliveryMethod options, byte channelNumber = 0) {
 			recycleWriter.Reset();
 
 			recycleWriter.Put(msg.msgType);
 			msg.Serialize(recycleWriter);
 
-			Send(recycleWriter, options);
+			Send(recycleWriter, options, channelNumber);
 		}
 
 		//============ Network Identity =====================//
@@ -146,13 +189,21 @@ namespace TinyBirdNet {
 		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object to spawn.</param>
 		public void ShowObjectToConnection(TinyNetIdentity tni) {
 			if (_observingNetObjects.Contains(tni)) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("ShowObjectToConnection() called but object with networkdID: " + tni.TinyInstanceID + " is already shown"); }
+				if (TinyNetLogLevel.logWarn) { TinyLogger.Log("ShowObjectToConnection() called but object with networkdID: " + tni.TinyInstanceID + " is already shown"); }
 				return;
 			}
 
 			_observingNetObjects.Add(tni);
 
-			// spawn tiny for this conn
+			foreach (SerializationMethod serializationMethod in tni.ComponentsSerializationMethods) {
+				if (!ObservingNetObjectsPerSerializationMethod.ContainsKey(serializationMethod)) {
+					ObservingNetObjectsPerSerializationMethod.Add(serializationMethod, new HashSet<TinyNetIdentity>());
+                }
+
+				ObservingNetObjectsPerSerializationMethod[serializationMethod].Add(tni);
+            }
+
+			// spawn tni for this conn
 			TinyNetServer.instance.ShowForConnection(tni, this);
 		}
 
@@ -162,11 +213,19 @@ namespace TinyBirdNet {
 		/// <param name="tni">The <see cref="TinyNetIdentity"/> of the object to hide.</param>
 		public void HideObjectToConnection(TinyNetIdentity tni, bool isDestroyed) {
 			if (!_observingNetObjects.Contains(tni)) {
-				if (TinyNetLogLevel.logDev) { TinyLogger.LogWarning("RemoveFromVisList() called but object with networkdID: " + tni.TinyInstanceID + " is not shown"); }
+				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("HideObjectToConnection() called but object with networkdID: " + tni.TinyInstanceID + " is not shown"); }
 				return;
 			}
 
 			_observingNetObjects.Remove(tni);
+
+			foreach (SerializationMethod serializationMethod in tni.ComponentsSerializationMethods) {
+				if (!ObservingNetObjectsPerSerializationMethod.ContainsKey(serializationMethod)) {
+					if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("HideObjectToConnection() tried to remove TinyNetIdentity from dictionary but it's not there."); }
+				}
+
+				ObservingNetObjectsPerSerializationMethod[serializationMethod].Remove(tni);
+			}
 
 			if (!isDestroyed) {
 				// hide tni for this conn
@@ -237,7 +296,7 @@ namespace TinyBirdNet {
 		/// Removes the player controller from this connection.
 		/// </summary>
 		/// <param name="playerControllerId">The player controller identifier.</param>
-		public void RemovePlayerController(short playerControllerId) {
+		public void RemovePlayerController(byte playerControllerId) {
 			/*int count = _playerControllers.Count;
 
 			while (count >= 0) {
@@ -247,13 +306,15 @@ namespace TinyBirdNet {
 				}
 				count -= 1;
 			}*/
-			TinyNetPlayerController tPC;
-			if (GetPlayerController(playerControllerId, out tPC)) {
-				_playerControllers.Remove(tPC);
+			RemovePlayerController(GetPlayerController(playerControllerId));
+		}
+
+		public void RemovePlayerController(TinyNetPlayerController player) {
+			if (_playerControllers.Remove(player)) {
 				return;
 			}
 
-			if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemovePlayerController for playerControllerId " + playerControllerId + " not found"); }
+			if (TinyNetLogLevel.logError) { TinyLogger.LogError("RemovePlayerController for playerControllerId " + player.playerControllerId + " not found"); }
 		}
 
 		/// <summary>
@@ -261,7 +322,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="playerControllerId">The player controller identifier.</param>
 		/// <returns></returns>
-		public TinyNetPlayerController GetPlayerController(short playerControllerId) {
+		public TinyNetPlayerController GetPlayerController(byte playerControllerId) {
 			for (int i = 0; i < _playerControllers.Count; i++) {
 				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
 					return _playerControllers[i];
@@ -279,7 +340,7 @@ namespace TinyBirdNet {
 		/// <returns>
 		///	  <c>true</c> if a player controller was found; otherwise, <c>false</c>.
 		/// </returns>
-		public bool GetPlayerController(short playerControllerId, out TinyNetPlayerController playerController) {
+		public bool GetPlayerController(byte playerControllerId, out TinyNetPlayerController playerController) {
 			playerController = null;
 
 			/*if (_playerControllers.Count > playerControllerId) {
@@ -312,7 +373,7 @@ namespace TinyBirdNet {
 		/// <typeparam name="T">A type derived from <see cref="TinyNetPlayerController"/>.</typeparam>
 		/// <param name="playerControllerId">The player controller identifier.</param>
 		/// <returns>A player controller cast to T.</returns>
-		public T GetPlayerController<T>(short playerControllerId) where T : TinyNetPlayerController {
+		public T GetPlayerController<T>(byte playerControllerId) where T : TinyNetPlayerController {
 			for (int i = 0; i < _playerControllers.Count; i++) {
 				if (_playerControllers[i].IsValid && _playerControllers[i].playerControllerId == playerControllerId) {
 					return (T)_playerControllers[i];

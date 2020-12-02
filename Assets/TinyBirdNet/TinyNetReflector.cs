@@ -22,7 +22,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
-		public static List<Type> GetAllClassesAndChildsOf<T>() where T : class {
+		private static List<Type> GetAllClassesAndChildsOf<T>() where T : class {
 			List<Type> types = new List<Type>();
 
 			foreach (Type type in
@@ -38,6 +38,10 @@ namespace TinyBirdNet {
 		/// Does the reflection process.
 		/// </summary>
 		public static void GetAllSyncVarProps() {
+			if (TinyNetStateSyncer.bAlreadySet) {
+				return;
+			}
+
 			List<Type> types = GetAllClassesAndChildsOf<TinyNetBehaviour>();
 
 			foreach (Type type in types) {
@@ -99,6 +103,8 @@ namespace TinyBirdNet {
 					}
 				}
 			}
+
+			TinyNetStateSyncer.bAlreadySet = true;
 		}
 	}
 }

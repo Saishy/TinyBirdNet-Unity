@@ -1,40 +1,34 @@
 using System;
+using System.Net;
 using LiteNetLib.Utils;
 
 namespace LiteNetLib
 {
     internal enum PacketProperty : byte
     {
-        Unreliable,             //0
-        ReliableUnordered,      //1
-        Sequenced,              //2
-        ReliableOrdered,        //3
-        AckReliable,            //4
-        AckReliableOrdered,     //5
-        Ping,                   //6 *
-        Pong,                   //7 *
-        ConnectRequest,         //8 *
-        ConnectAccept,          //9 *
-        Disconnect,             //10 *
-        UnconnectedMessage,     //11
-        NatIntroductionRequest, //12 *
-        NatIntroduction,        //13 *
-        NatPunchMessage,        //14 *
-        MtuCheck,               //15 *
-        MtuOk,                  //16 *
-        DiscoveryRequest,       //17 *
-        DiscoveryResponse,      //18 *
-        Merged,                 //19
-        ShutdownOk,             //20 *   
-        ReliableSequenced,      //21
-        AckReliableSequenced,   //22
-        PeerNotFound,           //23
-        InvalidProtocol         //24
+        Unreliable,
+        Channeled,
+        Ack,
+        Ping,
+        Pong,
+        ConnectRequest,
+        ConnectAccept,
+        Disconnect,
+        UnconnectedMessage,
+        MtuCheck,
+        MtuOk,
+        Broadcast,
+        Merged,
+        ShutdownOk,
+        PeerNotFound,
+        InvalidProtocol,
+        NatMessage,
+        Empty,
     }
 
     internal sealed class NetPacket
     {
-        private const int LastProperty = 24;
+        private static readonly int LastProperty = Enum.GetValues(typeof(PacketProperty)).Length;
         //Header
         public PacketProperty Property
         {
@@ -64,27 +58,36 @@ namespace LiteNetLib
             RawData[0] |= 0x80; //set first bit
         }
 
+        public byte ChannelId
+        {
+            get { return RawData[3]; }
+            set { RawData[3] = value; }
+        }
+
         public ushort FragmentId
         {
-            get { return BitConverter.ToUInt16(RawData, 3); }
-            set { FastBitConverter.GetBytes(RawData, 3, value); }
+            get { return BitConverter.ToUInt16(RawData, 4); }
+            set { FastBitConverter.GetBytes(RawData, 4, value); }
         }
 
         public ushort FragmentPart
         {
-            get { return BitConverter.ToUInt16(RawData, 5); }
-            set { FastBitConverter.GetBytes(RawData, 5, value); }
+            get { return BitConverter.ToUInt16(RawData, 6); }
+            set { FastBitConverter.GetBytes(RawData, 6, value); }
         }
 
         public ushort FragmentsTotal
         {
-            get { return BitConverter.ToUInt16(RawData, 7); }
-            set { FastBitConverter.GetBytes(RawData, 7, value); }
+            get { return BitConverter.ToUInt16(RawData, 8); }
+            set { FastBitConverter.GetBytes(RawData, 8, value); }
         }
 
         //Data
         public byte[] RawData;
         public int Size;
+
+        //Delivery
+        public object UserData;
 
         public NetPacket(int size)
         {
@@ -100,31 +103,15 @@ namespace LiteNetLib
             Size = size;
         }
 
-        public void Realloc(int toSize, bool clear)
-        {
-            Size = toSize;
-            if (RawData.Length < toSize)
-            {
-                RawData = new byte[toSize];
-                return;
-            }
-            if (clear)  //clear not reallocated
-                Array.Clear(RawData, 0, toSize);
-        }
-
         public static int GetHeaderSize(PacketProperty property)
         {
             switch (property)
             {
-                case PacketProperty.ReliableOrdered:
-                case PacketProperty.ReliableUnordered:
-                case PacketProperty.ReliableSequenced:
-                case PacketProperty.Sequenced:
-                case PacketProperty.AckReliable:
-                case PacketProperty.AckReliableOrdered:
-                case PacketProperty.AckReliableSequenced:
+                case PacketProperty.Channeled:
+                case PacketProperty.Ack:
+                    return NetConstants.ChanneledHeaderSize;
                 case PacketProperty.Ping:
-                    return NetConstants.SequencedHeaderSize;
+                    return NetConstants.HeaderSize + 2;
                 case PacketProperty.ConnectRequest:
                     return NetConnectRequestPacket.HeaderSize;
                 case PacketProperty.ConnectAccept:
@@ -132,7 +119,7 @@ namespace LiteNetLib
                 case PacketProperty.Disconnect:
                     return NetConstants.HeaderSize + 8;
                 case PacketProperty.Pong:
-                    return NetConstants.SequencedHeaderSize + 8;
+                    return NetConstants.HeaderSize + 10;
                 default:
                     return NetConstants.HeaderSize;
             }
@@ -143,7 +130,7 @@ namespace LiteNetLib
             return GetHeaderSize(Property);
         }
 
-        //Packet contstructor from byte array
+        //Packet constructor from byte array
         public bool FromBytes(byte[] data, int start, int packetSize)
         {
             //Reading property
@@ -152,28 +139,31 @@ namespace LiteNetLib
             int headerSize = GetHeaderSize((PacketProperty) property);
 
             if (property > LastProperty || packetSize < headerSize ||
-               (fragmented && packetSize < headerSize + NetConstants.FragmentHeaderSize))
+               (fragmented && packetSize < headerSize + NetConstants.FragmentHeaderSize) ||
+               data.Length < start + packetSize)
             {
                 return false;
             }
 
             Buffer.BlockCopy(data, start, RawData, 0, packetSize);
-            Size = packetSize;
+            Size = (ushort)packetSize;
             return true;
         }
     }
 
     internal sealed class NetConnectRequestPacket
     {
-        public const int HeaderSize = 13;
+        public const int HeaderSize = 14;
         public readonly long ConnectionTime;
         public readonly byte ConnectionNumber;
+        public readonly byte[] TargetAddress;
         public readonly NetDataReader Data;
 
-        private NetConnectRequestPacket(long connectionId, byte connectionNumber, NetDataReader data)
+        private NetConnectRequestPacket(long connectionTime, byte connectionNumber, byte[] targetAddress, NetDataReader data)
         {
-            ConnectionTime = connectionId;
+            ConnectionTime = connectionTime;
             ConnectionNumber = connectionNumber;
+            TargetAddress = targetAddress;
             Data = data;
         }
 
@@ -189,24 +179,34 @@ namespace LiteNetLib
 
             //Getting new id for peer
             long connectionId = BitConverter.ToInt64(packet.RawData, 5);
+            
+            //Get target address
+            int addrSize = packet.RawData[13];
+            if (addrSize != 16 && addrSize != 28)
+                return null;
+            byte[] addressBytes = new byte[addrSize];
+            Buffer.BlockCopy(packet.RawData, 14, addressBytes, 0, addrSize);
 
             // Read data and create request
             var reader = new NetDataReader(null, 0, 0);
-            if (packet.Size > HeaderSize)
-                reader.SetSource(packet.RawData, HeaderSize, packet.Size);
+            if (packet.Size > HeaderSize+addrSize)
+                reader.SetSource(packet.RawData, HeaderSize + addrSize, packet.Size);
 
-            return new NetConnectRequestPacket(connectionId, packet.ConnectionNumber, reader);
+            return new NetConnectRequestPacket(connectionId, packet.ConnectionNumber, addressBytes, reader);
         }
 
-        public static NetPacket Make(NetDataWriter connectData, long connectId)
+        public static NetPacket Make(NetDataWriter connectData, SocketAddress addressBytes, long connectId)
         {
             //Make initial packet
-            var packet = new NetPacket(PacketProperty.ConnectRequest, connectData.Length);
+            var packet = new NetPacket(PacketProperty.ConnectRequest, connectData.Length+addressBytes.Size);
 
             //Add data
             FastBitConverter.GetBytes(packet.RawData, 1, NetConstants.ProtocolId);
             FastBitConverter.GetBytes(packet.RawData, 5, connectId);
-            Buffer.BlockCopy(connectData.Data, 0, packet.RawData, HeaderSize, connectData.Length);
+            packet.RawData[13] = (byte)addressBytes.Size;
+            for (int i = 0; i < addressBytes.Size; i++)
+                packet.RawData[14+i] = addressBytes[i];
+            Buffer.BlockCopy(connectData.Data, 0, packet.RawData, 14+addressBytes.Size, connectData.Length);
             return packet;
         }
     }

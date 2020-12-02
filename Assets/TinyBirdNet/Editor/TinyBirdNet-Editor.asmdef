@@ -1,0 +1,17 @@
+{
+    "name": "TinyBirdNet-Editor",
+    "references": [
+        "GUID:2104aed735ab2364097bcc527e789d9c"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

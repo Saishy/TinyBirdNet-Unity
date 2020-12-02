@@ -33,7 +33,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	public ExamplePlayerController() : base() {
 	}
 
-	public ExamplePlayerController(short playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
+	public ExamplePlayerController(byte playerControllerId, TinyNetConnection nConn) : base(playerControllerId, nConn) {
 		inputMessageBuffer.playerControllerId = playerControllerId;
 	}
 
@@ -45,13 +45,13 @@ public class ExamplePlayerController : TinyNetPlayerController {
 	}*/
 
 	public override void OnDisconnect() {
-		if (TinyNetGameManager.instance.isServer && pawn != null) {
+		if (TinyNetGameManager.Instance.isServer && pawn != null) {
 			TinyNetServer.instance.DestroyObject(pawn.gameObject);
 		}
 	}
 
 	public override void Update() {
-		if (!TinyNetGameManager.instance.isClient) {
+		if (!HasAuthority) {
 			return;
 		}
 		Vector2 axis = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
@@ -67,7 +67,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 
 		inputMessageBuffer.keys = 0;
 
-		inputMessageBuffer.serverTick = TinyNetGameManager.instance.GetFrameTick();
+		inputMessageBuffer.serverTick = TinyNetGameManager.Instance.GetFrameTick();
 
 		if (bFire) {
 			inputMessageBuffer.keys |= MovementKeys.Fire;
@@ -133,7 +133,7 @@ public class ExamplePlayerController : TinyNetPlayerController {
 
 	protected void AskForPawn() {
 		if (!bAskedForPawn && timeForSpawn <= Time.time) {
-			((ExampleNetManager)TinyNetGameManager.instance).PawnRequest(this);
+			((ExampleNetManager)TinyNetGameManager.Instance).PawnRequest(this);
 
 			bAskedForPawn = true;
 		}
@@ -152,14 +152,12 @@ public class ExamplePlayerController : TinyNetPlayerController {
 }
 
 public class ExampleInputMessage : TinyNetInputMessage {
-	public ushort id;
 	public ExamplePlayerController.MovementKeys keys;
 	public ushort serverTick;
 
 	public override void Deserialize(NetDataReader reader) {
 		base.Deserialize(reader);
 
-		id = reader.GetUShort();
 		keys = (ExamplePlayerController.MovementKeys)reader.GetByte();
 		serverTick = reader.GetUShort();
 	}
@@ -167,7 +165,6 @@ public class ExampleInputMessage : TinyNetInputMessage {
 	public override void Serialize(NetDataWriter writer) {
 		base.Serialize(writer);
 
-		writer.Put(id);
 		writer.Put((byte)keys);
 		writer.Put(serverTick);
 	}

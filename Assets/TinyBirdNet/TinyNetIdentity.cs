@@ -5,6 +5,7 @@ using TinyBirdUtils;
 using LiteNetLib.Utils;
 using TinyBirdNet.Messaging;
 using TinyBirdNet.Utils;
+using LiteNetLib;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -34,38 +35,59 @@ namespace TinyBirdNet {
 		public TinyNetworkID TinyInstanceID { get; protected set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating whether this <see cref="TinyNetIdentity"/> is initialized.
+		/// <para>Useful for things that might check before this has been replicated.</para>
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if initialized; otherwise, <c>false</c>.
+		/// </value>
+		public bool Initialized { get; protected set; }
+
+		/// <summary>
 		/// If true, this object will not be spawned on clients.
 		/// </summary>
-		[SerializeField] bool _serverOnly;
+		[SerializeField] bool _serverOnly = false;
 		/// <summary>
 		/// If true, this object is owned by a client.
 		/// <para> This does not have any effect for TinyBirdNet, use it for your game. </para>
 		/// </summary>
-		[SerializeField] bool _localPlayerAuthority;
+		[SerializeField] bool _localPlayerAuthority = false;
 		/// <summary>
 		/// The asset unique identifier
 		/// </summary>
-		[SerializeField] string _assetGUID;
+		[SerializeField] string _assetGUID = null;
 		/// <summary>
 		/// If this object is a scene object, this will be set.
 		/// </summary>
-		[SerializeField] int _sceneID;
+		[SerializeField] int _sceneID = 0;
 
 		/// <summary>
 		/// The list of <see cref="ITinyNetComponent"/> components in this <see cref="GameObject"/>.
 		/// <para> You can use up to 64 components, the header size is automatically updated. </para>
 		/// <para> For now, changing the number of components at runtime is not supported. </para>
 		/// </summary>
-		ITinyNetComponent[] _tinyNetComponents;
+		public ITinyNetComponent[] TinyNetComponents { get; protected set; }
+
+		/// <summary>
+		/// A cache of the DeliveryMethod and Channel used for each component
+		/// </summary>
+		public SerializationMethod[] ComponentsSerializationMethods { get; protected set; }
 
 		/// <summary>
 		/// The dirty flag is a BitArray that represents if a ITinyNetComponent is dirty.
 		/// </summary>
 		private BitArray _dirtyFlag;
 
+		/// <summary>
+		/// This is used in TinySerialize to only send the relevant components
+		/// </summary>
+		private BitArray _serializationMethodDirtyFlag;
+
 		public bool IsDirty {
 			get; protected set;
 		}
+
+		public float PriorityAccumulator { get; protected set; }
 
 		public enum TinyNetComponentEvents {
 			OnNetworkCreate,
@@ -91,10 +113,20 @@ namespace TinyBirdNet {
 		/// </summary>
 		protected TinyNetConnection _connectionToOwnerClient;
 
-		/// <inheritdoc />
-		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
-		/// <inheritdoc />
-		public bool isClient { get { return TinyNetGameManager.instance.isClient; } }
+        /// <summary>
+        /// Gets a value indicating whether this application is server.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is server; otherwise, <c>false</c>.
+        /// </value>
+        public bool isServer { get { return TinyNetGameManager.Instance != null && TinyNetGameManager.Instance.isServer; } }
+        /// <summary>
+        /// Gets a value indicating whether this application is client.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is client; otherwise, <c>false</c>.
+        /// </value>
+        public bool isClient { get { return TinyNetGameManager.Instance != null && TinyNetGameManager.Instance.isClient; } }
 
 		/// <summary>
 		/// Gets a value indicating whether this object only exists on the server.
@@ -128,7 +160,7 @@ namespace TinyBirdNet {
 		/// <value>
 		/// The object scene identifier.
 		/// </value>
-		public int sceneID { get { return _sceneID; } }
+		public int SceneID { get { return _sceneID; } }
 
 		/// <summary>
 		/// Gets the asset unique identifier.
@@ -136,7 +168,7 @@ namespace TinyBirdNet {
 		/// <value>
 		/// The asset unique identifier.
 		/// </value>
-		public string assetGUID {
+		public string AssetGUID {
 			get {
 #if UNITY_EDITOR
 				// This is important because sometimes OnValidate does not run (like when adding view to prefab with no child links)
@@ -183,22 +215,36 @@ namespace TinyBirdNet {
 		/// Caches the <see cref="ITinyNetComponent"/>
 		/// </summary>
 		void CacheTinyNetObjects() {
-			if (_tinyNetComponents == null) {
-				_tinyNetComponents = GetComponentsInChildren<ITinyNetComponent>(true);
+			if (TinyNetComponents == null) {
+				TinyNetComponents = GetComponentsInChildren<ITinyNetComponent>(true);
 			}
 
-			if (_tinyNetComponents.Length <= 8) {
+			ComponentsSerializationMethods = new SerializationMethod[TinyNetComponents.Length];
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
+				ITinyNetDeliveryChannelComponent deliveryChannelComponent = TinyNetComponents[i] as ITinyNetDeliveryChannelComponent;
+
+				if (deliveryChannelComponent != null) {
+					ComponentsSerializationMethods[i] = deliveryChannelComponent.serializationMethod;
+					//ComponentsSerializationMethods[i] = new SerializationMethod(deliveryChannelComponent.DeliveryMethod, deliveryChannelComponent.Channel);
+				} else {
+					ComponentsSerializationMethods[i] = new SerializationMethod(DeliveryMethod.ReliableOrdered, 0);
+				}
+            }
+
+			if (TinyNetComponents.Length <= 8) {
 				_dirtyFlag = new BitArray(8);
-			} else if (_tinyNetComponents.Length <= 16) {
+			} else if (TinyNetComponents.Length <= 16) {
 				_dirtyFlag = new BitArray(16);
-			} else if (_tinyNetComponents.Length <= 32) {
+			} else if (TinyNetComponents.Length <= 32) {
 				_dirtyFlag = new BitArray(32);
-			} else if (_tinyNetComponents.Length <= 64) {
+			} else if (TinyNetComponents.Length <= 64) {
 				_dirtyFlag = new BitArray(64);
 			} else {
 				if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetIdentity::CacheTinyNetObjects amount of ITinyNetComponents is bigger than 64."); }
 				return;
 			}
+
+			_serializationMethodDirtyFlag = new BitArray(_dirtyFlag.Length);
 		}
 
 		/*// Just some dirtyflag testing
@@ -227,11 +273,11 @@ namespace TinyBirdNet {
 		}*/
 
 		public ITinyNetComponent GetComponentById(byte localId) {
-			if (localId < 0 || localId >= _tinyNetComponents.Length) {
+			if (localId < 0 || localId >= TinyNetComponents.Length) {
 				return null;
 			}
 
-			return _tinyNetComponents[localId];
+			return TinyNetComponents[localId];
 		}
 
 		public void RegisterEventHandler(TinyNetComponentEvents eventType, System.Action handler) {
@@ -260,62 +306,85 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// [Server Only] Called every server update, after all FixedUpdates.
+		/// [Server Only] Called every server update (only before sending state updates), after all FixedUpdates.
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
 		/// </summary>
 		public void TinyNetUpdate() {
 			IsDirty = false;
 
-			for (int i = 0; i < _tinyNetComponents.Length; i++) {
-				_tinyNetComponents[i].TinyNetUpdate();
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
+				TinyNetComponents[i].TinyNetUpdate();
 
-				_dirtyFlag[i] = _tinyNetComponents[i].IsDirty;
+				_dirtyFlag[i] = TinyNetComponents[i].IsDirty;
 				if (_dirtyFlag[i] == true) {
 					IsDirty = true;
 				}
 			}
+
+			PriorityAccumulator += GetImmediatePriorityOfComponents();
 		}
+
+		protected float GetImmediatePriorityOfComponents() {
+			float result = 0;
+
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
+				result += TinyNetComponents[i].ImmediatePriority;
+            }
+
+			return result;
+        }
 
 		/// <summary>
 		/// Called on the server to serialize all <see cref="ITinyNetComponent"/> attached to this prefab.
 		/// </summary>
 		/// <param name="writer"></param>
-		public void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
-			if (firstStateUpdate) {
-				for (int i = 0; i < _tinyNetComponents.Length; i++) {
+		public void TinySerialize(NetDataWriter writer, bool firstTimeUpdate, SerializationMethod serializationMethod) {
+			PriorityAccumulator = 0;
+
+			if (firstTimeUpdate) {
+				for (int i = 0; i < TinyNetComponents.Length; i++) {
 					// We are getting the length of how much this obj wrote.
 					_recycleWriter.Reset();
 
-					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
+					TinyNetComponents[i].TinySerialize(_recycleWriter, firstTimeUpdate);
 					// TODO: Compact this
 					writer.Put(_recycleWriter.Length);
 					writer.Put(_recycleWriter.Data, 0, _recycleWriter.Length);
 				}
 
+				PriorityAccumulator = GetImmediatePriorityOfComponents();
 				return;
 			}
 
-			switch (_dirtyFlag.Length) {
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
+				if (ComponentsSerializationMethods[i] == serializationMethod && _dirtyFlag[i]) {
+					_serializationMethodDirtyFlag[i] = true;
+                } else {
+					_serializationMethodDirtyFlag[i] = false;
+                }
+			}
+
+			switch (_serializationMethodDirtyFlag.Length) {
 				case 8:
-					writer.Put((byte)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+					writer.Put((byte)TinyBitArrayUtil.BitArrayToU64(_serializationMethodDirtyFlag));
 					break;
 				case 16:
-					writer.Put((ushort)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+					writer.Put((ushort)TinyBitArrayUtil.BitArrayToU64(_serializationMethodDirtyFlag));
 					break;
 				case 32:
-					writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+					writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_serializationMethodDirtyFlag));
 					break;
 				case 64:
-					writer.Put((ulong)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
+					writer.Put((ulong)TinyBitArrayUtil.BitArrayToU64(_serializationMethodDirtyFlag));
 					break;
 			}
 
-			for (int i = 0; i < _tinyNetComponents.Length; i++) {
-				if (_dirtyFlag[i] == true) {
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
+				if (_serializationMethodDirtyFlag[i] == true) {
 					// We are getting the length of how much this obj wrote.
 					_recycleWriter.Reset();
 
-					_tinyNetComponents[i].TinySerialize(_recycleWriter, firstStateUpdate);
+					TinyNetComponents[i].TinySerialize(_recycleWriter, firstTimeUpdate);
 					//Debug.Log("[Serialize] Size: " + _recycleWriter.Length + ", DirtyFlag: " + TinyBitArrayUtil.Display(_recycleWriter.Data[0]));
 					// TODO: Compact this
 					writer.Put(_recycleWriter.Length);
@@ -329,22 +398,22 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="reader">The reader.</param>
 		/// <param name="bInitialState">if set to <c>true</c> [b initial state].</param>
-		public virtual void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate) {
-			if (firstStateUpdate && _tinyNetComponents == null) {
-				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("TinyNetIdentity::TinyDeserialize called with firstStateUpdate true, but _tinyNetComponents is null."); }
+		public virtual void TinyDeserialize(TinyNetStateReader reader, bool fullDataUpdate) {
+			if (fullDataUpdate && TinyNetComponents == null) {
+				if (TinyNetLogLevel.logWarn) { TinyLogger.LogWarning("TinyNetIdentity::TinyDeserialize called with fullDataUpdate true, but _tinyNetComponents is null."); }
 				CacheTinyNetObjects();
 			}
 
-			if (firstStateUpdate) {
-				for (int i = 0; i < _tinyNetComponents.Length; i++) {
-					_tinyNetComponents[i].ReceiveNetworkID(new TinyNetworkID(TinyInstanceID.NetworkID, (byte)(i + 1)));
+			if (fullDataUpdate) {
+				for (int i = 0; i < TinyNetComponents.Length; i++) {
+					TinyNetComponents[i].ReceiveNetworkID(new TinyNetworkID(TinyInstanceID.NetworkID, (byte)(i + 1)));
 
 					_recycleReader.Clear();
 					int rSize = reader.GetInt();
 					_recycleReader.SetSource(reader.RawData, reader.Position, rSize);
 
 					_recycleReader.SetFrameTick(reader.FrameTick);
-					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
+					TinyNetComponents[i].TinyDeserialize(_recycleReader, fullDataUpdate);
 					// We jump the reader position to the amount of data we read.
 					reader.SkipBytes(rSize);
 				}
@@ -367,7 +436,7 @@ namespace TinyBirdNet {
 					break;
 			}
 
-			for (int i = 0; i < _tinyNetComponents.Length; i++) {
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
 				if (_dirtyFlag[i] == true) {
 					_recycleReader.Clear();
 					int rSize = reader.GetInt();
@@ -375,7 +444,7 @@ namespace TinyBirdNet {
 
 					_recycleReader.SetFrameTick(reader.FrameTick);
 					//Debug.Log("[Deserialize] Size: " + rSize + ", DirtyFlag: " + TinyBitArrayUtil.Display(_recycleReader.PeekByte()));
-					_tinyNetComponents[i].TinyDeserialize(_recycleReader, firstStateUpdate);
+					TinyNetComponents[i].TinyDeserialize(_recycleReader, fullDataUpdate);
 					// We jump the reader position to the amount of data we read.
 					reader.SkipBytes(rSize);
 				}
@@ -404,10 +473,17 @@ namespace TinyBirdNet {
 		///   <c>true</c> if this instance is a prefab; otherwise, <c>false</c>.
 		/// </returns>
 		bool IsPrefab() {
+#if UNITY_2018_3_OR_NEWER
+			PrefabAssetType prefabType = PrefabUtility.GetPrefabAssetType(gameObject);
+			if (prefabType == PrefabAssetType.Regular || prefabType == PrefabAssetType.Variant)
+				return true;
+			return false;
+#else
 			PrefabType prefabType = PrefabUtility.GetPrefabType(gameObject);
 			if (prefabType == PrefabType.Prefab)
 				return true;
 			return false;
+#endif
 		}
 
 		/// <summary>
@@ -448,11 +524,11 @@ namespace TinyBirdNet {
 			}
 		}
 #endif
-		/// <summary>
-		/// Sets the asset unique identifier during play.
-		/// </summary>
-		/// <param name="newAssetGUID">The new asset unique identifier.</param>
-		public void SetDynamicAssetGUID(string newAssetGUID) {
+			/// <summary>
+			/// Sets the asset unique identifier during play.
+			/// </summary>
+			/// <param name="newAssetGUID">The new asset unique identifier.</param>
+			public void SetDynamicAssetGUID(string newAssetGUID) {
 			if (_assetGUID == null || _assetGUID == string.Empty || /*!IsValidAssetGUI(_assetGUID) || */_assetGUID.Equals(newAssetGUID)) {
 				_assetGUID = newAssetGUID;
 			} else {
@@ -504,16 +580,17 @@ namespace TinyBirdNet {
 		/// <param name="allowAlreadySetId">If the object already have a NetworkId, it was probably recycled.</param>
 		public void OnStartServer(bool allowAlreadySetId) {
 			if (_localPlayerAuthority) {
-				// local player on server has NO authority
+				// only clients can have local player authority
+				// if it's a listen server, the OnStartAuthority will be called later when it is given anyway
 				HasAuthority = false;
 			} else {
-				// enemy on server has authority
+				// if no client has authorithy, then server has it
 				HasAuthority = true;
 			}
 
 			// If the instance/net ID is invalid here then this is an object instantiated from a prefab and the server should assign a valid ID
 			if (TinyInstanceID == null) {
-				TinyInstanceID = TinyNetGameManager.instance.NextNetworkID;
+				TinyInstanceID = TinyNetGameManager.Instance.NextNetworkID;
 			} else {
 				if (allowAlreadySetId) {
 					//allowed
@@ -524,9 +601,11 @@ namespace TinyBirdNet {
 			}
 
 			// If anything goes wrong, blame this person: https://forum.unity.com/threads/getcomponentsinchildren.4582/#post-33983
-			for (int i = 0; i < _tinyNetComponents.Length; i++) {
-				_tinyNetComponents[i].ReceiveNetworkID(new TinyNetworkID(TinyInstanceID.NetworkID, (byte)(i + 1)));
+			for (int i = 0; i < TinyNetComponents.Length; i++) {
+				TinyNetComponents[i].ReceiveNetworkID(new TinyNetworkID(TinyInstanceID.NetworkID, (byte)(i + 1)));
 			}
+
+			Initialized = true;
 
 			{ // Calling OnStartServer on those who registered
 				LinkedList<System.Action> handlers;
@@ -547,7 +626,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called when an object is spawned on the client.
+		/// Called when an object is spawned on the client. (Listen servers also call this)
 		/// <para> Called on the client when the object is spawned. Called after variables are synced. (Order: 2) </para>
 		/// </summary>
 		public void OnStartClient() {
@@ -556,6 +635,8 @@ namespace TinyBirdNet {
 			} else {
 				bStartClientTwiceTest = true;
 			}
+
+			Initialized = true;
 
 			{ // Calling OnStartClient on those who registered
 				LinkedList<System.Action> handlers;
@@ -587,7 +668,8 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// Called on Server or Client when receiving Authority
+		/// Called on Server or Client when receiving Authority.
+		/// <para>This is not called on server when it spawns if _localPlayerAuthority is true.</para>
 		/// </summary>
 		public virtual void OnStartAuthority() {
 			LinkedList<System.Action> handlers;
@@ -769,10 +851,6 @@ namespace TinyBirdNet {
 			msg.authority = true;
 			TinyNetServer.instance.SendMessageByChannelToTargetConnection(msg, LiteNetLib.DeliveryMethod.ReliableOrdered, conn);
 
-			//Saishy: Still don't have an authority callback
-			/*if (clientAuthorityCallback != null) {
-				clientAuthorityCallback(conn, this, true);
-			}*/
 			return true;
 		}
 	}

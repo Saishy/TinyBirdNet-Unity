@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace TinyBirdNet {
 
@@ -10,6 +11,8 @@ namespace TinyBirdNet {
 	/// <seealso cref="UnityEditor.Editor" />
 	[CustomEditor(typeof(TinyNetGameManager), true)]
 	public class TinyNetGameManagerEditor : Editor {
+
+		protected virtual bool HasCustomInspector { get { return false; } }
 
 		static GUIContent targetFPSButton = new GUIContent("Change Physics FPS to 60", "This will change your fixed timestep to 0.01666667. If you don't know what you are doing, click here!");
 		static GUIContent connectKeyLabel = new GUIContent("Connect Key:", "Insert here a unique key per version of your game, if the key mismatches the player will be denied connection.");
@@ -67,6 +70,35 @@ namespace TinyBirdNet {
 
 			EditorGUILayout.PropertyField(_currentLogFilter, logFilterLabel);
 			//netGameManager.currentLogFilter = (LogFilter)EditorGUILayout.EnumPopup("LogFilter:", netGameManager.currentLogFilter);
+
+			if (netGameManager.ShowDebugStats) {
+				if (GUILayout.Button("Hide Stats Overlay")) {
+					netGameManager.ShowDebugStats = false;
+				}
+			} else {
+				if (GUILayout.Button("Show Stats Overlay")) {
+					netGameManager.ShowDebugStats = true;
+				}
+			}
+
+			EditorGUILayout.Space();
+			//EditorGUILayout.LabelField("Child fields");
+
+			FieldInfo[] childFields = target.GetType().GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+			if (!HasCustomInspector) {
+				foreach (FieldInfo field in childFields) {
+					//if(field.IsNotSerialized || field.IsStatic)
+					//{
+					//    continue;
+					//}
+
+					if (field.IsPublic || field.GetCustomAttribute(typeof(SerializeField)) != null) {
+
+						EditorGUILayout.PropertyField(serializedObject.FindProperty(field.Name));
+					}
+				}
+			}
 
 			serializedObject.ApplyModifiedProperties();
 		}

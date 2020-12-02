@@ -1,4 +1,5 @@
-﻿using LiteNetLib.Utils;
+﻿using LiteNetLib;
+using LiteNetLib.Utils;
 using TinyBirdNet.Utils;
 
 namespace TinyBirdNet {
@@ -18,21 +19,26 @@ namespace TinyBirdNet {
 		bool IsDirty { get; }
 
 		/// <summary>
-		/// Serializates the data.
+		/// This is added to the PriorityAccumulator every frame, the N objects with the highest priorities are sent through the network, then it reset to default.
 		/// </summary>
-		/// <param name="writer">The writer.</param>
-		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
-		void TinySerialize(NetDataWriter writer, bool firstStateUpdate);
-		
-		/// <summary>
-		/// Deserializations the data received.
-		/// </summary>
-		/// <param name="reader">The reader.</param>
-		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
-		void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate);
+		float ImmediatePriority { get; }
 
 		/// <summary>
-		/// [Server Only] Called every server update, after all FixedUpdates.
+		/// Serializates the data to send.
+		/// </summary>
+		/// <param name="writer">The writer.</param>
+		/// <param name="firstTimeUpdate">if set to <c>true</c> this is the first time this object has been serialized to a connection.</param>
+		void TinySerialize(NetDataWriter writer, bool firstTimeUpdate);
+		
+		/// <summary>
+		/// Deserializates the data received.
+		/// </summary>
+		/// <param name="reader">The reader.</param>
+		/// <param name="fullDataUpdate">if set to <c>true</c> should contain every data possible.</param>
+		void TinyDeserialize(TinyNetStateReader reader, bool fullDataUpdate);
+
+		/// <summary>
+		/// [Server Only] Called every server network tick that a state update is gonna be sent, after all FixedUpdates and before sending state updates.
 		/// </summary>
 		void TinyNetUpdate();
 	}

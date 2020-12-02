@@ -1,34 +1,34 @@
-namespace LiteNetLib
+﻿namespace LiteNetLib
 {
     /// <summary>
     /// Sending method type
     /// </summary>
-    public enum DeliveryMethod
+    public enum DeliveryMethod : byte
     {
         /// <summary>
-        /// Unreliable. Packets can be dropped, duplicated or arrive without order
+        /// Unreliable. Packets can be dropped, can be duplicated, can arrive without order.
         /// </summary>
-        Unreliable,
+        Unreliable = 4,
 
         /// <summary>
-        /// Reliable. All packets will be sent and received, but without order
+        /// Reliable. Packets won't be dropped, won't be duplicated, can arrive without order.
         /// </summary>
-        ReliableUnordered,
+        ReliableUnordered = 0,
 
         /// <summary>
-        /// Unreliable. Packets can be dropped, but never duplicated and arrive in order
+        /// Unreliable. Packets can be dropped, won't be duplicated, will arrive in order.
         /// </summary>
-        Sequenced,
+        Sequenced = 1,
 
         /// <summary>
-        /// Reliable and ordered. All packets will be sent and received in order
+        /// Reliable and ordered. Packets won't be dropped, won't be duplicated, will arrive in order.
         /// </summary>
-        ReliableOrdered,
+        ReliableOrdered = 2,
 
         /// <summary>
-        /// Reliable only last packet
+        /// Reliable only last packet. Packets can be dropped (except the last one), won't be duplicated, will arrive in order.
         /// </summary>
-        ReliableSequenced
+        ReliableSequenced = 3
     }
 
     /// <summary>
@@ -42,13 +42,14 @@ namespace LiteNetLib
         public const int SocketTTL = 255;
 
         public const int HeaderSize = 1;
-        public const int SequencedHeaderSize = 3;
+        public const int ChanneledHeaderSize = 4;
         public const int FragmentHeaderSize = 6;
+        public const int FragmentedHeaderTotalSize = ChanneledHeaderSize + FragmentHeaderSize;
         public const ushort MaxSequence = 32768;
         public const ushort HalfMaxSequence = MaxSequence / 2;
 
         //protocol
-        internal const int ProtocolId = 7;
+        internal const int ProtocolId = 11;
         internal const int MaxUdpHeaderSize = 68;
 
         internal static readonly int[] PossibleMtu =

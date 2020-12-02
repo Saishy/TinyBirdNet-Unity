@@ -13,6 +13,8 @@ namespace TinyBirdNet {
 	/// </summary>
 	public abstract class TinyNetStateSyncer {
 
+		public static bool bAlreadySet = false;
+
 		protected static Dictionary<Type, List<PropertyInfo>> syncVarProps = new Dictionary<Type, List<PropertyInfo>>();
 		protected static Dictionary<Type, List<RPCMethodInfo>> rpcMethods = new Dictionary<Type, List<RPCMethodInfo>>(); //Maybe we have to change this
 

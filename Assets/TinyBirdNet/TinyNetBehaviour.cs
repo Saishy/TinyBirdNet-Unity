@@ -46,6 +46,10 @@ namespace TinyBirdNet {
 		private string[] propertiesName;
 		private Type[] propertiesTypes;
 
+		public float defaultNetPriority;
+
+		public float ImmediatePriority { get => defaultNetPriority; }
+
 		/// <summary>
 		/// Gets or sets a value indicating whether this instance is dirty.
 		/// </summary>
@@ -70,14 +74,14 @@ namespace TinyBirdNet {
 		/// <value>
 		///   <c>true</c> if this instance is server; otherwise, <c>false</c>.
 		/// </value>
-		public bool isServer { get { return TinyNetGameManager.instance.isServer; } }
+		public bool isServer { get { return TinyNetGameManager.Instance.isServer; } }
 		/// <summary>
 		/// Gets a value indicating whether this instance is client.
 		/// </summary>
 		/// <value>
 		///   <c>true</c> if this instance is client; otherwise, <c>false</c>.
 		/// </value>
-		public bool isClient { get { return TinyNetGameManager.instance.isClient; } }
+		public bool isClient { get { return TinyNetGameManager.Instance.isClient; } }
 		
 
 		public bool hasAuthority { get { return NetIdentity.HasAuthority; } }
@@ -256,13 +260,10 @@ namespace TinyBirdNet {
 			return false;
 		}
 
-		/// <summary>
-		/// Serializates the data.
-		/// </summary>
-		/// <param name="writer">The writer.</param>
-		/// <param name="firstStateUpdate">if set to <c>true</c> it's the first state update.</param>
-		public virtual void TinySerialize(NetDataWriter writer, bool firstStateUpdate) {
-			if (!firstStateUpdate) {
+		public virtual void TinySerialize(NetDataWriter writer, bool firstTimeUpdate) {
+			if (!firstTimeUpdate) {
+				// It's not our first update, so include the dirtyFlag.
+
 				//writer.Put((uint)TinyBitArrayUtil.BitArrayToU64(_dirtyFlag));
 				switch (_dirtyFlag.Length) {
 					case 0:
@@ -292,7 +293,8 @@ namespace TinyBirdNet {
 			int maxSyncVar = propertiesName.Length;
 
 			for (int i = 0; i < maxSyncVar; i++) {
-				if (!firstStateUpdate && _dirtyFlag[i] == false) {
+				// If it's our first update, never skip a property.
+				if (!firstTimeUpdate && _dirtyFlag[i] == false) {
 					continue;
 				}
 
@@ -327,8 +329,8 @@ namespace TinyBirdNet {
 		}
 
 		/// <inheritdoc />
-		public virtual void TinyDeserialize(TinyNetStateReader reader, bool firstStateUpdate) {
-			if (!firstStateUpdate) {
+		public virtual void TinyDeserialize(TinyNetStateReader reader, bool fullDataUpdate) {
+			if (!fullDataUpdate) {
 				//uint dFlag = reader.GetUInt();
 				//TinyBitArrayUtil.U64ToBitArray(dFlag, _dirtyFlag);
 				switch (_dirtyFlag.Length) {
@@ -357,7 +359,7 @@ namespace TinyBirdNet {
 			int maxSyncVar = propertiesName.Length;
 
 			for (int i = 0; i < maxSyncVar; i++) {
-				if (!firstStateUpdate && _dirtyFlag[i] == false) {
+				if (!fullDataUpdate && _dirtyFlag[i] == false) {
 					continue;
 				}
 
@@ -473,7 +475,7 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
-		/// [Server Only] Called every server update, after all FixedUpdates.
+		/// <inheritdoc/>
 		/// <para> It is used to check if it is time to send the current state to clients. </para>
 		/// </summary>
 		public virtual void TinyNetUpdate() {

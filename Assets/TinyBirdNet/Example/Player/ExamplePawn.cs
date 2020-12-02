@@ -22,7 +22,7 @@ public class ExamplePawn : TinyNetBehaviour {
 	byte netDir { get; set; }
 
 	[TinyNetSyncVar]
-	public short ownerPlayerControllerId { get; set; }
+	public byte ownerPlayerControllerId { get; set; }
 
 	public GameObject bulletPrefab;
 

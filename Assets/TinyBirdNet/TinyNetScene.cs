@@ -1,11 +1,9 @@
 ﻿using UnityEngine;
-using System.Collections;
 using LiteNetLib;
 using System.Collections.Generic;
 using LiteNetLib.Utils;
 using TinyBirdUtils;
 using TinyBirdNet.Messaging;
-using System;
 using System.Net;
 using System.Net.Sockets;
 
@@ -15,12 +13,14 @@ namespace TinyBirdNet {
 	/// Represents a Scene, which is all data required to reproduce the game state.
 	/// </summary>
 	/// <seealso cref="LiteNetLib.INetEventListener" />
-	public abstract class TinyNetScene : System.Object, INetEventListener, INetLogger {
+	public abstract class TinyNetScene : INetEventListener, INetLogger {
 
 		/// <summary>
 		/// Sugar for generating debug logs.
 		/// </summary>
 		public virtual string TYPE { get { return "Abstract"; } }
+
+		public EventBasedNetListener NetListenerEvents { get; protected set; } = new EventBasedNetListener();
 
 		//protected static Dictionary<string, GameObject> guidToPrefab;
 
@@ -102,6 +102,17 @@ namespace TinyBirdNet {
 		}
 
 		/// <summary>
+		/// Gets or sets the current tick.
+		/// <para>(This is not syncronized between client and server)</para>
+		/// </summary>
+		/// <value>
+		/// The current tick.
+		/// </value>
+		public ushort CurrentTick {
+			get; protected set;
+		}
+
+		/// <summary>
 		/// Returns true if socket is listening and update thread is running.
 		/// </summary>
 		public virtual bool isRunning {
@@ -131,7 +142,7 @@ namespace TinyBirdNet {
 		/// Initializes a new instance of the <see cref="TinyNetScene"/> class.
 		/// </summary>
 		public TinyNetScene() {
-			_tinyNetConns = new List<TinyNetConnection>(TinyNetGameManager.instance.MaxNumberOfPlayers);
+			_tinyNetConns = new List<TinyNetConnection>(TinyNetGameManager.Instance.MaxNumberOfPlayers);
 
 			/*if (guidToPrefab == null) {
 				guidToPrefab = TinyNetGameManager.instance.GetDictionaryOfAssetGUIDToPrefabs();
@@ -145,6 +156,10 @@ namespace TinyBirdNet {
 			RegisterHandlerSafe(TinyNetMsgType.Rpc, OnRPCMessage);
 			//RegisterHandlerSafe(MsgType.SyncEvent, OnSyncEventMessage);
 			//RegisterHandlerSafe(MsgType.AnimationTrigger, NetworkAnimator.OnAnimationTriggerClientMessage);
+		}
+
+		public virtual void TinyNetUpdate() {
+			CurrentTick = (ushort)((CurrentTick + 1) % TinyNetGameManager.Instance.MaxFrameSequence);
 		}
 
 		/// <summary>
@@ -165,10 +180,18 @@ namespace TinyBirdNet {
 			_tinyMessageHandlers.RegisterHandlerSafe(msgType, handler);
 		}
 
+		public void UnRegisterHandler(ushort msgType) {
+			_tinyMessageHandlers.UnregisterHandler(msgType);
+		}
+
+		public void ClearHandlers() {
+			_tinyMessageHandlers.ClearMessageHandlers();
+		}
+
 		/// <summary>
-		/// It is called from TinyNetGameManager Update(), handles PollEvents().
+		/// It is called from TinyNetGameManager, handles PollEvents().
 		/// </summary>
-		public virtual void InternalUpdate() {
+		public virtual void PollEvents() {
 			if (_netManager != null) {
 				_netManager.PollEvents();
 			}
@@ -186,6 +209,7 @@ namespace TinyBirdNet {
 		public virtual void ClearNetManager() {
 			if (_netManager != null) {
 				_netManager.Stop();
+				_tinyNetConns.Clear();
 			}
 		}
 
@@ -202,8 +226,8 @@ namespace TinyBirdNet {
 
 			_netManager.AutoRecycle = true;
 
-			_netManager.PingInterval = TinyNetGameManager.instance.PingInterval;
-			_netManager.NatPunchEnabled = TinyNetGameManager.instance.bNatPunchEnabled;
+			_netManager.PingInterval = TinyNetGameManager.Instance.PingInterval;
+			_netManager.NatPunchEnabled = TinyNetGameManager.Instance.bNatPunchEnabled;
 
 			RegisterMessageHandlers();
 		}
@@ -238,7 +262,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="connId">The connection identifier.</param>
 		/// <returns></returns>
-		protected TinyNetConnection GetTinyNetConnection(long connId) {
+		public TinyNetConnection GetTinyNetConnection(long connId) {
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				if (tinyNetConns[i].ConnectId == connId) {
 					return tinyNetConns[i];
@@ -253,7 +277,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="peer">The peer.</param>
 		/// <returns></returns>
-		protected TinyNetConnection GetTinyNetConnection(NetPeer peer) {
+		public TinyNetConnection GetTinyNetConnection(NetPeer peer) {
 			for (int i = 0; i < tinyNetConns.Count; i++) {
 				if (tinyNetConns[i].netPeer == peer) {
 					return tinyNetConns[i];
@@ -385,13 +409,13 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
-		public virtual void SendMessageByChannelToHost(ITinyNetMessage msg, DeliveryMethod sendOptions) {
+		public virtual void SendMessageByChannelToHost(ITinyNetMessage msg, DeliveryMethod sendOptions, byte channel = 0) {
 			s_recycleWriter.Reset();
 
 			s_recycleWriter.Put(msg.msgType);
 			msg.Serialize(s_recycleWriter);
 
-			connToHost.Send(s_recycleWriter, sendOptions);
+			connToHost.Send(s_recycleWriter, sendOptions, channel);
 		}
 
 		/// <summary>
@@ -400,13 +424,13 @@ namespace TinyBirdNet {
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
 		/// <param name="tinyNetConn">The connection.</param>
-		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, DeliveryMethod sendOptions, TinyNetConnection tinyNetConn) {
+		public virtual void SendMessageByChannelToTargetConnection(ITinyNetMessage msg, DeliveryMethod sendOptions, TinyNetConnection tinyNetConn, byte channel = 0) {
 			s_recycleWriter.Reset();
 
 			s_recycleWriter.Put(msg.msgType);
 			msg.Serialize(s_recycleWriter);
 
-			tinyNetConn.Send(s_recycleWriter, sendOptions);
+			tinyNetConn.Send(s_recycleWriter, sendOptions, channel);
 		}
 
 		/// <summary>
@@ -414,14 +438,14 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
-		public virtual void SendMessageByChannelToAllConnections(ITinyNetMessage msg, DeliveryMethod sendOptions) {
+		public virtual void SendMessageByChannelToAllConnections(ITinyNetMessage msg, DeliveryMethod sendOptions, byte channel = 0) {
 			s_recycleWriter.Reset();
 
 			s_recycleWriter.Put(msg.msgType);
 			msg.Serialize(s_recycleWriter);
 			
 			for (int i = 0; i < tinyNetConns.Count; i++) {
-				tinyNetConns[i].Send(s_recycleWriter, sendOptions);
+				tinyNetConns[i].Send(s_recycleWriter, sendOptions, channel);
 			}
 		}
 
@@ -430,17 +454,17 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
-		public virtual void SendMessageByChannelToAllReadyConnections(ITinyNetMessage msg, DeliveryMethod sendOptions) {
+		public virtual void SendMessageByChannelToAllReadyConnections(ITinyNetMessage msg, DeliveryMethod sendOptions, byte channel = 0) {
 			s_recycleWriter.Reset();
 
 			s_recycleWriter.Put(msg.msgType);
 			msg.Serialize(s_recycleWriter);
 
 			for (int i = 0; i < tinyNetConns.Count; i++) {
-				if (!tinyNetConns[i].isReady) {
+				if (!tinyNetConns[i].bReady) {
 					return;
 				}
-				tinyNetConns[i].Send(s_recycleWriter, sendOptions);
+				tinyNetConns[i].Send(s_recycleWriter, sendOptions, channel);
 			}
 		}
 
@@ -450,7 +474,7 @@ namespace TinyBirdNet {
 		/// <param name="tni">The <see cref="TinyNetIdentity"/>.</param>
 		/// <param name="msg">The message.</param>
 		/// <param name="sendOptions">The send options.</param>
-		public virtual void SendMessageByChannelToAllObserversOf(TinyNetIdentity tni, ITinyNetMessage msg, DeliveryMethod sendOptions) {
+		public virtual void SendMessageByChannelToAllObserversOf(TinyNetIdentity tni, ITinyNetMessage msg, DeliveryMethod sendOptions, byte channel = 0) {
 			s_recycleWriter.Reset();
 
 			s_recycleWriter.Put(msg.msgType);
@@ -460,7 +484,7 @@ namespace TinyBirdNet {
 				if (!tinyNetConns[i].IsObservingNetIdentity(tni)) {
 					return;
 				}
-				tinyNetConns[i].Send(s_recycleWriter, sendOptions);
+				tinyNetConns[i].Send(s_recycleWriter, sendOptions, channel);
 			}
 		}
 
@@ -471,7 +495,11 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="request">Request information (EndPoint, internal id, additional data)</param>
 		public virtual void OnConnectionRequest(ConnectionRequest request) {
-			
+			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Connection requested from: " + request.RemoteEndPoint); }
+
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnConnectionRequest(request);
+			}
 		}
 
 		/// <summary>
@@ -480,6 +508,10 @@ namespace TinyBirdNet {
 		/// <param name="peer">Connected peer object</param>
 		public virtual void OnPeerConnected(NetPeer peer) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] We have new peer: " + peer.EndPoint + " connectId: " + peer.Id); }
+
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnPeerConnected(peer);
+			}
 
 			TinyNetConnection nConn = CreateTinyNetConnection(peer);
 
@@ -494,8 +526,12 @@ namespace TinyBirdNet {
 		public virtual void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] disconnected from: " + peer.EndPoint + " because " + disconnectInfo.Reason); }
 
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnPeerDisconnected(peer, disconnectInfo);
+			}
+
 			TinyNetConnection nConn = GetTinyNetConnection(peer);
-			OnDisconnect(nConn);
+			OnDisconnect(nConn, disconnectInfo);
 
 			RemoveTinyNetConnection(nConn);
 		}
@@ -507,6 +543,10 @@ namespace TinyBirdNet {
 		/// <param name="socketErrorCode">Socket error code</param>
 		public virtual void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode) {
 			if (TinyNetLogLevel.logError) { TinyLogger.LogError("[" + TYPE + "] error " + socketErrorCode + " at: " + endPoint); }
+
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnNetworkError(endPoint, socketErrorCode);
+			}
 		}
 
 		/// <summary>
@@ -516,8 +556,12 @@ namespace TinyBirdNet {
 		/// <param name="reader">DataReader containing all received data</param>
 		/// <param name="deliveryMethod">Type of received packet</param>
 		public virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod) {
-			string msgType = TinyNetMsgType.MsgTypeToString(ReadMessageAndCallDelegate(reader, peer, deliveryMethod));
+			string msgType = TinyNetMsgType.MsgTypeToString(reader.PeekUShort());
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] received message " + msgType + " from: " + peer.EndPoint + " channel: " + deliveryMethod.ToString()); }
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnNetworkReceive(peer, reader, deliveryMethod);
+			}
+			ReadMessageAndCallDelegate(reader, peer, deliveryMethod);
 		}
 
 		/// <summary>
@@ -528,6 +572,9 @@ namespace TinyBirdNet {
 		/// <param name="messageType">Message type (simple, discovery request or responce)</param>
 		public virtual void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Received Unconnected message from: " + remoteEndPoint); }
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnNetworkReceiveUnconnected(remoteEndPoint, reader, messageType);
+			}
 		}
 
 		/// <summary>
@@ -537,6 +584,9 @@ namespace TinyBirdNet {
 		/// <param name="latency">latency value in milliseconds</param>
 		public virtual void OnNetworkLatencyUpdate(NetPeer peer, int latency) {
 			if (TinyNetLogLevel.logDev) { TinyLogger.Log("[" + TYPE + "] Latency update for peer: " + peer.EndPoint + " " + latency + "ms"); }
+			if (NetListenerEvents != null) {
+				((INetEventListener)NetListenerEvents).OnNetworkLatencyUpdate(peer, latency);
+			}
 		}
 
 		/*public virtual void OnNetworkReceive(NetPeer peer, NetDataReader reader) {
@@ -575,8 +625,11 @@ namespace TinyBirdNet {
 		/// Called after a peer has been disconnected but before the TinyNetConnection has been removed from the list.
 		/// </summary>
 		/// <param name="nConn">The connection that disconnected.</param>
-		protected virtual void OnDisconnect(TinyNetConnection nConn) {
-			nConn.OnDisconnect();
+		protected virtual void OnDisconnect(TinyNetConnection nConn, DisconnectInfo disconnectInfo) {
+			// If it's null, the connection was never accepted in the first place.
+			if (nConn != null) {
+				nConn.OnDisconnect();
+			}
 		}
 
 		//============ TinyNetMessages Handlers =============//
@@ -607,18 +660,18 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="conn">The connection.</param>
 		/// <param name="playerControllerId">The player controller identifier.</param>
-		protected virtual void AddPlayerControllerToConnection(TinyNetConnection conn, int playerControllerId) {
+		protected virtual void AddPlayerControllerToConnection(TinyNetConnection conn, byte playerControllerId, byte[] msgData) {
 			if (playerControllerId < 0) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("AddPlayerControllerToConnection() called with playerControllerId < 0"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError($"[{TYPE}] AddPlayerControllerToConnection() called with playerControllerId < 0"); }
 				return;
 			}
 
 			if (playerControllerId < conn.playerControllers.Count && conn.playerControllers[playerControllerId].IsValid) {
-				if (TinyNetLogLevel.logError) { TinyLogger.LogError("There is already a player with that playerControllerId for this connection"); }
+				if (TinyNetLogLevel.logError) { TinyLogger.LogError($"[{TYPE}] There is already a player with id={playerControllerId} for this connection"); }
 				return;
 			}
 
-			CreatePlayerAndAdd(conn, playerControllerId);
+			CreatePlayerAndAdd(conn, playerControllerId, msgData);
 		}
 
 		/// <summary>
@@ -626,8 +679,11 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="conn">The connection.</param>
 		/// <param name="playerControllerId">The player controller identifier.</param>
-		protected virtual void RemovePlayerControllerFromConnection(TinyNetConnection conn, short playerControllerId) {
-			conn.RemovePlayerController(playerControllerId);
+		protected virtual void RemovePlayerControllerFromConnection(TinyNetConnection conn, byte playerControllerId) {
+			TinyNetPlayerController playerController = conn.GetPlayerController(playerControllerId);
+			
+			TinyNetGameManager.Instance.OnPlayerControllerRemoved(playerController);
+			conn.RemovePlayerController(playerController);
 		}
 
 		/// <summary>
@@ -635,8 +691,12 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="conn">The connection.</param>
 		/// <param name="playerControllerId">The player controller identifier.</param>
-		protected virtual void CreatePlayerAndAdd(TinyNetConnection conn, int playerControllerId) {
-			conn.SetPlayerController<TinyNetPlayerController>(TinyNetGameManager.instance.CreatePlayerController(conn, playerControllerId));
+		protected virtual void CreatePlayerAndAdd(TinyNetConnection conn, byte playerControllerId, byte[] msgData) {
+			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("[" + TYPE + "] CreatePlayerAndAdd Conn: " + conn + ", playerId: " + playerControllerId); }
+			TinyNetPlayerController playerController = TinyNetGameManager.Instance.CreatePlayerController(conn, playerControllerId, msgData);
+			
+			conn.SetPlayerController<TinyNetPlayerController>(playerController);
+			TinyNetGameManager.Instance.OnPlayerControllerAdded(playerController);
 		}
 	}
 }

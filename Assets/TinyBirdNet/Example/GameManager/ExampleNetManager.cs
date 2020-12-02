@@ -11,8 +11,8 @@ class ExampleNetManager : TinyNetGameManager {
 		base.AwakeVirtual();
 	}
 
-	public override void StartServer() {
-		base.StartServer();
+	public override bool StartServer() {
+		bool bResult = base.StartServer();
 
 #if DEBUG
 		//serverManager.NetManager.SimulateLatency = true;
@@ -20,17 +20,15 @@ class ExampleNetManager : TinyNetGameManager {
 		//serverManager.NetManager.SimulationMinLatency = 600;
 #endif
 
-		if (serverManager != null && serverManager.isRunning) {
+		if (bResult && serverManager != null && serverManager.isRunning) {
 			ServerChangeScene("MainScene");
 		}
+
+		return bResult;
 	}
 
 	public void StartSinglePlayer() {
 		
-	}
-
-	public override void ClientConnectTo(string hostAddress, int hostPort) {
-		base.ClientConnectTo(hostAddress, hostPort);
 	}
 
 	public override void RegisterMessageHandlersServer() {
@@ -39,18 +37,24 @@ class ExampleNetManager : TinyNetGameManager {
 		serverManager.RegisterHandlerSafe(TinyNetMsgType.Highest + 1, OnPlayerNameReceive);
 	}
 
-	public override TinyNetPlayerController CreatePlayerController(TinyNetConnection conn, int playerId) {
-		return new ExamplePlayerController((short)playerId, conn);
+	public override TinyNetPlayerController CreatePlayerController(TinyNetConnection conn, byte playerId, byte[] msgData) {
+		return new ExamplePlayerController(playerId, conn);
 	}
 
 	public override void OnClientReady() {
 		base.OnClientReady();
 
+		if (clientManager.connToHost.playerControllers.Count > 0) {
+			return;
+		}
+
+		clientManager.RequestAddPlayerControllerToServer(null);
+
 		//Remember this only works cos we only have 1 player per connection in this demo.
 		stringMsg.msgType = TinyNetMsgType.Highest + 1;
 		stringMsg.value = System.Environment.UserName;
 
-		TinyNetClient.instance.connToHost.Send(stringMsg, LiteNetLib.DeliveryMethod.ReliableOrdered);
+		clientManager.connToHost.Send(stringMsg, LiteNetLib.DeliveryMethod.ReliableOrdered);
 	}
 
 	public void PawnRequest(ExamplePlayerController controller) {

@@ -17,12 +17,12 @@ namespace TinyBirdNet {
 	public class TinyNetGameManager : MonoBehaviour {
 
 		// Different protocols can't connect to each other
-		public const int PROTOCOL_VERSION = 2;
+		public const int PROTOCOL_VERSION = 4;
 
 		/// <summary>
 		/// The singleton instance.
 		/// </summary>
-		public static TinyNetGameManager instance;
+		public static TinyNetGameManager Instance { get; protected set; }
 
 		public static readonly Guid ApplicationGUID = Guid.NewGuid();
 		public static readonly string ApplicationGUIDString = ApplicationGUID.ToString();
@@ -168,6 +168,17 @@ namespace TinyBirdNet {
 		/// </summary>
 		protected TinyNetClient clientManager;
 
+		public EventBasedNetListener ServerEventNetListener {
+			get {
+				return serverManager != null ? serverManager.NetListenerEvents : null;
+			}
+		}
+		public EventBasedNetListener ClientEventNetListener {
+			get {
+				return clientManager != null ? clientManager.NetListenerEvents : null;
+			}
+		}
+
 		/// <summary>
 		/// Gets a value indicating whether this instance is a server.
 		/// </summary>
@@ -182,6 +193,13 @@ namespace TinyBirdNet {
 		///   <c>true</c> if this instance is client; otherwise, <c>false</c>.
 		/// </value>
 		public bool isClient { get { return clientManager != null && clientManager.isRunning; } }
+		/// <summary>
+		/// Gets a value indicating whether this instance is offline (neither a client nor a server).
+		/// </summary>
+		/// <value>
+		///   <c>true</c> if this instance is offline; otherwise, <c>false</c>.
+		/// </value>
+		public bool isOffline { get { return !isServer && !isClient; } }
 		/// <summary>
 		/// Gets a value indicating whether this instance is a listen server.
 		/// <para>A listen server is a server that is also a client.</para>
@@ -225,24 +243,38 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// The next player identifier
 		/// </summary>
-		private int _nextPlayerID = 0;
+		private byte _nextPlayerID = 0;
 		/// <summary>
 		/// Gets the next player identifier.
 		/// </summary>
 		/// <value>
 		/// The next player identifier.
 		/// </value>
-		public int NextPlayerID {
+		public virtual byte NextPlayerID {
 			get {
 				return _nextPlayerID++;
 			}
 		}
 
+		public bool ShowDebugStats {
+			get {
+				return _bDebugStats;
+            }
+			set {
+				_bDebugStats = value;
+            }
+		}
+
+		protected Rect _debugWindowRect;
+		protected bool _bDebugStats;
+		protected float _lastDebugUpdate = 0;
+		protected string _lastDebugTxt;
+
 		/// <summary>
 		/// Awake is run before Start and there is no guarantee anything else has been initialized. Called by UnityEngine.
 		/// </summary>
 		void Awake() {
-			instance = this;
+			Instance = this;
 
 			TinyNetLogLevel.currentLevel = currentLogFilter;
 
@@ -259,7 +291,9 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Provides a function to be overrrided in case you need to add something in the Awake call.
 		/// </summary>
-		protected virtual void AwakeVirtual() { }
+		protected virtual void AwakeVirtual() {
+			_debugWindowRect = new Rect(10, 10, 180, 120);
+		}
 
 		/// <summary>
 		/// Starts this instance. Called by UnityEngine.
@@ -278,14 +312,7 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Called every frame update by the UnityEngine.
 		/// </summary>
-		void Update() {
-			if (serverManager != null) {
-				serverManager.InternalUpdate();
-			}
-			if (clientManager != null) {
-				clientManager.InternalUpdate();
-			}
-
+		protected virtual void Update() {
 			// Calls the Update method on all TinyNetPlayerControllers.
 			if (serverManager != null) {
 				serverManager.CallUpdateOnControllers();
@@ -294,23 +321,30 @@ namespace TinyBirdNet {
 			}
 
 			CheckForSceneLoad();
-
-			UpdateVirtual();
 		}
 
 		/// <summary>
-		/// Provides a function to be overrrided in case you need to add something in the Update call.
+		/// Called every physics frame update by the UnityEngine.
 		/// </summary>
-		protected virtual void UpdateVirtual() {
+		protected virtual void FixedUpdate() {
+			if (serverManager != null) {
+				serverManager.PollEvents();
+			}
+			if (clientManager != null) {
+				clientManager.PollEvents();
+			}
 		}
 
-		/// <summary>
-		/// This is called every physics update, but after every FixedUpdate() has been called.
-		/// </summary>
-		IEnumerator TinyNetUpdate() {
+        /// <summary>
+        /// This is called every physics update, but after every FixedUpdate() has been called.
+        /// </summary>
+        IEnumerator TinyNetUpdate() {
 			while (true) {
-				if (serverManager != null) {
+				if (serverManager != null && serverManager.isRunning) {
 					serverManager.TinyNetUpdate();
+				}
+				if (clientManager != null && clientManager.isRunning) {
+					clientManager.TinyNetUpdate();
 				}
 
 				yield return new WaitForFixedUpdate();
@@ -319,6 +353,7 @@ namespace TinyBirdNet {
 
 		/// <summary>
 		/// Returns the diff in frames between tick a and b.
+		/// <para>Positive means tick A is ahead of B, negative otherwise, zero is the same tick.</para>
 		/// </summary>
 		/// <returns>Returns how far between two ticks are, positive means tick A is ahead of B, negative otherwise, zero is the same tick.</returns>
 		public int SeqDiff(int a, int b) {
@@ -335,9 +370,9 @@ namespace TinyBirdNet {
 		/// <returns></returns>
 		public ushort GetFrameTick() {
 			if (serverManager != null) {
-				return serverManager.ServerTick;
+				return serverManager.CurrentTick;
 			} else if (clientManager != null) {
-				return clientManager.LastServerTick;
+				return clientManager.CurrentTick;
 			}
 
 			return 0;
@@ -409,7 +444,7 @@ namespace TinyBirdNet {
 			prefabsGUID = new List<string>(registeredPrefabs.Count);
 
 			for (int i = 0; i < registeredPrefabs.Count; i++) {
-				prefabsGUID.Add(registeredPrefabs[i].GetComponent<TinyNetIdentity>().assetGUID);
+				prefabsGUID.Add(registeredPrefabs[i].GetComponent<TinyNetIdentity>().AssetGUID);
 			}
 		}
 
@@ -512,9 +547,9 @@ namespace TinyBirdNet {
 		//============ Net Management =======================//
 
 		/// <summary>
-		/// Clears the net manager.
+		/// Clears the <see cref="NetManager"/> from both Server and Client.
 		/// </summary>
-		protected virtual void ClearNetManager() {
+		public virtual void ClearNetManager() {
 			if (serverManager != null) {
 				serverManager.ClearNetManager();
 			}
@@ -529,7 +564,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="newNumber">The new number.</param>
 		public virtual void SetMaxNumberOfPlayers(int newNumber) {
-			if (serverManager != null) {
+			if (serverManager != null && serverManager.isRunning) {
 				return;
 			}
 			maxNumberOfPlayers = newNumber;
@@ -540,7 +575,7 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="newPort">The new port.</param>
 		public virtual void SetPort(int newPort) {
-			if (serverManager != null) {
+			if (serverManager != null && serverManager.isRunning) {
 				return;
 			}
 			port = newPort;
@@ -557,19 +592,45 @@ namespace TinyBirdNet {
 		/// <summary>
 		/// Prepares this game to work as a server.
 		/// </summary>
-		public virtual void StartServer() {
-			serverManager = new TinyNetServer();
+		public virtual bool StartServer() {
+			if (serverManager == null) {
+				serverManager = new TinyNetServer();
+			}
 
-			serverManager.StartServer(port, maxNumberOfPlayers);
+			return serverManager.StartServer(port, maxNumberOfPlayers);
 		}
 
 		/// <summary>
 		/// Prepares this game to work as a client.
 		/// </summary>
-		public virtual void StartClient() {
-			clientManager = new TinyNetClient();
+		public virtual bool StartClient() {
+			if (clientManager == null) {
+				clientManager = new TinyNetClient();
+			}
 
-			clientManager.StartClient();
+			return clientManager.StartClient();
+		}
+
+		/// <summary>
+		/// Clears the <see cref="NetManager"/> from the server.
+		/// </summary>
+		public virtual void StopServer() {
+			if (serverManager == null) {
+				return;
+			}
+
+			serverManager.ClearNetManager();
+		}
+
+		/// <summary>
+		/// Clears the <see cref="NetManager"/> from the client.
+		/// </summary>
+		public virtual void StopClient() {
+			if (clientManager == null) {
+				return;
+			}
+
+			clientManager.ClearNetManager();
 		}
 
 		/// <summary>
@@ -589,12 +650,18 @@ namespace TinyBirdNet {
 		/// </summary>
 		/// <param name="hostAddress">An IPv4 or IPv6 string containing the address of the server.</param>
 		/// <param name="hostPort">An int representing the port to use for the connection.</param>
-		public virtual void ClientConnectTo(string hostAddress, int hostPort) {
+		public virtual void ClientConnectTo(string hostAddress, int hostPort/*, Action<bool> responseCallback = null*/) {
+			//clientManager._responseEvent = responseCallback;
 			clientManager.ClientConnectTo(hostAddress, hostPort);
 		}
 
-		public bool CheckConnectionKey(string key) {
-			return key == (PROTOCOL_VERSION + multiplayerConnectKey);
+		/// <summary>
+		/// Checks if the connection key is valid.
+		/// </summary>
+		/// <param name="key">The key.</param>
+		/// <returns></returns>
+		public virtual bool CheckConnectionKey(string key) {
+			return key == (PROTOCOL_VERSION + multiplayerConnectKey + Application.version);
 		}
 
 		//============ Scenes Methods =======================//
@@ -603,14 +670,9 @@ namespace TinyBirdNet {
 		/// Checks if a scene load was requested and if it finished.
 		/// </summary>
 		protected virtual void CheckForSceneLoad() {
-			if (instance == null)
+			if (Instance == null || s_LoadingSceneAsync == null || !s_LoadingSceneAsync.isDone) {
 				return;
-
-			if (s_LoadingSceneAsync == null)
-				return;
-
-			if (!s_LoadingSceneAsync.isDone)
-				return;
+			}
 
 			if (TinyNetLogLevel.logDebug) { TinyLogger.Log("TinyNetGameManager::CheckForSceneLoad() done"); }
 
@@ -673,7 +735,7 @@ namespace TinyBirdNet {
 			if (isClient) {
 				clientManager.ClientFinishLoadScene();
 			} else {
-				if (TinyNetLogLevel.logDev) { TinyLogger.Log("FinishLoadScene client is null"); }
+				if (TinyNetLogLevel.logDebug) { TinyLogger.Log("FinishLoadScene client is null"); }
 			}
 
 			if (isServer) {
@@ -684,6 +746,53 @@ namespace TinyBirdNet {
 			if (isClient && clientManager.isConnected) {
 				clientManager.OnClientSceneChanged();
 			}
+		}
+
+		//============ Debug Methods ======================//
+
+		private void OnGUI() {
+			if (_bDebugStats) {
+				OpenDebugGUI();
+			}
+		}
+
+		public virtual void OpenDebugGUI() {
+			_debugWindowRect = GUI.Window(GetInstanceID(), _debugWindowRect, DrawDebugOverlay, "TinyBirdNet Debug");
+		}
+
+#if !UNITY_EDITOR
+        private void Start()
+        {
+            isOverlayEnabled = Settings.Instance.IsOverlayEnabled(fmodPlatform);
+        }
+#endif
+
+		protected virtual void DrawDebugOverlay(int windowID) {
+			if (_lastDebugUpdate < Time.unscaledTime) {
+				System.Text.StringBuilder debug = new System.Text.StringBuilder();
+
+				if (isServer) {
+					debug.Append("- Server:\n");
+					debug.AppendFormat(" tick: {0}\n", serverManager.CurrentTick);
+					debug.AppendFormat(" clients: {0}\n", serverManager.tinyNetConns.Count);
+                }
+
+				if (isClient) {
+					debug.Append("- Client:\n");
+					debug.AppendFormat(" tick: {0} / {1} / {2}\n", clientManager.LastServerTick, clientManager.TicksSinceLastServerTick, clientManager.CurrentExtrapolatedServerTick);
+					debug.AppendFormat(" latency: {0}\n", clientManager.Latency);
+				}
+
+				if (isOffline) {
+					debug.Append("Is Offline");
+                }
+
+				_lastDebugTxt = debug.ToString();
+				_lastDebugUpdate = Time.unscaledTime;
+			}
+
+			GUI.Label(new Rect(10, 18, 180, 120), _lastDebugTxt);
+			GUI.DragWindow();
 		}
 
 		//============ Players Methods ======================//
@@ -700,15 +809,29 @@ namespace TinyBirdNet {
 		/// <param name="conn">The connection to create a player controller for.</param>
 		/// <param name="playerControllerId">The player controller's id.</param>
 		/// <returns>A new <see cref="TinyNetPlayerController"/>.</returns>
-		public virtual TinyNetPlayerController CreatePlayerController(TinyNetConnection conn, int playerControllerId) {
-			return new TinyNetPlayerController((short)playerControllerId, conn);
+		public virtual TinyNetPlayerController CreatePlayerController(TinyNetConnection conn, byte playerControllerId, byte[] msgData) {
+			return new TinyNetPlayerController(playerControllerId, conn);
 		}
 
 		/// <summary>
-		/// Called by [Client] after sending a Ready message to server.
+		/// [Client-only] Called by [Client] after sending a Ready message to server.
 		/// </summary>
 		public virtual void OnClientReady() {
-			clientManager.RequestAddPlayerControllerToServer();
+			//clientManager.RequestAddPlayerControllerToServer(null);
+		}
+
+		/// <summary>
+		/// Called after a player controller has been added to a connection.
+		/// </summary>
+		/// <param name="playerController">The player controller.</param>
+		public virtual void OnPlayerControllerAdded(TinyNetPlayerController playerController) {
+		}
+
+		/// <summary>
+		/// Called before a player controller has been removed from a connection.
+		/// </summary>
+		/// <param name="playerController">The player controller.</param>
+		public virtual void OnPlayerControllerRemoved(TinyNetPlayerController playerController) {
 		}
 
 		//============ Unity Events =========================//

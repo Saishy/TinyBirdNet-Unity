@@ -1,10 +1,9 @@
-﻿using TinyBirdUtils;
-using UnityEditor;
+﻿#if UNITY_EDITOR
+using TinyBirdUtils;
 using UnityEditor.Callbacks;
 using UnityEngine;
 
 namespace TinyBirdNet {
-
 	/// <summary>
 	/// Used to run a method on the PostProcessScene.
 	/// </summary>
@@ -16,6 +15,10 @@ namespace TinyBirdNet {
 		/// </summary>
 		[PostProcessScene]
 		public static void OnPostProcessScene() {
+			if (Application.isPlaying) {
+				return;
+            }
+
 			int nextSceneId = 1;
 			TinyNetIdentity[] tnis = MonoBehaviour.FindObjectsOfType<TinyNetIdentity>();
 
@@ -26,13 +29,10 @@ namespace TinyBirdNet {
 					if (TinyNetLogLevel.logError) { TinyLogger.LogError("TinyNetGameManager has a TinyNetIdentity component. This will cause the TinyNetGameManager object to be disabled, so it is not recommended."); }
 				}
 
-				if (tnis[i].isClient || tnis[i].isServer) {
-					continue;
-				}
-
 				tnis[i].gameObject.SetActive(false);
 				tnis[i].ForceSceneId(nextSceneId++);
 			}
 		}
 	}
 }
+#endif

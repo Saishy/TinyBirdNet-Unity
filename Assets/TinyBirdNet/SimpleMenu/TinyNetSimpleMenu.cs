@@ -12,23 +12,23 @@ namespace TinyBirdNet {
 		public InputField hostPortField;
 
 		public void PressedConnectButton() {
-			TinyNetGameManager.instance.StartClient();
+			TinyNetGameManager.Instance.StartClient();
 
-			TinyNetGameManager.instance.ClientConnectTo(ipToConnectField.text.Length == 0 ? "localhost" : ipToConnectField.text, portToConnectField.text.Length == 0 ? 7777 : int.Parse(portToConnectField.text));
+			TinyNetGameManager.Instance.ClientConnectTo(ipToConnectField.text.Length == 0 ? "localhost" : ipToConnectField.text, portToConnectField.text.Length == 0 ? 7777 : int.Parse(portToConnectField.text));
 		}
 
 		public void PressedHostButton() {
-			TinyNetGameManager.instance.SetPort(hostPortField.text.Length == 0 ? 7777 : int.Parse(hostPortField.text));
+			TinyNetGameManager.Instance.SetPort(hostPortField.text.Length == 0 ? 7777 : int.Parse(hostPortField.text));
 
-			TinyNetGameManager.instance.StartServer();
+			TinyNetGameManager.Instance.StartServer();
 
-			TinyNetGameManager.instance.StartClient();
+			TinyNetGameManager.Instance.StartClient();
 
-			TinyNetGameManager.instance.ClientConnectTo("localhost", hostPortField.text.Length == 0 ? 7777 : int.Parse(hostPortField.text));
+			TinyNetGameManager.Instance.ClientConnectTo("localhost", hostPortField.text.Length == 0 ? 7777 : int.Parse(hostPortField.text));
 		}
 
 		public void ToggleNatPunching(bool bNewValue) {
-			TinyNetGameManager.instance.ToggleNatPunching(bNewValue);
+			TinyNetGameManager.Instance.ToggleNatPunching(bNewValue);
 		}
 	}
 }
