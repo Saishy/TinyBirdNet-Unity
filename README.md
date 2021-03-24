@@ -6,7 +6,7 @@ The goal of TinyBirdNet is to create an environment where you can easily add net
 ## Features
 - Deals with lots of common problems like readying, scene changes, player owned objects.
 - All code available, no obfuscation, no dlls.
-- Free for noncommercial projects! Try it fully without paying.
+- Free for everyone!
 - No additional charges for CCU, bandwidth, nothing, it's yours to use.
 
 ## Latest Versions:
